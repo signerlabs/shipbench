@@ -1,0 +1,31 @@
+import SwiftUI
+
+struct HabitListView: View {
+    @State private var store = HabitStore.shared
+
+    var body: some View {
+        NavigationStack {
+            List(store.habits) { habit in
+                HStack(spacing: 12) {
+                    Circle().fill(habit.color).frame(width: 12, height: 12)
+                    Text(habit.name)
+                    Spacer()
+                    if let time = habit.reminderTime {
+                        Text(time, style: .time).foregroundStyle(.secondary)
+                    }
+                }
+            }
+            .navigationTitle("Habits")
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    NavigationLink {
+                        MealLogView()
+                    } label: {
+                        Image(systemName: "fork.knife")
+                    }
+                    .accessibilityLabel("Log a Meal")
+                }
+            }
+        }
+    }
+}

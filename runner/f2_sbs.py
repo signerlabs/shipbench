@@ -66,6 +66,97 @@ def f1_events(path):
     return tuple(None if x is None else x / 30 for x in (a, t1, t2))
 
 
+def shot_events(video, states, n):
+    """按截图找事件时刻（视频自己的时间轴）：states 目录里 k1..kn 是每一步停稳的画面（回放截图或原录屏的标准帧）。
+    对每个 k_j，先找最像它的那一帧，再往后找画面开始离开它的第一帧，就是下一次操作（点按、滑动）起作用的时刻。
+    找不到的返回 None，由调用方按 .marks 估算。11-08 为 F2 加（回放比原录屏慢、录屏又是变帧率，不能按墙上时间换算）"""
+    import numpy as np
+    w, h = 96, 208
+    pts = [float(x.strip(',')) for x in subprocess.run(['ffprobe', '-v', 'error', '-select_streams', 'v', '-show_entries', 'frame=pts_time',
+                                                       '-of', 'csv=p=0', video], capture_output=True, text=True).stdout.split() if x.strip(',')]
+    raw = subprocess.run(['ffmpeg', '-v', 'error', '-i', video, '-vf', f'scale={w}:{h},format=gray', '-fps_mode', 'passthrough',
+                          '-f', 'rawvideo', '-'], capture_output=True).stdout
+    fr = np.frombuffer(raw, np.uint8).reshape(-1, h, w).astype(np.float32)[:, int(h * 0.07):, :]  # 去掉状态栏
+    pts = pts[:len(fr)]
+    def load(k):
+        im = Image.open(os.path.join(states, f'k{k}.png')).convert('L').resize((w, h))
+        return np.asarray(im, np.float32)[int(h * 0.07):, :]
+    S = [load(k) for k in range(1, n + 1)]
+    ev, after = [], 0
+    for j in range(n - 1):
+        d = np.abs(fr - S[j]).mean(axis=(1, 2))
+        span = max(float(np.abs(S[j] - S[j + 1]).mean()), 0.8)
+        rem = range(after, len(fr))
+        if not rem:
+            ev.append(None); continue
+        dmin = min(d[i] for i in rem)
+        if dmin > 12:  # 根本没出现这个画面
+            ev.append(None); continue
+        tol = max(0.2, 0.15 * span)
+        thr = dmin + tol + 0.25 * span
+        def held(i, cond, secs):
+            # 从第 i 帧起持续 secs 秒都满足 cond（滤掉 0.1 秒级的闪烁、滚动回弹）
+            j = i
+            while j < len(fr) and cond(j):
+                if pts[j] - pts[i] >= secs:
+                    return True
+                j += 1
+            return j >= len(fr) and j > i
+        # 取第一次停稳在这个画面的那一帧（k1 和「取消选中」画面一样，不能直接取全局最像的）
+        m = next((i for i in rem if d[i] <= dmin + tol and held(i, lambda x: d[x] <= dmin + tol, 0.25)), None)
+        if m is None:
+            ev.append(None); continue
+        e = next((i for i in range(m, len(fr)) if d[i] > thr and held(i, lambda x: d[x] > thr, 0.15)), None)
+        ev.append(pts[e] if e is not None else None)
+        after = e if e is not None else m
+    return ev
+
+
+def compose(video, segs, total, path):
+    """按分段直接从解码帧拼出等长的 30 帧小片，不用 ffmpeg 按时间跳转（11-08 加）。
+    有的回放录屏时间戳会倒退（ffmpeg 读到 81.46 秒之后又是 56.53 秒），按时间跳转会取错帧；这里按解码顺序和 ffprobe 的时间戳取帧：
+    每个输出时刻取「不晚于对应源时刻的最后一帧」，变帧率静止的部分自然停住。segs 是 [(源起点, 长度), ...]"""
+    import bisect
+    import numpy as np
+    pts = [float(x.strip(',')) for x in subprocess.run(['ffprobe', '-v', 'error', '-select_streams', 'v', '-show_entries', 'frame=pts_time',
+                                                       '-of', 'csv=p=0', video], capture_output=True, text=True).stdout.split() if x.strip(',')]
+    lo = min(a for a, _ in segs) - 1.0
+    hi = max(a + d for a, d in segs) + 1.0
+    proc = subprocess.Popen(['ffmpeg', '-v', 'error', '-i', video, '-vf', f'scale={W}:{H},setsar=1', '-fps_mode', 'passthrough',
+                             '-pix_fmt', 'rgb24', '-f', 'rawvideo', '-'], stdout=subprocess.PIPE)
+    size = W * H * 3
+    keep_t, keep_f, last = [], [], None
+    for t in pts:
+        buf = proc.stdout.read(size)
+        if len(buf) < size:
+            break
+        if t < lo:
+            last = (t, buf)  # 窗口开始前的最后一帧，静止画面要用
+            continue
+        if last is not None and not keep_t:
+            keep_t.append(last[0]); keep_f.append(last[1])
+        if t > hi:
+            break
+        keep_t.append(t); keep_f.append(buf)
+    proc.stdout.close(); proc.wait()
+    if not keep_t and last is not None:
+        keep_t, keep_f = [last[0]], [last[1]]
+    order = sorted(range(len(keep_t)), key=lambda i: keep_t[i])
+    keep_t = [keep_t[i] for i in order]; keep_f = [keep_f[i] for i in order]
+    enc = subprocess.Popen(['ffmpeg', '-v', 'error', '-y', '-f', 'rawvideo', '-pix_fmt', 'rgb24', '-s', f'{W}x{H}', '-r', str(FPS), '-i', '-',
+                            '-c:v', 'libx264', '-crf', '18', '-preset', 'veryfast', '-pix_fmt', 'yuv420p', '-an', path], stdin=subprocess.PIPE)
+    n = 0
+    for a, d in segs:
+        for k in range(int(round(d * FPS))):
+            src = a + k / FPS
+            i = max(bisect.bisect_right(keep_t, src) - 1, 0)
+            enc.stdin.write(keep_f[i]); n += 1
+    while n < int(total * FPS):
+        enc.stdin.write(keep_f[i]); n += 1
+    enc.stdin.close(); enc.wait()
+    return path
+
+
 def run(*a):
     subprocess.run(['nice', '-n', '10', 'ffmpeg', '-nostdin', '-v', 'error', '-y', *a], check=True)
 
@@ -96,6 +187,29 @@ def main(ref, out, *pairs):
             print(pairs[i], f'出画面 {a:.2f}s 第一次点 {t1:.2f}s 第二次点 {t2:.2f}s（视频时间）', file=sys.stderr)
             end = max(vd - 1.0, 0)
             clips.append((pairs[i], [(min(a, end), 6.45), (min(t1, end), 5.1), (min(t2, end), clips[0][2] - 11.55 + TAIL)], clips[0][2] + TAIL))
+        elif os.environ.get('FTASK', 'F2') == 'F2' and os.environ.get('F2_REF_STATES'):
+            # F2 分七段对齐（11-08 改）：原录屏和回放各自按停稳画面找出 6 次操作的时刻，每段按原录屏的长度截取；
+            # 回放多等的静止时间截掉，动画慢的部分停在最后一帧。找不到的操作按 .marks 的间隔估算
+            if 'ref_ev' not in globals():
+                globals()['ref_ev'] = shot_events(ref, os.environ['F2_REF_STATES'], 7)
+            o = globals()['ref_ev']
+            shots = os.path.join(os.path.dirname(pairs[i]), 'shots')
+            e = shot_events(pairs[i], shots, 7)
+            # 回放每次操作都紧跟在截图 k_{j+1} 之后，所以操作之间的间隔就是 .marks 里截图的间隔。以最好认的一次操作
+            # （点进 Bedroom 详情，整屏换掉）为锚，按 .marks 推出其余操作的时刻；从画面认出来的时刻和推算差 0.5 秒以内才用
+            # （环形图选中前后画面差别小，录屏里还可能有闪烁，单靠画面容易认错）
+            anchor = 4 if e[4] is not None else next((j for j in range(6) if e[j] is not None), None)
+            for j in range(6):
+                pred = (e[anchor] + m[f'shot:k{j + 1}'] - m[f'shot:k{anchor + 1}']) if anchor is not None else None
+                if e[j] is None or (pred is not None and abs(e[j] - pred) > 0.5):
+                    if pred is None:
+                        pred = (m[f'shot:k{j + 1}'] - m['rec']) + 0.3
+                    print(pairs[i], f'第 {j + 1} 次操作按 .marks 推算：{pred:.2f}s（画面认出的是 {e[j]}）', file=sys.stderr)
+                    e[j] = pred
+            print(pairs[i], '操作时刻（视频时间）', [round(x, 2) for x in e], '原录屏', [round(x, 2) for x in o], file=sys.stderr)
+            segs = [(max(e[0] - o[0], 0), o[0])] + [(e[j], o[j + 1] - o[j]) for j in range(5)] + [(e[5], clips[0][2] - o[5] + TAIL)]
+            pre = compose(pairs[i], segs, clips[0][2] + TAIL, os.path.join(tmp, f'pre{i}.mp4'))
+            clips.append((pre, 0.0, clips[0][2] + TAIL))
         else:
             clips.append((pairs[i], min(m['shot:k1'] - m['rec'] - 1.0, vd - 0.2), m['shot:k7'] - m['shot:k1'] + 1.8))
     total = max(c[2] for c in clips)

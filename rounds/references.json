@@ -1,0 +1,42 @@
+{
+ "S1": {
+  "seconds": 206.38,
+  "cost_usd": 1.06,
+  "set_in": "round-01"
+ },
+ "S2": {
+  "seconds": 441.55,
+  "cost_usd": 2.531,
+  "set_in": "round-01"
+ },
+ "F1": {
+  "seconds": 2311.99,
+  "cost_usd": 11.223,
+  "set_in": "round-01"
+ },
+ "B2": {
+  "seconds": 998.49,
+  "cost_usd": 3.796,
+  "set_in": "round-01"
+ },
+ "R5": {
+  "seconds": 180.67,
+  "cost_usd": 1.293,
+  "set_in": "round-01"
+ },
+ "R9": {
+  "seconds": 570.12,
+  "cost_usd": 2.843,
+  "set_in": "round-01"
+ },
+ "F2": {
+  "seconds": 1787.29,
+  "cost_usd": 8.826,
+  "set_in": "round-01"
+ },
+ "B4": {
+  "seconds": 591.09,
+  "cost_usd": 2.123,
+  "set_in": "round-01"
+ }
+}

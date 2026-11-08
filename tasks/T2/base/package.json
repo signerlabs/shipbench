@@ -1,0 +1,12 @@
+{
+  "name": "math-lesson-core",
+  "private": true,
+  "type": "module",
+  "description": "小学数学 AI 学伴的课程与实时课核心逻辑（纯 TypeScript，Node ≥ 23.6 原生跑 TS，不需要安装依赖）",
+  "scripts": {
+    "test": "node --test"
+  },
+  "engines": {
+    "node": ">=23.6"
+  }
+}

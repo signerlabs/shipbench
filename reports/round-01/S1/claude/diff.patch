@@ -1,0 +1,90 @@
+ Sources/ClipData/Store/CloudWorker.swift  | 12 ++++++--
+ Tests/ClipDataTests/CloudMergeTests.swift | 46 +++++++++++++++++++++++++++++++
+ 2 files changed, 55 insertions(+), 3 deletions(-)
+diff --git a/Sources/ClipData/Store/CloudWorker.swift b/Sources/ClipData/Store/CloudWorker.swift
+index fb3ae51..127538c 100644
+--- a/Sources/ClipData/Store/CloudWorker.swift
++++ b/Sources/ClipData/Store/CloudWorker.swift
+@@ -170,7 +170,7 @@ enum CloudMerge {
+     /// 时间按整秒比：经 iCloud 同步来的日期精度不如本机原值（毫秒级取整方式待真机核实），比到秒以下两台 Mac 可能比出不同的保留者、
+     /// 结果两份都被删；同一秒内的交给后面的字段（uuid 等）决定
+     static func pinboardPrecedes(_ a: PinboardRecord, _ b: PinboardRecord) -> Bool {
+-        (a.createdAt, a.sortKey, a.name, a.colorRaw) < (b.createdAt, b.sortKey, b.name, b.colorRaw)
++        (wholeSecond(a.createdAt), a.sortKey, a.name, a.colorRaw) < (wholeSecond(b.createdAt), b.sortKey, b.name, b.colorRaw)
+     }
+ 
+     static func pinnedPrecedes(_ a: PinnedClip, _ b: PinnedClip) -> Bool {
+@@ -178,8 +178,14 @@ enum CloudMerge {
+     }
+ 
+     static func pinnedPrecedes(_ a: PinnedValue, _ b: PinnedValue) -> Bool {
+-        (a.createdAt, a.uuid.uuidString, a.pinboardID?.uuidString ?? "", a.pinSortKey, a.lastUsedAt, a.title ?? "")
+-            < (b.createdAt, b.uuid.uuidString, b.pinboardID?.uuidString ?? "", b.pinSortKey, b.lastUsedAt, b.title ?? "")
++        (wholeSecond(a.createdAt), a.uuid.uuidString, a.pinboardID?.uuidString ?? "", a.pinSortKey, wholeSecond(a.lastUsedAt), a.title ?? "")
++            < (wholeSecond(b.createdAt), b.uuid.uuidString, b.pinboardID?.uuidString ?? "", b.pinSortKey, wholeSecond(b.lastUsedAt), b.title ?? "")
++    }
++
++    /// 比先后用的时间：向下取到整秒（同一整秒内的视为同时）。
++    /// 向下取：同步丢掉的是毫秒以下的尾数，原值与同步后的值落在同一整秒里（若同步是四舍五入到毫秒，整秒前最后半毫秒内的仍可能分到两秒）
++    private static func wholeSecond(_ date: Date) -> TimeInterval {
++        date.timeIntervalSinceReferenceDate.rounded(.down)
+     }
+ 
+     /// 排好序、同 uuid 只留一份的 Pinboard：按排序键，相同再按 uuid（各台 Mac 排出同一个顺序）
+diff --git a/Tests/ClipDataTests/CloudMergeTests.swift b/Tests/ClipDataTests/CloudMergeTests.swift
+index ab6da86..937160f 100644
+--- a/Tests/ClipDataTests/CloudMergeTests.swift
++++ b/Tests/ClipDataTests/CloudMergeTests.swift
+@@ -85,6 +85,52 @@ import Testing
+         #expect(try await store.mergeCloudChanges() == false)
+     }
+ 
++    @Test func twoMacsKeepSameCopyDespiteSubMillisecondDrift() async throws {
++        // 两台 Mac 各把同一段文字收进同一个 Pinboard，创建时间落在同一毫秒内。
++        // 本机那份是原值；对方那份经 iCloud 同步过来，丢了毫秒以下的精度（两份都只剩 .500）
++        let boardID = UUID()
++        let fromA = UUID(uuidString: "AAAAAAAA-0000-0000-0000-000000000000")!
++        let fromB = UUID(uuidString: "BBBBBBBB-0000-0000-0000-000000000000")!
++        let second: TimeInterval = 800_000_000
++        let synced = Date(timeIntervalSinceReferenceDate: second + 0.5)
++        let macs = [
++            (local: fromA, createdAt: Date(timeIntervalSinceReferenceDate: second + 0.5004), remote: fromB),
++            (local: fromB, createdAt: Date(timeIntervalSinceReferenceDate: second + 0.5002), remote: fromA),
++        ]
++        var kept: [[UUID]] = []
++        for mac in macs {
++            let store = try await makeStore()
++            _ = try await store.createPinboard(id: boardID, name: "Work", color: .orange)
++            try await store.insertRemotePinned(id: mac.local, text: "same text", pinboardID: boardID, createdAt: mac.createdAt)
++            try await store.insertRemotePinned(id: mac.remote, text: "same text", pinboardID: boardID, createdAt: synced)
++            #expect(try await store.mergeCloudChanges())
++            kept.append(try await pinboard(store, boardID).map(\.id))
++        }
++        // 同一整秒内算同时，按 uuid 往下比：两台 Mac 留下同一份（各自删掉的那份同步过去后，这一份还在）
++        #expect(kept == [[fromA], [fromA]])
++    }
++
++    @Test func twoMacsKeepSamePinboardRecordDespiteSubMillisecondDrift() async throws {
++        // 同一 uuid 的 Pinboard 两台 Mac 各有一份（名字不同），创建时间落在同一毫秒内
++        let id = UUID()
++        let second: TimeInterval = 800_000_000
++        let synced = Date(timeIntervalSinceReferenceDate: second + 0.5)
++        let macs = [
++            (local: "Snippets", createdAt: Date(timeIntervalSinceReferenceDate: second + 0.5004), remote: "Templates"),
++            (local: "Templates", createdAt: Date(timeIntervalSinceReferenceDate: second + 0.5002), remote: "Snippets"),
++        ]
++        var kept: [[String]] = []
++        for mac in macs {
++            let store = try await makeStore()
++            try await store.insertRemotePinboard(id: id, name: mac.local, createdAt: mac.createdAt, isExample: false)
++            try await store.insertRemotePinboard(id: id, name: mac.remote, createdAt: synced, isExample: false)
++            #expect(try await store.mergeCloudChanges())
++            kept.append(try await store.pinboardRecordNames(id))
++        }
++        // 同一整秒内算同时，排序键相同、再按名字比：两台 Mac 留下同一份
++        #expect(kept == [["Snippets"], ["Snippets"]])
++    }
++
+     @Test func remoteRenameReachesHistoryAndSearch() async throws {
+         let store = try await makeStore()
+         let board = try await store.createPinboard(id: UUID(), name: "Work", color: .orange)

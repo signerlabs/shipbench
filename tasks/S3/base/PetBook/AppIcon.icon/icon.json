@@ -1,0 +1,40 @@
+{
+  "fill" : {
+    "automatic-gradient" : "srgb:0.00000,0.99144,1.00000,1.00000"
+  },
+  "groups" : [
+    {
+      "layers" : [
+        {
+          "blend-mode" : "normal",
+          "fill" : "none",
+          "glass" : false,
+          "hidden" : false,
+          "image-name" : "Logo (3).png",
+          "name" : "Logo (3)",
+          "position" : {
+            "scale" : 1.2,
+            "translation-in-points" : [
+              -1.1749999999999545,
+              214.30375000000004
+            ]
+          }
+        }
+      ],
+      "shadow" : {
+        "kind" : "neutral",
+        "opacity" : 0.5
+      },
+      "translucency" : {
+        "enabled" : true,
+        "value" : 0.5
+      }
+    }
+  ],
+  "supported-platforms" : {
+    "circles" : [
+      "watchOS"
+    ],
+    "squares" : "shared"
+  }
+}

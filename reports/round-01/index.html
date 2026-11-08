@@ -1,0 +1,478 @@
+<title>ShipBench Round 1</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans+Condensed:wght@500;600;700&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&display=swap">
+<style>
+/* Layout: one reading column like a lab report — a scoreboard up top, then setup, per-task table, findings, recordings, method. Two tool colors carry every comparison. */
+:root {
+  --paper: #f4f6f3;
+  --panel: #ffffff;
+  --ink: #17212b;
+  --muted: #5a6672;
+  --rule: #d6dbd4;
+  --soft: #e9ede7;
+  --cc: #b9502a;
+  --cx: #2c6a8a;
+  --ok: #2f7a4f;
+  --warn: #9a6a12;
+  --display: "IBM Plex Sans Condensed", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Arial Narrow", sans-serif;
+  --body: "IBM Plex Sans", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", system-ui, sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --paper: #111518; --panel: #181d21; --ink: #e5e9e3; --muted: #9aa5ad; --rule: #2b3238; --soft: #20262b;
+    --cc: #e0784f; --cx: #62a7c9; --ok: #6cc08e; --warn: #d9a441; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --paper: #111518; --panel: #181d21; --ink: #e5e9e3; --muted: #9aa5ad; --rule: #2b3238; --soft: #20262b;
+  --cc: #e0784f; --cx: #62a7c9; --ok: #6cc08e; --warn: #d9a441; color-scheme: dark;
+}
+html[data-lang="zh"] [data-l="en"], html[data-lang="en"] [data-l="zh"] { display: none !important; }
+body { background: var(--paper); color: var(--ink); font-family: var(--body); font-size: 15px; line-height: 1.6; }
+.wrap { max-width: 1000px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 28px 64px; }
+h1, h2, h3 { font-family: var(--display); text-wrap: balance; line-height: 1.15; margin: 0; }
+h1 { font-size: clamp(30px, 5vw, 44px); font-weight: 700; letter-spacing: -0.01em; }
+h2 { font-size: 24px; font-weight: 600; }
+h3 { font-size: 17px; font-weight: 600; }
+p { margin: 0; max-width: 68ch; }
+a { color: inherit; text-decoration-color: var(--muted); text-underline-offset: 3px; }
+a:focus-visible, button:focus-visible, summary:focus-visible { outline: 2px solid var(--cx); outline-offset: 2px; border-radius: 3px; }
+code { font-family: var(--mono); font-size: 0.88em; background: var(--soft); padding: 1px 5px; border-radius: 3px; }
+.eyebrow { font-family: var(--mono); font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+.muted { color: var(--muted); }
+.num { font-variant-numeric: tabular-nums; }
+
+header.top { display: flex; flex-wrap: wrap; gap: 16px 24px; align-items: flex-start; justify-content: space-between; padding-bottom: 22px; border-bottom: 1px solid var(--rule); }
+header.top .lead { display: grid; gap: 10px; min-width: 0; flex: 1 1 520px; }
+header.top .lead p { font-size: 17px; color: var(--muted); }
+.lang { display: inline-flex; border: 1px solid var(--rule); border-radius: 999px; overflow: hidden; flex: none; }
+.lang button { font: 500 13px var(--body); padding: 6px 14px; border: 0; background: transparent; color: var(--muted); cursor: pointer; }
+.lang button[aria-pressed="true"] { background: var(--ink); color: var(--paper); }
+.status { display: inline-flex; align-items: center; gap: 8px; font-family: var(--mono); font-size: 12px; color: var(--warn); }
+.status::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: currentColor; }
+.status.done { color: var(--ok); }
+
+section { display: grid; gap: 14px; padding-block: 34px 0; }
+.board { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; padding-top: 26px; }
+.tool { background: var(--panel); border: 1px solid var(--rule); border-top: 4px solid var(--c); border-radius: 6px; padding: 18px 20px; display: grid; gap: 14px; min-width: 0; }
+.tool .name { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 10px; }
+.tool .name b { font-family: var(--display); font-size: 21px; font-weight: 600; }
+.tool .name span { font-family: var(--mono); font-size: 12px; color: var(--muted); }
+.tool .q { display: flex; align-items: baseline; gap: 10px; }
+.tool .q .big { font-family: var(--display); font-weight: 700; font-size: 58px; line-height: 1; color: var(--c); font-variant-numeric: tabular-nums; }
+.tool .q .lbl { font-size: 13px; color: var(--muted); }
+.tool dl { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px 16px; margin: 0; }
+.tool dt { font-size: 12px; color: var(--muted); }
+.tool dd { margin: 0; font-family: var(--mono); font-size: 15px; font-variant-numeric: tabular-nums; }
+
+.dims { display: grid; gap: 10px; background: var(--panel); border: 1px solid var(--rule); border-radius: 6px; padding: 16px 20px; }
+.dim { display: grid; grid-template-columns: minmax(120px, 190px) 1fr; gap: 6px 14px; align-items: center; }
+.dim .dn { font-size: 14px; }
+.dim .dn small { display: block; color: var(--muted); font-family: var(--mono); font-size: 11px; }
+.bars { display: grid; gap: 4px; min-width: 0; }
+.bar { display: grid; grid-template-columns: 1fr 44px; gap: 8px; align-items: center; }
+.bar .track { height: 10px; background: var(--soft); border-radius: 2px; position: relative; overflow: hidden; }
+.bar .fill { position: absolute; inset: 0 auto 0 0; background: var(--c); border-radius: 2px; }
+.bar .v { font-family: var(--mono); font-size: 12px; text-align: right; font-variant-numeric: tabular-nums; }
+.legend { display: flex; flex-wrap: wrap; gap: 6px 18px; font-size: 13px; color: var(--muted); }
+.legend i { display: inline-block; width: 10px; height: 10px; border-radius: 2px; background: var(--c); margin-right: 6px; vertical-align: -1px; }
+@media (max-width: 520px) { .dim { grid-template-columns: 1fr; } }
+
+.tablewrap { overflow-x: auto; background: var(--panel); border: 1px solid var(--rule); border-radius: 6px; }
+table { border-collapse: collapse; width: 100%; font-size: 14px; }
+th, td { padding: 9px 12px; text-align: left; vertical-align: top; border-bottom: 1px solid var(--rule); }
+th { font-family: var(--mono); font-size: 11px; font-weight: 500; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); white-space: nowrap; }
+tbody tr:last-child td { border-bottom: 0; }
+td.n { font-family: var(--mono); font-variant-numeric: tabular-nums; white-space: nowrap; text-align: right; }
+th.n { text-align: right; }
+td.id { font-family: var(--mono); font-weight: 500; white-space: nowrap; }
+tr.grp td { background: var(--soft); font-size: 12px; font-family: var(--mono); letter-spacing: 0.04em; color: var(--muted); padding-block: 5px; }
+.cc { color: var(--cc); } .cx { color: var(--cx); }
+.win { font-weight: 600; }
+.pend { color: var(--warn); font-family: var(--mono); font-size: 12px; }
+.lvl { font-family: var(--mono); font-size: 11px; color: var(--muted); border: 1px solid var(--rule); border-radius: 3px; padding: 0 5px; white-space: nowrap; }
+
+.cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 16px; }
+.card { background: var(--panel); border: 1px solid var(--rule); border-radius: 6px; padding: 16px 18px; display: grid; gap: 8px; min-width: 0; align-content: start; }
+ul.find { margin: 0; padding-left: 20px; display: grid; gap: 10px; max-width: 74ch; }
+.note { border-left: 3px solid var(--warn); padding: 8px 14px; background: var(--panel); font-size: 14px; max-width: none; }
+
+.videos { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+.videos figure { margin: 0; display: grid; gap: 6px; min-width: 0; }
+.videos video { width: 100%; max-width: 100%; aspect-ratio: 440 / 956; background: var(--soft); border-radius: 8px; border: 1px solid var(--rule); }
+.videos figcaption { font-size: 13px; font-family: var(--mono); }
+@media (max-width: 560px) { .videos { gap: 6px; } .videos figcaption { font-size: 11px; } }
+
+details { background: var(--panel); border: 1px solid var(--rule); border-radius: 6px; }
+details > summary { cursor: pointer; padding: 12px 16px; font-weight: 500; list-style-position: inside; }
+details > div { padding: 0 16px 14px; display: grid; gap: 10px; }
+.crit { display: grid; grid-template-columns: minmax(84px, 120px) 32px 32px; gap: 4px 12px; font-size: 13px; }
+.crit span:nth-child(3n+2), .crit span:nth-child(3n) { font-family: var(--mono); text-align: right; font-variant-numeric: tabular-nums; }
+.ded { display: grid; gap: 10px; }
+.ded .rule { font-size: 13px; color: var(--muted); max-width: none; }
+.dedcols { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 12px; }
+.dedcol { border-top: 3px solid var(--c); background: var(--paper); border-radius: 4px; padding: 10px 12px; display: grid; gap: 8px; min-width: 0; align-content: start; }
+.dedcol h4 { margin: 0; font-family: var(--display); font-size: 16px; font-weight: 600; display: flex; justify-content: space-between; gap: 8px; }
+.dedcol h4 span { font-family: var(--mono); font-variant-numeric: tabular-nums; color: var(--c); }
+.dl { display: grid; gap: 6px; margin: 0; padding: 0; list-style: none; font-size: 13px; }
+.dl li { display: grid; gap: 2px; }
+.dl .k { display: flex; flex-wrap: wrap; gap: 4px 10px; align-items: baseline; }
+.dl .k b { font-weight: 600; }
+.dl .k .sc { font-family: var(--mono); font-variant-numeric: tabular-nums; }
+.dl .k .lost { font-family: var(--mono); font-size: 12px; color: var(--warn); }
+.dl .k .none { font-family: var(--mono); font-size: 12px; color: var(--ok); }
+.dl .why { color: var(--muted); }
+.cmp { font-size: 13px; max-width: none; border-left: 2px solid var(--rule); padding-left: 10px; }
+.formula { font-family: var(--mono); font-size: 13px; background: var(--panel); border: 1px solid var(--rule); border-radius: 6px; padding: 10px 14px; overflow-x: auto; white-space: nowrap; }
+footer { padding-top: 40px; font-size: 13px; color: var(--muted); display: grid; gap: 6px; }
+@media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto !important; } }
+</style>
+
+<div class="wrap">
+  <header class="top">
+    <div class="lead">
+      <span class="eyebrow">ShipBench · <span data-l="zh">第一轮</span><span data-l="en">Round 1</span> · 2026-11-08</span>
+      <h1><span data-l="zh">Opus 5.5 对 GPT-6 Astra：8 道真实开发题</span><span data-l="en">Opus 5.5 vs GPT-6 Astra on 8 real app-development tasks</span></h1>
+      <p data-l="zh">两个模型各在自家的编程工具里跑（Opus 5.5 用 Claude Code，GPT-6 Astra 用 Codex），在已上架 App 的真实代码上修 bug、照录屏复刻 iOS 页面、按需求搭后端、照项目规矩加功能。每题每个模型跑一次，思考档位都是各家第二高的 xhigh。</p>
+      <p data-l="en">Two models, each running in its vendor's own coding agent (Opus 5.5 in Claude Code, GPT-6 Astra in Codex), fix bugs in shipping code, rebuild iOS screens from screen recordings, build backends from a spec and add features under a project's own rules. One run per task per model, both at their second-highest reasoning effort (xhigh).</p>
+      <span id="status" class="status"></span>
+    </div>
+    <div class="lang" role="group" aria-label="Language">
+      <button type="button" id="btn-zh" data-set="zh">中文</button>
+      <button type="button" id="btn-en" data-set="en">English</button>
+    </div>
+  </header>
+
+  <div class="board" id="board"></div>
+
+  <section aria-labelledby="h-dims">
+    <h2 id="h-dims"><span data-l="zh">四个维度的质量分</span><span data-l="en">Quality by dimension</span></h2>
+    <div class="dims" id="dims"></div>
+  </section>
+
+  <section aria-labelledby="h-setup">
+    <h2 id="h-setup"><span data-l="zh">这一轮测了什么</span><span data-l="en">What this round tested</span></h2>
+    <div class="cols">
+      <div class="card">
+        <h3><span data-l="zh">参测模型</span><span data-l="en">Models</span></h3>
+        <p data-l="zh"><b class="cc">Opus 5.5</b>（<code>claude-opus-5-5</code>），在 Claude Code 2.1.319 里跑，<code>--effort xhigh</code></p>
+        <p data-l="en"><b class="cc">Opus 5.5</b> (<code>claude-opus-5-5</code>) in Claude Code 2.1.319, <code>--effort xhigh</code></p>
+        <p data-l="zh"><b class="cx">GPT-6 Astra</b>（<code>gpt-6-astra</code>），在 Codex CLI 0.167.0 里跑，<code>model_reasoning_effort="xhigh"</code></p>
+        <p data-l="en"><b class="cx">GPT-6 Astra</b> (<code>gpt-6-astra</code>) in Codex CLI 0.167.0, <code>model_reasoning_effort="xhigh"</code></p>
+        <p class="muted" data-l="zh">每个模型都在自家厂商的编程工具里跑，工具固定，换的是模型。两家工具的默认档位差得远（Claude Code 默认 medium，Codex 默认 low），所以一律显式指定第二高的一档。档位影响很大：11-07 用默认档试跑同一道 F1，两个模型分别是 78.9、73.6，开到 xhigh 后是 94.2、83.9，用时和花费也都翻了几倍。</p>
+        <p class="muted" data-l="en">Each model runs in its own vendor's coding agent: the agent stays fixed, the model is what changes from round to round. The agents' defaults differ a lot (Claude Code uses medium, Codex uses low), so both were set explicitly to their second-highest level. Effort matters: in a trial at default effort on 2026-11-07, the same F1 task scored 78.9 and 73.6; at xhigh it scored 94.2 and 83.9, while time and cost grew several-fold.</p>
+      </div>
+      <div class="card">
+        <h3><span data-l="zh">题目从哪来</span><span data-l="en">Where the tasks come from</span></h3>
+        <p data-l="zh">ShipBench 题库共 31 道，出自已上架 App 的真实提交、真实页面和真实后端需求。这一轮是精简版：四个维度各挑两道，一易一难，共 8 道，都是题库里最早的样题。其余 23 道留给后面的轮次。</p>
+        <p data-l="en">The ShipBench bank has 31 tasks drawn from real commits, screens and backend requirements of apps on the App Store. This round is the lite set: two tasks per dimension, one easier and one harder, 8 in total, all from the bank's first sample tasks. The other 23 are kept for later rounds.</p>
+        <p class="muted" data-l="zh">每次运行都在独立的 macOS 系统用户里全自动跑，全新代码副本、全新配置目录，不限时（3 小时安全上限），两家拿到一字不差的题面，一家一家顺序跑。</p>
+        <p class="muted" data-l="en">Every run is fully autonomous in a dedicated macOS user, with a fresh copy of the code and a fresh config directory, no time limit (3-hour safety cap), the same prompt byte for byte, and runs one at a time.</p>
+      </div>
+    </div>
+  </section>
+
+  <section aria-labelledby="h-tasks">
+    <h2 id="h-tasks"><span data-l="zh">逐题成绩</span><span data-l="en">Task by task</span></h2>
+    <p class="muted" data-l="zh">质量分 0–100。时间是墙钟时间，花费按 API 标价折算（不管实际走订阅还是按量）。速度分、成本分不进质量分，单列。</p>
+    <p class="muted" data-l="en">Quality is 0–100. Time is wall-clock; cost is at API list price, whatever the actual billing. Speed and cost are reported separately, not folded into quality.</p>
+    <div class="tablewrap"><table id="tasks"></table></div>
+  </section>
+
+  <section aria-labelledby="h-find">
+    <h2 id="h-find"><span data-l="zh">看到了什么</span><span data-l="en">Findings</span></h2>
+    <p class="note" id="prelim" hidden><span data-l="zh">初步结论：Opus 5.5 的 8 道题都跑完了，GPT-6 Astra 还差 F2、B4；下面只基于两家都完成的 6 道题，全部出完后定稿。</span><span data-l="en">Preliminary: Opus 5.5 has finished all 8 tasks; GPT-6 Astra still has F2 and B4 to run. The findings below cover the 6 tasks both have finished and will be finalized once all results are in.</span></p>
+    <ul class="find" data-l="zh">
+      <li><b>判对错，两家全满分。</b>8 道题的隐藏测试、接口验收、静态检查，两个模型一条不落全过。只看对不对，这一轮分不出高下。</li>
+      <li><b>差距最大在前端：92.5 对 77.2。</b>两份复刻停稳时都很像原录屏，差在动起来。Opus 5.5 两道题的动效和交互几乎逐帧对得上。GPT-6 Astra 在 F2 从屏幕左边缘右滑返回没有反应，一直停在详情页；三次点环形图，过渡中途淡化的扇区都会闪回全彩；进详情的入场动画慢约 0.3 秒。F1 它第 1 步开头卡了约 0.75 秒。</li>
+      <li><b>其次是代码质量。</b>Opus 5.5 在 S2（84 对 66）、R9（82 对 70）、B2（86 对 70）、B4（86 对 80）都高一截：分层更清楚、改动更克制。也不是一边倒：R5 是 GPT-6 Astra 写得更好（84 对 76），用系统 Form 加草稿状态，比 Opus 5.5 手搭的表单干净；守规矩这一维两家几乎打平（93.7 对 93.1）。</li>
+      <li><b>GPT-6 Astra 快得多，也省得多。</b>8 道题合计 1 小时 19 分、按标价 23 美元，Opus 5.5 是 3 小时 6 分、52 美元。8 道题 GPT-6 Astra 每道都更快；花费只有 S1、S2 两道 Swift 修 bug 题是 Opus 5.5 更省。</li>
+      <li><b>Opus 5.5 慢在反复验证。</b>两道前端题它都自己在模拟器上录屏、逐帧和原录屏比、按帧时间戳拟合动画曲线，F1 调用工具 303 次、F2 156 次；GPT-6 Astra 分别是 47、46 次。</li>
+      <li><b>所以三个分要分开看。</b>要质量选 Opus 5.5（94.5 对 88.7），要快要省选 GPT-6 Astra（速度 61.9 对 38.1，成本 57.9 对 42.1）。不把三个数合成一个。</li>
+    </ul>
+    <ul class="find" data-l="en">
+      <li><b>Both pass every pass/fail check.</b> On all 8 tasks, both models pass every hidden test, API check and static check. Correctness alone does not separate them this round.</li>
+      <li><b>The widest gap is the frontend: 92.5 vs 77.2.</b> Both rebuilds look close to the original when settled; the difference is in motion. Opus 5.5 matches the motion and interaction of both screens almost frame by frame. On F2, GPT-6 Astra's swipe back from the left edge does nothing and the app stays on the detail page; on all three donut taps the dimmed segments flash back to full color mid-transition; the detail entrance runs about 0.3 s slow. On F1 it stalls for about 0.75 s at the start of step 1.</li>
+      <li><b>Next comes code quality.</b> Opus 5.5 scores clearly higher on S2 (84 vs 66), R9 (82 vs 70), B2 (86 vs 70) and B4 (86 vs 80): cleaner layering and more restrained changes. It is not one-sided: on R5 GPT-6 Astra writes the better code (84 vs 76), a system Form with a draft state, cleaner than Opus 5.5's hand-built form; the project-rules dimension is almost a tie (93.7 vs 93.1).</li>
+      <li><b>GPT-6 Astra is much faster and much cheaper.</b> All 8 tasks took it 1 h 19 min and $23 at list price; Opus 5.5 took 3 h 6 min and $52. GPT-6 Astra is faster on every task; only on S1 and S2, the two Swift bug fixes, does Opus 5.5 cost less.</li>
+      <li><b>Opus 5.5 spends the time verifying.</b> On both frontend tasks it recorded its own build on the simulator, compared it frame by frame with the original and fitted the animation curves to frame timestamps: 303 tool calls on F1 and 156 on F2, against 47 and 46 for GPT-6 Astra.</li>
+      <li><b>Read the three scores separately.</b> For quality, Opus 5.5 leads (94.5 vs 88.7); for speed and cost, GPT-6 Astra leads (61.9 vs 38.1 and 57.9 vs 42.1). They are not combined into one number.</li>
+    </ul>
+  </section>
+
+  <section aria-labelledby="h-front">
+    <h2 id="h-front"><span data-l="zh">前端：看动起来的效果</span><span data-l="en">Frontend: watch them move</span></h2>
+    <p class="muted" data-l="zh">工具只拿到原录屏和素材（字体、图片），没有关键帧、时间轴，也不说明手势。判分时在模拟器上按原录屏的同一套操作回放并录屏；下面三段已按 App 出现和每次点按对齐。</p>
+    <p class="muted" data-l="en">The agents get only the original recording and the assets (fonts, images): no keyframes, no timeline, no description of the gestures. Grading replays the same taps on a simulator while recording; the three clips below are aligned at app launch and at each tap.</p>
+    <h3>F1 · <span data-l="zh">美食地图 App 三步引导页</span><span data-l="en">Food-map app, three-step onboarding</span></h3>
+    <div class="videos">
+      <figure><video src="media/f1-ref.mp4" muted loop playsinline controls preload="metadata"></video><figcaption><span data-l="zh">原录屏</span><span data-l="en">Original</span></figcaption></figure>
+      <figure><video src="media/f1-claude.mp4" muted loop playsinline controls preload="metadata"></video><figcaption class="cc">Opus 5.5</figcaption></figure>
+      <figure><video src="media/f1-codex.mp4" muted loop playsinline controls preload="metadata"></video><figcaption class="cx">GPT-6 Astra</figcaption></figure>
+    </div>
+    <h3>F2 · <span data-l="zh">Trovy 统计报表和房间详情</span><span data-l="en">Trovy stats report and room detail</span></h3>
+    <div class="videos">
+      <figure><video src="media/f2-ref.mp4" muted loop playsinline controls preload="metadata"></video><figcaption><span data-l="zh">原录屏</span><span data-l="en">Original</span></figcaption></figure>
+      <figure><video src="media/f2-claude.mp4" muted loop playsinline controls preload="metadata"></video><figcaption class="cc">Opus 5.5</figcaption></figure>
+      <figure><video src="media/f2-codex.mp4" muted loop playsinline controls preload="metadata"></video><figcaption class="cx">GPT-6 Astra</figcaption></figure>
+    </div>
+    <p class="muted" data-l="zh">F2 的回放比原录屏慢（每步之后要截图），所以按 6 次操作分段对齐：每段从操作那一刻起，截成原录屏同一段的长度。</p>
+    <p class="muted" data-l="en">The F2 replays run slower than the original (a screenshot is taken after each step), so each of the 6 gestures is aligned separately: every segment starts at the gesture and is cut to the length of the same segment in the original.</p>
+    <div class="tablewrap"><table id="fscores"></table></div>
+  </section>
+
+  <section aria-labelledby="h-code">
+    <h2 id="h-code"><span data-l="zh">逐题扣分明细</span><span data-l="en">Where each model lost points</span></h2>
+    <p class="muted" data-l="zh">每题先写怎么判，再列两个模型各扣在哪里、扣了多少（折算成这道题的分数）和理由。修 bug、守规矩、后端：质量 = 判对错 70% + 代码质量 30%，代码质量每项每少 1 分，本题少 0.6 分。前端：质量 = 自动比对 30% + 录屏评分 70%，录屏三项每少 1 分，本题少约 2.3 分。</p>
+    <p class="muted" data-l="en">For each task: how it is graded, then where each model lost points, how many (on that task's 0–100 scale) and why. Bug fixes, rules and backends: quality = 70% correctness + 30% code quality, so each code-quality point lost costs 0.6 on the task. Frontend: quality = 30% automatic comparison + 70% video review, so each video-review point lost costs about 2.3.</p>
+    <div id="code" class="ded"></div>
+  </section>
+
+  <section aria-labelledby="h-method">
+    <h2 id="h-method"><span data-l="zh">怎么算分</span><span data-l="en">How scores are computed</span></h2>
+    <div class="cols">
+      <div class="card">
+        <h3><span data-l="zh">质量（总分）</span><span data-l="en">Quality (headline)</span></h3>
+        <p data-l="zh">四个维度加权：修 bug、加功能 30%，前端复刻 25%，后端搭建 25%，守规矩 20%；维度分是该维度两道题的平均。前端题 = 回放后停稳画面的自动比对 30% + 并排视频评分 70%（静态还原、动效还原、交互手感）。</p>
+        <p data-l="en">Four weighted dimensions: bug fixes & features 30%, frontend rebuild 25%, backend 25%, project rules 20%; each dimension is the mean of its two tasks. Frontend = 30% automatic comparison of the settled frames after replay + 70% review of the side-by-side video (static fidelity, motion, interaction feel).</p>
+      </div>
+      <div class="card">
+        <h3><span data-l="zh">速度和成本</span><span data-l="en">Speed and cost</span></h3>
+        <div class="formula">50 + 25 × log2(reference ÷ actual), clamp 0–100</div>
+        <p data-l="zh">和基准一样记 50，快一倍（或省一半）记 75。每题的基准取第一轮两家的几何平均，定下就冻结，以后的新组合都和同一把尺子比。质量低于 60 或碰到安全上限的题记 0。GPT-6 Astra 的花费按每百万 token 输入 10、缓存输入 1、输出 50 美元折算；Opus 5.5 用 Claude Code 自报的标价花费。</p>
+        <p data-l="en">Matching the reference scores 50; twice as fast (or half the cost) scores 75. Each task's reference is the geometric mean of round 1, then frozen so later entrants face the same yardstick. Tasks with quality below 60 or that hit the safety cap score 0. GPT-6 Astra cost uses $10 input, $1 cached input and $50 output per million tokens; for Opus 5.5, Claude Code reports its own list-price cost.</p>
+      </div>
+      <div class="card">
+        <h3><span data-l="zh">谁打的主观分</span><span data-l="en">Who scored the subjective parts</span></h3>
+        <p data-l="zh">录屏评分和代码质量评审由 AI 评审打分：Claude（Opus 5.5，也就是参赛模型之一）。两家的产出标成随机的甲、乙，打完才揭晓；S1、S2、R5、R9 的代码评审是新开的独立会话做的，只看匿名改动。评审本身就是参赛模型之一，所以每条理由、每段视频、每份改动都公开，谁都可以重新打分。</p>
+        <p data-l="en">Video ratings and code reviews were done by an AI reviewer, Claude (Opus 5.5, one of the two contestants). The two outputs were labeled 甲/乙 at random and revealed only after scoring; the S1, S2, R5 and R9 code reviews were done in a fresh, separate session that saw only the anonymous diffs. Because the reviewer is itself a contestant, every rationale, video and diff is published for anyone to re-score.</p>
+      </div>
+    </div>
+  </section>
+
+  <section aria-labelledby="h-limits">
+    <h2 id="h-limits"><span data-l="zh">局限和插曲</span><span data-l="en">Limitations and incidents</span></h2>
+    <ul class="find" data-l="zh">
+      <li>每题只跑一次，单次结果有偶然性；分差小的应当看成打平。</li>
+      <li>8 道题是精简版，结论只代表这 8 道题。完整题库 31 道，之后的轮次补上。</li>
+      <li>前端题目前只有 iOS（SwiftUI）。</li>
+      <li>GPT-6 Astra 第一次跑 F1 时 Codex 用的 ChatGPT Plus 额度用完，那次作废，升级 Pro 后从头重跑。</li>
+      <li>R9 的判分程序起初把 GPT-6 Astra 按文档给页面枚举加的一个 case 误判成改了组件源码，修好判分程序后重判（93 → 100）。</li>
+      <li>B4 的安全检查起初把 Opus 5.5 读取 wrangler 配置结构里的 <code>secrets</code> 属性误判成碰了凭证；检查改成只认真实路径后，所有运行重查一遍，都没有危险操作。</li>
+      <li>F2 第一次评审时，GPT-6 Astra 那一路的对照帧从 2.8 秒起停在了最后一帧：它的录屏文件时间戳中途倒退，按时间跳转取错了帧。评审发现后，对齐改成按解码顺序取帧，对照帧重做，第一次的评分作废，换一个新的评审会话从头重评。</li>
+    </ul>
+    <ul class="find" data-l="en">
+      <li>One run per task; single runs vary, and close results should be read as ties.</li>
+      <li>This is the 8-task lite set, and the findings hold for these 8 tasks only. The full bank has 31 tasks; later rounds add the rest.</li>
+      <li>Frontend tasks are iOS (SwiftUI) only for now.</li>
+      <li>On GPT-6 Astra's first F1 run, Codex ran out of its ChatGPT Plus quota; that run was voided and F1 re-run from scratch after upgrading to Pro.</li>
+      <li>The R9 grader first counted a <code>case</code> that GPT-6 Astra added to a page enum, as the docs instruct, as editing component source; the grader was fixed and the run re-graded (93 → 100).</li>
+      <li>On B4 the safety check first flagged Opus 5.5 for touching credentials when it read the <code>secrets</code> property of the wrangler config schema. The check now matches real paths only; every run was re-checked and none touched credentials.</li>
+      <li>In the first F2 review, GPT-6 Astra's column froze on its last frame from 2.8 s onward: the timestamps in its recording run backwards partway through, so seeking by time picked the wrong frames. The reviewer flagged it; alignment now takes frames in decoding order, the comparison frames were rebuilt, the first scores were discarded and a fresh review session scored F2 again from scratch.</li>
+    </ul>
+  </section>
+
+  <footer>
+    <span data-l="zh">数据、改动、评分理由和视频都在开源仓库 <a href="https://github.com/signerlabs/shipbench/tree/main/reports/round-01">signerlabs/shipbench · reports/round-01</a>。题目 CC BY-NC 4.0，结果 CC BY 4.0，程序 MIT。</span>
+    <span data-l="en">Data, diffs, rationales and videos are in the open-source repository <a href="https://github.com/signerlabs/shipbench/tree/main/reports/round-01">signerlabs/shipbench · reports/round-01</a>. Tasks CC BY-NC 4.0, results CC BY 4.0, code MIT.</span>
+    <span>ShipBench · SignerLabs</span>
+  </footer>
+</div>
+
+<script type="application/json" id="round-data">{"round": "round-01", "title": {"zh": "第一轮：Opus 5.5 对 GPT-6 Astra（精简题库）", "en": "Round 1: Opus 5.5 vs GPT-6 Astra (lite set)"}, "dates": "2026-11-08", "note": "从 31 道题库里每个维度挑两道（都是样题，每维一易一难），每题每家只跑一次，思考档位都是各家第二高的 xhigh。", "tools": {"claude": {"name": "Claude Code", "model": "claude-opus-5-5", "model_name": "Opus 5.5", "effort": "--effort xhigh"}, "codex": {"name": "Codex CLI", "model": "gpt-6-astra", "model_name": "GPT-6 Astra", "effort": "-c model_reasoning_effort=\"xhigh\""}}, "dimensions": [{"key": "fix", "weight": 0.3, "tasks": ["S1", "S2"]}, {"key": "frontend", "weight": 0.25, "tasks": ["F2", "F1"]}, {"key": "backend", "weight": 0.25, "tasks": ["B4", "B2"]}, {"key": "rules", "weight": 0.2, "tasks": ["R5", "R9"]}], "prices_per_mtok": {"codex": {"input": 10, "cached_input": 1, "output": 50}}, "tasks": {"S1": {"dimension": "fix", "batch": "2026-11-08-formal", "level": "easy", "zh": "剪贴板 App 数据层：两台 Mac 同步来的同一条置顶，去重时留下的不一样", "en": "Clipboard app data layer: duplicate pins synced from two Macs are deduplicated differently", "lang": "Swift", "rule": {"zh": "判对错：用隐藏测试替换对应的测试文件，`swift test` 全过记 100，有挂或编不过记 0。", "en": "Correctness: the hidden test replaces the matching test file; `swift test` passing completely scores 100, any failure or a build error scores 0."}, "tools": {"claude": {"status": "done", "seconds": 229, "cost_usd": 1.03, "tool_calls": 15, "hit_cap": false, "safety_violations": [], "version": "2.1.319 (Claude Code)", "effort": "xhigh", "correctness": 100, "quality": 95.8, "code_quality": 86, "code_scores": {"结构与分层": 9, "可读性": 9, "一致性": 9, "稳健写法": 8, "可维护性": 8}, "rationale": {"结构与分层": "只在 CloudMerge 两个比较函数里改按整秒比，加私有 wholeSecond，测试放对文件，改动面小。", "可读性": "wholeSecond 命名直白，注释讲清为何向下取整及残余风险，测试用 macs 数组模拟两台 Mac，好读。", "一致性": "沿用原有元组比较与中文注释风格，测试复用 insertRemotePinned 等已有辅助方法。", "稳健写法": "按参考日期向下取整，lastUsedAt 一并按整秒比；未覆盖整秒边界和负时间戳等情形。", "可维护性": "两个测试分别覆盖 Pinned 与 Pinboard 两条去重路径，直接复现两台 Mac 各选各的，无夹带改动。"}, "rationale_en": {"结构与分层": "Only the two comparison functions in CloudMerge change to whole-second comparison, via a private wholeSecond helper; tests go in the right file and the change is small.", "可读性": "wholeSecond is plainly named and its comment explains why it rounds down and what risk remains; the tests model two Macs with a macs array and read well.", "一致性": "Keeps the existing tuple comparison and comment style; the tests reuse existing helpers such as insertRemotePinned.", "稳健写法": "Rounds down from the reference date and compares lastUsedAt at whole seconds too; does not cover the second boundary or negative timestamps.", "可维护性": "Two tests cover the Pinned and Pinboard deduplication paths and reproduce the two Macs choosing differently; no unrelated changes."}, "speed": 46.2, "cost": 51.0}, "codex": {"status": "done", "seconds": 186, "cost_usd": 1.09, "tool_calls": 14, "hit_cap": false, "safety_violations": [], "version": "codex-cli 0.167.0", "effort": "xhigh", "correctness": 100, "quality": 94.6, "code_quality": 82, "code_scores": {"结构与分层": 9, "可读性": 7, "一致性": 8, "稳健写法": 9, "可维护性": 8}, "rationale": {"结构与分层": "修复同样集中在 CloudMerge 比较函数与私有 wholeSecond，测试放对文件，无越界改动。", "可读性": "wholeSecond 无注释，测试里 localID == a ? b : a 等三元较绕，单个测试反复改模型字段。", "一致性": "沿用元组比较并把原注释的『待真机核实』改成实际做法；新测试直接构造模型测内部函数，与原集成测试风格不同。", "稳健写法": "参数化测试覆盖 0.9999/1.0 与负时间戳的整秒边界、全字段相同不删的规则，并核对库里实际副本数。", "可维护性": "测试覆盖面广，但两个参数化函数同时测 Pinboard 与 Pinned、手工改字段多，字段顺序一改就要跟着改。"}, "rationale_en": {"结构与分层": "The fix is likewise limited to the CloudMerge comparison functions and a private wholeSecond helper; tests are in the right file, nothing out of scope.", "可读性": "wholeSecond has no comment; the tests use convoluted ternaries such as localID == a ? b : a, and one test keeps mutating model fields.", "一致性": "Keeps the tuple comparison and replaces the old \"verify on device\" comment with what it actually does; the new tests build models and test internals directly, unlike the existing integration-style tests.", "稳健写法": "Parameterized tests cover the 0.9999/1.0 second boundary, negative timestamps and the rule that fully identical items are kept, and check the actual copy count in the store.", "可维护性": "Broad coverage, but two parameterized functions test Pinboard and Pinned at once with many hand-edited fields, so a change in field order breaks them."}, "speed": 53.8, "cost": 49.0}}, "reference": {"seconds": 206.38, "cost_usd": 1.06, "set_in": "round-01"}}, "S2": {"dimension": "fix", "batch": "2026-11-08-xhigh", "level": "hard", "zh": "剪贴板 App 数据层：搜索翻页回到开头、Pinboard 拖不动（只写现象）", "en": "Clipboard app data layer: search paging jumps back to the start, Pinboard items won't move (symptoms only)", "lang": "Swift", "rule": {"zh": "判对错：8 个隐藏回归用例，过几个算几分（每个 12.5）；其他测试有挂、或原有 38 个测试少了，分数减半；编不过 0 分。", "en": "Correctness: 8 hidden regression tests, 12.5 points each; halved if any other test fails or any of the 38 original tests is missing; 0 if it does not build."}, "tools": {"claude": {"status": "done", "seconds": 462, "cost_usd": 2.28, "tool_calls": 33, "hit_cap": false, "safety_violations": [], "version": "2.1.319 (Claude Code)", "effort": "xhigh", "correctness": 100, "quality": 95.2, "code_quality": 84, "code_scores": {"结构与分层": 9, "可读性": 8, "一致性": 9, "稳健写法": 8, "可维护性": 8}, "rationale": {"结构与分层": "翻页只把游标时间传进 search，保留 rowid 即时间的原设计；排序修在合并排序与挪动两处。", "可读性": "注释讲清中点等于邻居会弹回、游标条目被删或前移的原因；search 里按探测窗口取实际 rowid 的判断稍绕。", "一致性": "魔法数 8 提成 rankProbeLimit 复用，新 rank(of:) 沿用原有写法并区分无行与出错。", "稳健写法": "新键须严格落在两邻居之间，否则整体重排且跳过未变的记录；同毫秒碰撞加游标被删时仍有极端漏重可能。", "可维护性": "测试覆盖 trigram 与短词两路、60 组拖动和 80 次挤缝；moved 辅助函数复刻了夹取逻辑。"}, "rationale_en": {"结构与分层": "Paging only passes the cursor time into search, keeping the original \"rowid is time\" design; the ordering fix is in the merge sort and in moving.", "可读性": "Comments explain why a midpoint equal to a neighbor bounces back and what happens when the cursor item is deleted or moved; the probe-window check for the real rowid in search is a bit convoluted.", "一致性": "The magic number 8 becomes a reused rankProbeLimit constant, and the new rank(of:) follows the existing style and tells \"no row\" apart from an error.", "稳健写法": "A new key must fall strictly between its two neighbors or the list is renumbered, skipping unchanged items; a same-millisecond collision combined with a deleted cursor can still, in extreme cases, skip or repeat an item.", "可维护性": "Tests cover both the trigram and short-query paths, 60 drag sequences and 80 squeezes into a gap; the moved test helper duplicates the clamping logic."}, "speed": 48.4, "cost": 53.8}, "codex": {"status": "done", "seconds": 422, "cost_usd": 2.81, "tool_calls": 34, "hit_cap": false, "safety_violations": [], "version": "codex-cli 0.167.0", "effort": "xhigh", "correctness": 100, "quality": 89.8, "code_quality": 66, "code_scores": {"结构与分层": 6, "可读性": 6, "一致性": 6, "稳健写法": 8, "可维护性": 7}, "rationale": {"结构与分层": "为修翻页把索引升到 schema 2，加新列、两个索引、JOIN 查询和原地升级，超出修 bug 所需。", "可读性": "search 拼接多段 SQL 字符串，绑定序号靠 cursor == nil ? 2 : 4 推算，不易一眼看清。", "一致性": "弃用 rowid 即时间的原设计、删掉实测性能注释，Entry 改字段牵动旧测试，索引层依赖 ClipCursor。", "稳健写法": "按（时间, uuid）翻页，同毫秒也不漏不重；isFinite 与升级置待修补周到，但升级后列可空与新建不一致。", "可维护性": "补了迁移测试和同毫秒翻页测试，覆盖较全，但引入 schema 迁移与查询计划提示，后续维护负担明显加重。"}, "rationale_en": {"结构与分层": "Upgrades the index to schema 2 to fix paging, adding a column, two indexes, a JOIN query and an in-place migration, far beyond what the bug needs.", "可读性": "search concatenates several SQL strings, and bind positions have to be worked out from cursor == nil ? 2 : 4; hard to read at a glance.", "一致性": "Drops the original \"rowid is time\" design and removes a measured performance comment; changing Entry fields forces old tests to change, and the index layer now depends on ClipCursor.", "稳健写法": "Pages by (time, uuid), so nothing is skipped or repeated even within the same millisecond; the isFinite checks and repair-on-upgrade are careful, but after the upgrade the column is nullable, unlike in new databases.", "可维护性": "Adds migration and same-millisecond paging tests with good coverage, but the schema migration and query-plan hints add a clear ongoing maintenance burden."}, "speed": 51.6, "cost": 46.2}}, "reference": {"seconds": 441.55, "cost_usd": 2.531, "set_in": "round-01"}}, "F2": {"dimension": "frontend", "batch": "2026-11-08-formal", "level": "easy", "zh": "照录屏复刻 Trovy 的统计报表页和房间详情页", "en": "Rebuild Trovy's stats report and room detail screens from a recording", "lang": "SwiftUI", "rule": {"zh": "同 F1：编译安装是门槛；自动比对 7 个状态占 30%；录屏评分三项占 70%。", "en": "Same as F1: building and installing is the gate; automatic comparison of 7 states, 30%; video review on three axes, 70%."}, "tools": {"claude": {"status": "done", "seconds": 2662, "cost_usd": 13.43, "tool_calls": 156, "hit_cap": false, "safety_violations": [], "version": "2.1.319 (Claude Code)", "effort": "xhigh", "quality": 90.8, "auto": 92.5, "video": 90.0, "video_scores": {"静态还原": 9, "动效还原": 9, "交互手感": 9}, "rationale": {"静态还原": "两页布局、配色、字号、文字和数字与原录屏几乎一致，上滑停稳位置也对。扣1分：卡片底色偏灰，不如原录屏暖白。", "动效还原": "数字逐位滚动、扇区淡入淡出、扫环、横条生长和数字从0滚上都与原录屏同步。扣1分：7.3秒页面推入慢约0.1秒；1.6秒中心小字晚一帧才换成Clothing。", "交互手感": "六次操作全部生效，左边缘右滑正常返回并保留滚动位置，无闪烁。扣1分：9.4秒右滑返回的页面位移比原录屏落后约0.1秒。"}, "rationale_en": {"静态还原": "Layout, colors, type sizes, text and numbers on both pages match the original closely, and the scroll settles at the same spot. −1: card fill is greyer than the original's warm white.", "动效还原": "Digit rolling, segment fade in/out, ring sweep, bar growth and count-up from 0 stay in sync with the original. −1: the push at 7.3 s is ~0.1 s slower; at 1.6 s the center caption switches to Clothing one frame late.", "交互手感": "All six operations work; the left-edge swipe returns to the report page and keeps its scroll position, with no flicker. −1: the swipe-back page movement at 9.4 s trails the original by ~0.1 s."}, "auto_states": [{"state": "首屏", "state_en": "First screen", "score": 93.4}, {"state": "选中 Clothing", "state_en": "Clothing selected", "score": 93.0}, {"state": "选中 Home", "state_en": "Home selected", "score": 92.9}, {"state": "取消选中", "state_en": "Deselected", "score": 93.4}, {"state": "往下滚", "state_en": "Scrolled down", "score": 89.2}, {"state": "Bedroom 详情", "state_en": "Bedroom detail", "score": 92.7}, {"state": "返回报表页", "state_en": "Back to the report", "score": 93.0}], "speed": 35.6, "cost": 34.9}, "codex": {"status": "done", "seconds": 1200, "cost_usd": 5.8, "tool_calls": 46, "hit_cap": false, "safety_violations": [], "version": "codex-cli 0.167.0", "effort": "xhigh", "quality": 70.5, "auto": 79.5, "video": 66.7, "video_scores": {"静态还原": 9, "动效还原": 6, "交互手感": 5}, "rationale": {"静态还原": "两页卡片布局、配色、字号、图例和数字都几乎一致。扣1分：卡片底色偏灰，不如原录屏暖白；上滑停稳后比原录屏多滚了几点。", "动效还原": "滚动、淡化、扫环和横条生长都有。扣4分：三次点选过渡中途淡化扇区闪回全彩（2.1、3.0、5.0秒）；1.6秒起步晚0.2秒；扫环、横条和推入慢约0.3秒。", "交互手感": "点选、取消、上滑和点Bedroom进详情都生效，没有跳错页。扣5分：9.33秒左边缘右滑完全没有返回，最后一直停在Bedroom详情页。"}, "rationale_en": {"静态还原": "Card layout, colors, type sizes, legends and numbers on both pages match closely. −1: card fill is greyer than the original's warm white; the scroll settles a few points further down.", "动效还原": "Digit rolling, segment dimming, ring sweep and bar growth are all present. −4: dimmed segments flash back to full color mid-transition on all three taps (2.1, 3.0, 5.0 s); the 1.6 s change starts ~0.2 s late; ring sweep, bars and push run ~0.3 s behind.", "交互手感": "Segment taps, deselect, scroll and the Bedroom tap all work with no wrong navigation. −5: the left-edge swipe at 9.33 s does not go back at all; the replay stays on the Bedroom detail page."}, "auto_states": [{"state": "首屏", "state_en": "First screen", "score": 94.8}, {"state": "选中 Clothing", "state_en": "Clothing selected", "score": 94.4}, {"state": "选中 Home", "state_en": "Home selected", "score": 94.3}, {"state": "取消选中", "state_en": "Deselected", "score": 94.7}, {"state": "往下滚", "state_en": "Scrolled down", "score": 83.7}, {"state": "Bedroom 详情", "state_en": "Bedroom detail", "score": 94.3}, {"state": "返回报表页", "state_en": "Back to the report", "score": 0.0}], "speed": 64.4, "cost": 65.1}}, "reference": {"seconds": 1787.29, "cost_usd": 8.826, "set_in": "round-01"}}, "F1": {"dimension": "frontend", "batch": "2026-11-08-xhigh", "level": "hard", "zh": "照录屏复刻美食地图 App 的三步引导页，含插画动画", "en": "Rebuild a food-map app's three-step onboarding from a recording, illustrations animated", "lang": "SwiftUI", "rule": {"zh": "先要编译通过、装得上（不然 0 分）。自动比对占 30%：回放后三步演完的停稳画面和原录屏比相似度（空白工程 0、原录屏 100）。录屏评分占 70%：静态还原、动效还原、交互手感各 1–10 分，平均 × 10，每少 1 分，本题少约 2.3 分。", "en": "It must build and install, or it scores 0. Automatic comparison, 30%: the three settled screens after replay are compared with the original (an empty project scores 0, the original 100). Video review, 70%: static fidelity, motion and interaction feel, 1–10 each, averaged × 10; each point lost costs about 2.3 points on the task."}, "tools": {"claude": {"status": "done", "seconds": 4608, "cost_usd": 23.07, "tool_calls": 303, "hit_cap": false, "safety_violations": [], "version": "2.1.319 (Claude Code)", "effort": "xhigh", "quality": 94.2, "auto": 96.4, "video": 93.3, "video_scores": {"静态还原": 10, "动效还原": 9, "交互手感": 9}, "rationale": {"静态还原": "三步演完的画面和原录屏几乎重合，布局、配色、字体、插画位置都对上；原录屏里几处用系统字体的文字也照着改了。不扣分。", "动效还原": "入场先后、间隔和缓动对到约一帧，第 3 步纸飞机路线、到店时间、「到了」气泡和小店回弹几乎逐帧一致。扣 1 分：App 出来时先整体淡入，整段比原录屏晚开演约 0.4 秒。", "交互手感": "两次点「下一步」翻页都是两页一起推，标题错开的节奏也一样。扣 1 分：同样因为开头淡入，启动后的第一屏出来得慢半拍。"}, "rationale_en": {"静态还原": "The three settled screens nearly overlap the original: layout, colors, fonts and illustration positions all match, including a few texts that use the system font in the original. No deduction.", "动效还原": "Entrance order, spacing and easing match to about a frame; in step 3 the paper plane's route, arrival time, the \"arrived\" bubble and the shop's bounce line up almost frame by frame. −1: the app fades in at launch, so the whole sequence starts about 0.4 s late.", "交互手感": "Both taps on \"Next\" push the two pages together with the same staggered titles as the original. −1: because of the launch fade-in, the first screen appears half a beat late."}, "auto_states": [{"state": "第 1 步演完", "state_en": "Step 1 settled", "score": 95.2}, {"state": "第 2 步演完", "state_en": "Step 2 settled", "score": 96.9}, {"state": "第 3 步演完", "state_en": "Step 3 settled", "score": 97.0}], "speed": 25.1, "cost": 24.0}, "codex": {"status": "done", "seconds": 1160, "cost_usd": 5.46, "tool_calls": 47, "hit_cap": false, "safety_violations": [], "version": "codex-cli 0.167.0", "effort": "xhigh", "quality": 83.9, "auto": 93.1, "video": 80.0, "video_scores": {"静态还原": 9, "动效还原": 7, "交互手感": 8}, "rationale": {"静态还原": "整体布局、配色、字体接近，数字「2000」和逐位滚动也对。扣 1 分：第 1 步便签卡和面碗的位置偏了（便签整体偏下，碗偏右下），第 3 步虚线路线的弯法和原录屏不一样。", "动效还原": "第 2、3 步的动画接近原录屏。扣 3 分：第 1 步开头卡了约 0.75 秒（这段录屏没有新帧），之后第三个头像和便签出来得晚，打字效果几乎一闪而过。", "交互手感": "点「下一步」也是两页一起推。扣 2 分：翻页比原录屏快，加上开头的卡顿，第一次点按前的等待感和原录屏不同。"}, "rationale_en": {"静态还原": "Layout, colors and fonts are close, and the counter reads \"2000\" and rolls digit by digit like the original. −1: in step 1 the note card sits lower and the noodle bowl further right and down, and in step 3 the dotted route curves differently from the original.", "动效还原": "Steps 2 and 3 animate close to the original. −3: step 1 stalls for about 0.75 s right after launch (no new frames recorded), then the third avatar and the note card arrive late and the typing effect is almost instant.", "交互手感": "Tapping \"Next\" also pushes both pages together. −2: the page transition runs faster than the original, and with the stall at launch the wait before the first tap feels different."}, "auto_states": [{"state": "第 1 步演完", "state_en": "Step 1 settled", "score": 91.3}, {"state": "第 2 步演完", "state_en": "Step 2 settled", "score": 94.7}, {"state": "第 3 步演完", "state_en": "Step 3 settled", "score": 93.4}], "speed": 74.9, "cost": 76.0}}, "reference": {"seconds": 2311.99, "cost_usd": 11.223, "set_in": "round-01"}}, "B4": {"dimension": "backend", "batch": "2026-11-08-formal", "level": "easy", "zh": "按需求搭会员订阅回调服务（17 条隐藏验收）", "en": "Build a subscription webhook service from a spec (17 hidden checks)", "lang": "TypeScript · Workers + D1", "rule": {"zh": "判对错：17 条隐藏接口验收（鉴权、校验、状态流转、重复和乱序推送、10 路并发、字段完整），按通过比例给分。代码质量同 B2。", "en": "Correctness: 17 hidden API checks (auth, validation, state transitions, duplicate and out-of-order events, 10 concurrent deliveries, complete fields), scored by the share passed. Code quality as in B2."}, "tools": {"claude": {"status": "done", "seconds": 703, "cost_usd": 2.49, "tool_calls": 35, "hit_cap": false, "safety_violations": [], "version": "2.1.319 (Claude Code)", "effort": "xhigh", "correctness": 100, "quality": 95.8, "code_quality": 86, "code_scores": {"结构与分层": 9, "可读性": 9, "一致性": 8, "稳健写法": 8, "可维护性": 9}, "rationale": {"结构与分层": "鉴权、请求解析、数据库读写、状态推导各成一个模块，纯函数与读写分开；响应和日志助手仍堆在入口文件里", "可读性": "deriveSubscription 按发生顺序折叠事件，注释清楚；循环内解构赋值和日志的嵌套三元稍绕", "一致性": "错误码风格统一并集中在助手函数；但只有 400 带说明，product_id 允许空串而其他字符串字段要求非空", "稳健写法": "参数化插入冲突即忽略，令牌哈希后常数时间比较；但校验后靠 as string 强转，查询读出全部事件在内存排序", "可维护性": "事件类型只定义一处，EFFECTS 穷举映射；单测含全排列乱序验证；但端到端用无种子随机洗牌，启动靠匹配日志文字"}, "rationale_en": {"结构与分层": "Auth, request parsing, database access and state derivation each get their own module, keeping pure logic apart from I/O; response and logging helpers still sit in the entry file.", "可读性": "deriveSubscription folds events in occurrence order with clear doc comments; the destructuring assignment inside the loop and the nested ternary for the log outcome are a bit convoluted.", "一致性": "Error codes follow one style and come from shared helpers; but only 400s include a message, and product_id may be an empty string while other string fields must be non-empty.", "稳健写法": "A parameterized insert that ignores conflicts, plus constant-time comparison of hashed tokens; but fields are force-cast with `as string` after validation, and every lookup loads all of a user's events and sorts them in memory.", "可维护性": "Event types are defined once and EFFECTS maps them exhaustively; unit tests check every arrival permutation. But the end-to-end tests shuffle with an unseeded random, and server startup is detected by matching log text."}, "speed": 43.7, "cost": 44.2}, "codex": {"status": "done", "seconds": 497, "cost_usd": 1.81, "tool_calls": 17, "hit_cap": false, "safety_violations": [], "version": "codex-cli 0.167.0", "effort": "xhigh", "correctness": 100, "quality": 94.0, "code_quality": 80, "code_scores": {"结构与分层": 7, "可读性": 8, "一致性": 8, "稳健写法": 9, "可维护性": 8}, "rationale": {"结构与分层": "校验和权益计算抽到 subscriptions.ts，但 index.ts 兼管路由、鉴权和内联 SQL，缺独立数据访问层", "可读性": "命名清楚、注释交代设计；但查询靠两个相关子查询拼字段，toSubscription 的三元判断偏紧凑", "一致性": "错误统一走 json()，均为 {error} 形式且先鉴权后判方法；但 405 两处内联拼写，错误体没有机器可读的错误码", "稳健写法": "单条参数化插入靠主键冲突忽略去重，读时按事件时间取最新并有部分索引和 CHECK 约束；令牌用 === 比较，非常数时间", "可维护性": "测试覆盖全面，含确定性乱序并发与注入写入故障；但六种事件类型在索引、视图和 TS 映射三处各写一遍，测试为无类型 .mjs"}, "rationale_en": {"结构与分层": "Validation and entitlement logic live in subscriptions.ts, but index.ts mixes routing, auth and inline SQL with no separate data-access layer.", "可读性": "Clear names and comments that explain intent, but the lookup query stitches fields together with correlated subqueries and toSubscription's ternary logic is terse.", "一致性": "All errors go through json() as {error}, with auth checked before method; but the 405 response is built inline twice and errors carry no machine-readable code.", "稳健写法": "A single parameterized insert that ignores primary-key conflicts handles dedup; reads take the latest by event time, backed by a partial index and CHECK constraints. Tokens are compared with ===, which is not constant-time.", "可维护性": "Thorough tests, including deterministic out-of-order concurrency and injected write failures; but the six event types are listed three times (index, view, TS map) and the tests are untyped .mjs."}, "speed": 56.3, "cost": 55.8}}, "reference": {"seconds": 591.09, "cost_usd": 2.123, "set_in": "round-01"}}, "B2": {"dimension": "backend", "batch": "2026-11-08-xhigh", "level": "hard", "zh": "按需求从零搭家庭物品与过期提醒服务（49 条隐藏验收）", "en": "Build a household inventory and expiry-reminder service from a spec (49 hidden checks)", "lang": "TypeScript · Workers + D1", "rule": {"zh": "判对错：49 条隐藏接口验收（功能 22、鉴权与隔离 13、健壮性 14），按通过比例给分。代码质量五项各 1–10 分，平均 × 10；每少 1 分，本题少 0.6 分。", "en": "Correctness: 49 hidden API checks (22 features, 13 auth and isolation, 14 robustness), scored by the share passed. Code quality: five criteria, 1–10 each, averaged × 10; each point lost costs 0.6 on the task."}, "tools": {"claude": {"status": "done", "seconds": 1109, "cost_usd": 4.38, "tool_calls": 48, "hit_cap": false, "safety_violations": [], "version": "2.1.319 (Claude Code)", "effort": "xhigh", "correctness": 100, "quality": 95.8, "code_quality": 86, "code_scores": {"结构与分层": 9, "可读性": 8, "一致性": 9, "稳健写法": 8, "可维护性": 9}, "rationale": {"结构与分层": "按资源分 handlers，路由表带鉴权标记，http/validate/db/dates/cursor/crypto 各自独立", "可读性": "命名清楚，并发取舍有注释；列表接口约 85 行偏长、动态拼 UPDATE 略绕", "一致性": "统一 HttpError 和错误响应，校验集中，处理 405，越权一律 404", "稳健写法": "全参数化；条件写入和批处理防竞争；会话只存哈希；防邮箱探测；约 10 处非空断言，外键未按家庭复合约束", "可维护性": "常量命名，零重复，接口测试 1042 行加 node:test 单元测试"}, "rationale_en": {"结构与分层": "Handlers split by resource behind a routing table with auth flags; http, validate, db, dates, cursor and crypto each in their own module.", "可读性": "Clear names and comments on concurrency trade-offs; the list endpoint is about 85 lines and the dynamically built UPDATE is a bit convoluted.", "一致性": "One HttpError type and one error response format, validation in one place, 405 handled, and any cross-household access returns 404.", "稳健写法": "Fully parameterized SQL; conditional writes and batches prevent races; sessions are stored as hashes; email probing is prevented. About 10 non-null assertions, and foreign keys are not composite per household.", "可维护性": "Named constants, no duplication, 1,042 lines of API tests plus node:test unit tests."}, "speed": 46.2, "cost": 44.8}, "codex": {"status": "done", "seconds": 899, "cost_usd": 3.29, "tool_calls": 19, "hit_cap": false, "safety_violations": [], "version": "codex-cli 0.167.0", "effort": "xhigh", "correctness": 100, "quality": 91.0, "code_quality": 70, "code_scores": {"结构与分层": 7, "可读性": 6, "一致性": 7, "稳健写法": 8, "可维护性": 7}, "rationale": {"结构与分层": "按资源分模块，HouseholdDB 把鉴权和操作放进同一批处理很巧；但路由是一长串手写判断，校验函数放在 http 模块", "可读性": "代码密、长行多，SQL 片段靠 ?1/?2/?3 位置约定拼接，as unknown as 强转多", "一致性": "统一 fail()；但所有请求都先解析请求体，未知路径先回 401，竞态不变量失败抛 500", "稳健写法": "数据库约束最严（复合外键、层级 CHECK、唯一 owner、触发器原子加入），每条语句复查成员；令牌无状态不能撤销，依赖 TOKEN_SECRET", "可维护性": "精简少重复；有魔法数（86_400_000），PATCH 预查两次，测试 490 行"}, "rationale_en": {"结构与分层": "Modules by resource, and HouseholdDB cleverly puts the auth check and the operation in one batch; but routing is a long hand-written chain of conditions and validators live in the http module.", "可读性": "Dense code with long lines; SQL fragments rely on ?1/?2/?3 position conventions, and there are many as unknown as casts.", "一致性": "One fail() helper; but every request parses its body first, unknown paths answer 401 before 404, and a failed race invariant throws a 500.", "稳健写法": "The strictest database constraints (composite foreign keys, depth CHECKs, a single owner, a trigger for atomic joins), and membership is re-checked in every statement; tokens are stateless and cannot be revoked, and depend on TOKEN_SECRET.", "可维护性": "Compact with little duplication; a magic number (86_400_000), PATCH looks the row up twice, 490 lines of tests."}, "speed": 53.8, "cost": 55.2}}, "reference": {"seconds": 998.49, "cost_usd": 3.796, "set_in": "round-01"}}, "R5": {"dimension": "rules", "batch": "2026-11-08-formal", "level": "easy", "zh": "用 ShipSwift 组件加「编辑习惯」和全局提示", "en": "Add habit editing and a global toast with ShipSwift components", "lang": "SwiftUI", "rule": {"zh": "判对错：先要能编译；再看 9 条静态检查（提示组件的用法、挂载位置、不等弹窗关闭、不自己做横幅、不写 iOS 18 兼容分支、不改 ShipSwift 源码和工程设置），违反一条扣一条的分。代码质量同 B2。", "en": "Correctness: it must build; then 9 static checks (alert component usage, where it is attached, no waiting for the sheet to close, no hand-made banners, no iOS 18 compatibility branches, ShipSwift sources and project settings untouched), each violation costs its share. Code quality as in B2."}, "tools": {"claude": {"status": "done", "seconds": 408, "cost_usd": 1.64, "tool_calls": 34, "hit_cap": false, "safety_violations": [], "version": "2.1.319 (Claude Code)", "effort": "xhigh", "correctness": 100, "quality": 92.8, "code_quality": 76, "code_scores": {"结构与分层": 8, "可读性": 7, "一致性": 8, "稳健写法": 8, "可维护性": 7}, "rationale": {"结构与分层": "新建 HabitEditView，列表用 sheet(item:) 弹出，swAlert 挂在 App 入口，分层清楚。", "可读性": "draft 计算属性把可选的改动叠在 store 实时数据上，再配自定义 Binding，不够直观。", "一致性": "按钮用 SW 按钮样式，成败都走 SWAlertManager，不等 sheet 关闭，符合组件约定。", "稳健写法": "保存中禁用按钮和下滑关闭，色块带无障碍标签与选中态；Preview 直接取 habits[0]。", "可维护性": "手搭表单与色块，32、44、16 等尺寸散落在代码里，代码量约为系统 Form 写法的两倍。"}, "rationale_en": {"结构与分层": "New HabitEditView, presented from the list with sheet(item:), with swAlert attached at the app entry; clear layering.", "可读性": "A computed draft property layers optional edits over the store's live data, combined with custom Bindings; not intuitive.", "一致性": "Buttons use the SW button styles, success and failure both go through SWAlertManager without waiting for the sheet to close, as the component docs require.", "稳健写法": "Disables the button and swipe-to-dismiss while saving, and the color swatches have accessibility labels and selected state; the Preview simply takes habits[0].", "可维护性": "Hand-built form and swatches with sizes such as 32, 44 and 16 scattered through the code, about twice the code of a system Form."}, "speed": 20.6, "cost": 41.4}, "codex": {"status": "done", "seconds": 80, "cost_usd": 1.02, "tool_calls": 14, "hit_cap": false, "safety_violations": [], "version": "codex-cli 0.167.0", "effort": "xhigh", "correctness": 100, "quality": 95.2, "code_quality": 84, "code_scores": {"结构与分层": 9, "可读性": 9, "一致性": 8, "稳健写法": 8, "可维护性": 8}, "rationale": {"结构与分层": "新建 HabitEditView，列表用 sheet(item:) 弹出，swAlert 挂在 App 入口，改动集中。", "可读性": "@State draft 由 init 注入，Form 里输入框与 Picker 直接绑定 $draft，一眼看懂。", "一致性": "按钮用 swPrimary、swSecondary，提示走 SWAlertManager，颜色选择用系统 Picker。", "稳健写法": "save 先 guard !isSaving 防重复点击，defer 复位状态，保存期间禁用表单与下滑关闭。", "可维护性": "依赖系统 Form 与 Picker，几乎没有魔法数，无夹带改动；没有加 Preview。"}, "rationale_en": {"结构与分层": "New HabitEditView, presented from the list with sheet(item:), with swAlert attached at the app entry; the change is focused.", "可读性": "A @State draft injected through init, with the text fields and Picker in a Form bound directly to $draft; clear at a glance.", "一致性": "Buttons use swPrimary and swSecondary, alerts go through SWAlertManager, and the color choice uses the system Picker.", "稳健写法": "save starts with guard !isSaving against double taps and resets state with defer; the form and swipe-to-dismiss are disabled while saving.", "可维护性": "Relies on the system Form and Picker with almost no magic numbers and no unrelated changes; no Preview added."}, "speed": 79.4, "cost": 58.6}}, "reference": {"seconds": 180.67, "cost_usd": 1.293, "set_in": "round-01"}}, "R9": {"dimension": "rules", "batch": "2026-11-08-xhigh", "level": "hard", "zh": "健身 App 加花费页，避开四份文档里写明的坑", "en": "Add an expenses screen to a fitness app without hitting the pitfalls in four docs", "lang": "SwiftUI", "rule": {"zh": "判对错：两道门（能编译、真的做了需求）不过记 0；再看 14 条静态检查（该用的组件、按地区解析金额和日期、纯日期不按 UTC 解析等），违反一条扣一条的分。代码质量同 B2。", "en": "Correctness: two gates (it builds; the feature is really implemented), failing either scores 0; then 14 static checks (the right components, locale-aware amounts and dates, no UTC parsing of date-only values and more), each violation costs its share. Code quality as in B2."}, "tools": {"claude": {"status": "done", "seconds": 994, "cost_usd": 4.04, "tool_calls": 52, "hit_cap": false, "safety_violations": [], "version": "2.1.319 (Claude Code)", "effort": "xhigh", "correctness": 100, "quality": 94.6, "code_quality": 82, "code_scores": {"结构与分层": 9, "可读性": 8, "一致性": 8, "稳健写法": 8, "可维护性": 8}, "rationale": {"结构与分层": "拆成 ExpenseDay、LocalMoney、ExpenseStore 与视图，日期、金额、数据、界面各管一块。", "可读性": "注释讲清本地正午、系统解析过宽等原因；parse 与 recentAdds 的 generation 逻辑偏密。", "一致性": "KPI 卡、状态徽章、添加面板、页面加载都用 SW 组件，按文档在枚举末尾加 expenses。", "稳健写法": "整串严格解析金额、本地正午解析日期，处理取消与日期变更；每次解析都新建 NumberFormatter。", "可维护性": "Large 阈值提成 largeAmountThreshold，三个地区各有 Preview；手写解析器偏长，未补测试。"}, "rationale_en": {"结构与分层": "Split into ExpenseDay, LocalMoney, ExpenseStore and the views: dates, money, data and UI each in their own place.", "可读性": "Comments explain parsing at local noon and why the system parser is too lenient; the generation logic in parse and recentAdds is dense.", "一致性": "KPI cards, status badges, the add sheet and page loading all use SW components, and expenses is added at the end of the enum as the docs instruct.", "稳健写法": "Strict whole-string amount parsing and local-noon date parsing, handles cancellation and date changes; creates a new NumberFormatter on every parse.", "可维护性": "The Large threshold is a named largeAmountThreshold, with a Preview for each of three regions; the hand-written parser is long and no tests were added."}, "speed": 30.0, "cost": 37.3}, "codex": {"status": "done", "seconds": 327, "cost_usd": 2.0, "tool_calls": 22, "hit_cap": false, "safety_violations": [], "version": "codex-cli 0.167.0", "effort": "xhigh", "correctness": 100, "quality": 91.0, "code_quality": 70, "code_scores": {"结构与分层": 7, "可读性": 7, "一致性": 6, "稳健写法": 8, "可维护性": 7}, "rationale": {"结构与分层": "ExpenseFormatting 包揽解析、日期、标签与月合计，store.log 还接收原始文本解析，层次略混。", "可读性": "正则校验金额与日期清楚，行布局易懂；isLoading、isSaving 守卫在 store 和视图各写一遍。", "一致性": "SW 组件用法到位，但另起用 swiftc 单独编译运行的测试程序和 Tests/README.md，游离于工程之外。", "稳健写法": "显式 MainActor、防重复提交、日期回转校验到位；币种回退 XXX，每行新建 DateFormatter。", "可维护性": "fetch、add 可注入便于测试且检查覆盖面广，但阈值 50 写死在视图里，测试要手动敲命令才能跑。"}, "rationale_en": {"结构与分层": "ExpenseFormatting handles parsing, dates, labels and monthly totals at once, and store.log also takes raw text to parse; the layers are somewhat mixed.", "可读性": "Regex validation of amounts and dates is clear and the row layout is easy to follow; the isLoading and isSaving guards are written twice, in the store and in the view.", "一致性": "SW components are used correctly, but the tests are a separate program compiled with swiftc plus a Tests/README.md, outside the project.", "稳健写法": "Explicit MainActor, double-submit guard and round-trip date validation; falls back to currency XXX and creates a DateFormatter for every row.", "可维护性": "fetch and add are injectable and the checks cover a lot, but the threshold 50 is hard-coded in the view and the tests must be run by hand."}, "speed": 70.0, "cost": 62.7}}, "reference": {"seconds": 570.12, "cost_usd": 2.843, "set_in": "round-01"}}}, "totals": {"claude": {"quality": 94.5, "speed": 38.1, "cost": 42.1, "seconds": 11175, "cost_usd": 52.36, "complete": true, "dimensions": {"fix": {"quality": 95.5, "speed": 47.3, "cost": 52.4}, "frontend": {"quality": 92.5, "speed": 30.4, "cost": 29.4}, "backend": {"quality": 95.8, "speed": 45.0, "cost": 44.5}, "rules": {"quality": 93.7, "speed": 25.3, "cost": 39.3}}}, "codex": {"quality": 88.7, "speed": 61.9, "cost": 57.9, "seconds": 4771, "cost_usd": 23.28, "complete": true, "dimensions": {"fix": {"quality": 92.2, "speed": 52.7, "cost": 47.6}, "frontend": {"quality": 77.2, "speed": 69.7, "cost": 70.5}, "backend": {"quality": 92.5, "speed": 55.0, "cost": 55.5}, "rules": {"quality": 93.1, "speed": 74.7, "cost": 60.7}}}}}</script>
+<script>
+(function () {
+  var D = JSON.parse(document.getElementById('round-data').textContent || '{}');
+  var TOOLS = ['claude', 'codex'];
+  var COLOR = { claude: 'var(--cc)', codex: 'var(--cx)' };
+  var CLS = { claude: 'cc', codex: 'cx' };
+  var T = {
+    zh: { quality: '质量', speed: '速度', cost: '成本', time: '8 题用时', spend: '8 题花费', timeSoFar: '已跑完的题用时', spendSoFar: '已跑完的题花费', pending: '待出', review: '待评审',
+          dims: { fix: '修 bug、加功能', frontend: '前端复刻', backend: '后端搭建', rules: '守规矩' },
+          easy: '易', hard: '难', task: '题目', q: '质量', t: '用时', c: '花费', calls: '工具调用',
+          inprog: '进行中：GPT-6 Astra 还没跑 F2、B4；F2 录屏评分、B4 代码质量等两家都跑完再评', done: '已完成', weight: '权重',
+          auto: '自动比对', video: '录屏评分', axes: ['静态还原', '动效还原', '交互手感'], score: '题目得分',
+          corr: '判对错', cq: '代码质量', crit: ['结构与分层', '可读性', '一致性', '稳健写法', '可维护性'] },
+    en: { quality: 'Quality', speed: 'Speed', cost: 'Cost', time: 'Time, 8 tasks', spend: 'Cost, 8 tasks', timeSoFar: 'Time, finished so far', spendSoFar: 'Cost, finished so far', pending: 'pending', review: 'in review',
+          dims: { fix: 'Bug fixes & features', frontend: 'Frontend rebuild', backend: 'Backend', rules: 'Project rules' },
+          easy: 'easier', hard: 'harder', task: 'Task', q: 'Quality', t: 'Time', c: 'Cost', calls: 'Tool calls',
+          inprog: 'In progress: GPT-6 Astra has not run F2 and B4 yet; the F2 video review and B4 code review wait for both', done: 'Complete', weight: 'weight',
+          auto: 'Automatic', video: 'Video review', axes: ['Static', 'Motion', 'Feel'], score: 'Task score',
+          corr: 'Correctness', cq: 'Code quality', crit: ['Structure', 'Readability', 'Consistency', 'Robustness', 'Maintainability'] }
+  };
+  var CRIT_KEYS = ['结构与分层', '可读性', '一致性', '稳健写法', '可维护性'];
+  var lang = 'en';
+
+  function esc(s) { return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
+  function n1(x) { return x == null ? '—' : (Math.round(x * 10) / 10).toFixed(1); }
+  function dur(s) {
+    if (!s) return '—';
+    var h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60), sec = s % 60;
+    if (lang === 'zh') return h ? h + ' 小时 ' + m + ' 分' : m + ' 分 ' + (sec < 10 ? '0' : '') + sec + ' 秒';
+    return h ? h + ' h ' + m + ' min' : m + ':' + (sec < 10 ? '0' : '') + sec;
+  }
+  function usd(x) { return x == null ? '—' : '$' + x.toFixed(2); }
+  function cell(e, key) {
+    if (!e || e.status === 'pending') return '<span class="pend">' + T[lang].pending + '</span>';
+    if (e[key] == null) return '<span class="pend">' + T[lang].review + '</span>';
+    return n1(e[key]);
+  }
+
+  function renderBoard() {
+    var L = T[lang], h = '';
+    TOOLS.forEach(function (k) {
+      var tool = D.tools[k], tot = D.totals[k];
+      h += '<article class="tool" style="--c:' + COLOR[k] + '">' +
+        '<div class="name"><b>' + esc(tool.model_name) + '</b><span>' + esc(tool.name) + ' · xhigh</span></div>' +
+        '<div class="q"><span class="big">' + (tot.quality == null ? '—' : n1(tot.quality)) + '</span><span class="lbl">' + L.quality + (tot.quality == null ? ' · ' + L.pending : '') + '</span></div>' +
+        '<dl><div><dt>' + L.speed + '</dt><dd>' + n1(tot.speed) + '</dd></div><div><dt>' + L.cost + '</dt><dd>' + n1(tot.cost) + '</dd></div>' +
+        '<div><dt>' + (tot.complete ? L.time : L.timeSoFar) + '</dt><dd>' + dur(tot.seconds) + '</dd></div><div><dt>' + (tot.complete ? L.spend : L.spendSoFar) + '</dt><dd>' + usd(tot.cost_usd) + '</dd></div></dl></article>';
+    });
+    document.getElementById('board').innerHTML = h;
+    var st = document.getElementById('status');
+    var done = TOOLS.every(function (k) { return D.totals[k].complete; });
+    st.textContent = done ? L.done : L.inprog;
+    st.className = 'status' + (done ? ' done' : '');
+    document.getElementById('prelim').hidden = done;
+  }
+
+  function renderDims() {
+    var L = T[lang], h = '<div class="legend">' + TOOLS.map(function (k) { return '<span style="--c:' + COLOR[k] + '"><i></i>' + esc(D.tools[k].model_name) + '</span>'; }).join('') + '</div>';
+    D.dimensions.forEach(function (d) {
+      h += '<div class="dim"><div class="dn">' + L.dims[d.key] + '<small>' + d.tasks.join(' · ') + ' · ' + L.weight + ' ' + Math.round(d.weight * 100) + '%</small></div><div class="bars">';
+      TOOLS.forEach(function (k) {
+        var v = D.totals[k].dimensions[d.key].quality;
+        var parts = d.tasks.map(function (t) { return D.tasks[t].tools[k].quality; });
+        var shown = v != null ? v : null;
+        var label = v != null ? n1(v) : L.pending;
+        var w = shown != null ? shown : 0;
+        h += '<div class="bar" style="--c:' + COLOR[k] + '"><div class="track"><div class="fill" style="width:' + w + '%"></div></div><span class="v">' + label + '</span></div>';
+      });
+      h += '</div></div>';
+    });
+    document.getElementById('dims').innerHTML = h;
+  }
+
+  function renderTasks() {
+    var L = T[lang];
+    var h = '<thead><tr><th>' + L.task + '</th><th></th>' +
+      TOOLS.map(function (k) { return '<th class="n ' + CLS[k] + '">' + esc(D.tools[k].model_name) + '<br>' + L.q + '</th>'; }).join('') +
+      TOOLS.map(function (k) { return '<th class="n ' + CLS[k] + '">' + L.t + '</th>'; }).join('') +
+      TOOLS.map(function (k) { return '<th class="n ' + CLS[k] + '">' + L.c + '</th>'; }).join('') +
+      TOOLS.map(function (k) { return '<th class="n ' + CLS[k] + '">' + L.calls + '</th>'; }).join('') + '</tr></thead><tbody>';
+    D.dimensions.forEach(function (d) {
+      h += '<tr class="grp"><td colspan="10">' + L.dims[d.key] + ' · ' + Math.round(d.weight * 100) + '%</td></tr>';
+      d.tasks.forEach(function (t) {
+        var e = D.tasks[t];
+        var qs = TOOLS.map(function (k) { return e.tools[k].quality; });
+        var best = qs.every(function (x) { return x != null; }) && qs[0] !== qs[1] ? (qs[0] > qs[1] ? 0 : 1) : -1;
+        h += '<tr><td class="id">' + t + '</td><td>' + esc(e[lang]) + ' <span class="lvl">' + L[e.level] + '</span></td>' +
+          TOOLS.map(function (k, i) { return '<td class="n ' + (i === best ? 'win ' + CLS[k] : '') + '">' + cell(e.tools[k], 'quality') + '</td>'; }).join('') +
+          TOOLS.map(function (k) { return '<td class="n">' + dur(e.tools[k].seconds) + '</td>'; }).join('') +
+          TOOLS.map(function (k) { return '<td class="n">' + usd(e.tools[k].cost_usd) + '</td>'; }).join('') +
+          TOOLS.map(function (k) { return '<td class="n">' + (e.tools[k].tool_calls == null ? '—' : e.tools[k].tool_calls) + '</td>'; }).join('') + '</tr>';
+      });
+    });
+    document.getElementById('tasks').innerHTML = h + '</tbody>';
+  }
+
+  function renderF() {
+    var L = T[lang];
+    var h = '<thead><tr><th></th>' + TOOLS.map(function (k) { return '<th class="n ' + CLS[k] + '">' + esc(D.tools[k].model_name) + '</th>'; }).join('') + '</tr></thead><tbody>';
+    ['F1', 'F2'].forEach(function (t) {
+      var e = D.tasks[t]; if (!e) return;
+      h += '<tr class="grp"><td colspan="3">' + t + ' · ' + esc(e[lang]) + '</td></tr>';
+      L.axes.forEach(function (ax, i) {
+        h += '<tr><td>' + ax + ' (1–10)</td>' + TOOLS.map(function (k) { var v = e.tools[k].video_scores; return '<td class="n">' + (v ? v[['静态还原', '动效还原', '交互手感'][i]] : '<span class="pend">' + L.pending + '</span>') + '</td>'; }).join('') + '</tr>';
+      });
+      h += '<tr><td>' + L.video + ' (70%)</td>' + TOOLS.map(function (k) { return '<td class="n">' + cell(e.tools[k], 'video') + '</td>'; }).join('') + '</tr>';
+      h += '<tr><td>' + L.auto + ' (30%)</td>' + TOOLS.map(function (k) { return '<td class="n">' + cell(e.tools[k], 'auto') + '</td>'; }).join('') + '</tr>';
+      h += '<tr><td><b>' + L.score + '</b></td>' + TOOLS.map(function (k) { return '<td class="n"><b>' + cell(e.tools[k], 'quality') + '</b></td>'; }).join('') + '</tr>';
+    });
+    document.getElementById('fscores').innerHTML = h + '</tbody>';
+  }
+
+  function lost(x) { return x > 0.04 ? '<span class="lost">' + (lang === 'zh' ? '本题 −' : '−') + x.toFixed(1) + (lang === 'zh' ? '' : ' on task') + '</span>' : '<span class="none">' + (lang === 'zh' ? '不扣分' : 'no deduction') + '</span>'; }
+  function renderCode() {
+    var L = T[lang], h = '';
+    var AX = ['静态还原', '动效还原', '交互手感'];
+    D.dimensions.forEach(function (d) {
+      d.tasks.forEach(function (t) {
+        var e = D.tasks[t]; if (!e) return;
+        var isF = t.charAt(0) === 'F';
+        var head = TOOLS.map(function (k) { var x = e.tools[k]; return '<span class="' + CLS[k] + '">' + esc(D.tools[k].model_name) + ' ' + (x.quality == null ? (x.status === 'pending' ? L.pending : L.review) : n1(x.quality)) + '</span>'; }).join(' · ');
+        h += '<details><summary><span class="id">' + t + '</span> · ' + esc(e[lang]) + ' — ' + head + '</summary><div>';
+        if (e.rule) h += '<p class="rule">' + esc(e.rule[lang]) + '</p>';
+        h += '<div class="dedcols">';
+        TOOLS.forEach(function (k) {
+          var x = e.tools[k];
+          var why = (lang === 'en' ? x.rationale_en : x.rationale) || {};
+          h += '<div class="dedcol" style="--c:' + COLOR[k] + '"><h4>' + esc(D.tools[k].model_name) + '<span>' + (x.quality == null ? '—' : n1(x.quality)) + '</span></h4>';
+          if (x.quality == null) {
+            h += '<p class="pend">' + (x.status === 'pending' ? L.pending : L.review) + '</p></div>';
+            return;
+          }
+          h += '<ul class="dl">';
+          if (isF) {
+            var st = (x.auto_states || []).map(function (s) { return esc(lang === 'en' ? s.state_en : s.state) + ' ' + n1(s.score); }).join(' · ');
+            h += '<li><div class="k"><b>' + L.auto + '</b><span class="sc">' + n1(x.auto) + '</span>' + lost((100 - x.auto) * 0.3) + '</div>' + (st ? '<div class="why">' + st + '</div>' : '') + '</li>';
+            h += '<li><div class="k"><b>' + L.video + '</b><span class="sc">' + n1(x.video) + '</span>' + lost((100 - x.video) * 0.7) + '</div></li>';
+            AX.forEach(function (c, i) {
+              var v = x.video_scores[c];
+              h += '<li><div class="k"><b>· ' + L.axes[i] + '</b><span class="sc">' + v + '/10</span>' + lost((10 - v) * 7 / 3) + '</div>' + (why[c] ? '<div class="why">' + esc(why[c]) + '</div>' : '') + '</li>';
+            });
+          } else {
+            var c0 = x.correctness;
+            h += '<li><div class="k"><b>' + L.corr + '</b><span class="sc">' + (c0 == null ? '—' : c0) + '</span>' + lost((100 - (c0 || 0)) * 0.7) + '</div>' + (c0 === 100 ? '<div class="why">' + (lang === 'zh' ? '全部通过。' : 'Everything passed.') + '</div>' : '') + '</li>';
+            h += '<li><div class="k"><b>' + L.cq + '</b><span class="sc">' + x.code_quality + '</span>' + lost((100 - x.code_quality) * 0.3) + '</div></li>';
+            CRIT_KEYS.forEach(function (c, i) {
+              var v = x.code_scores[c];
+              h += '<li><div class="k"><b>· ' + L.crit[i] + '</b><span class="sc">' + v + '/10</span>' + lost((10 - v) * 0.6) + '</div>' + (why[c] ? '<div class="why">' + esc(why[c]) + '</div>' : '') + '</li>';
+            });
+          }
+          h += '</ul></div>';
+        });
+        h += '</div>';
+        var notes = document.querySelector('template[data-task="' + t + '"][data-l="' + lang + '"]');
+        if (notes) h += '<div class="cmp">' + notes.innerHTML + '</div>';
+        h += '</div></details>';
+      });
+    });
+    document.getElementById('code').innerHTML = h;
+  }
+
+  function setLang(l) {
+    lang = l === 'zh' ? 'zh' : 'en';
+    document.documentElement.setAttribute('data-lang', lang);
+    document.documentElement.lang = lang === 'zh' ? 'zh-CN' : 'en';
+    document.getElementById('btn-zh').setAttribute('aria-pressed', String(lang === 'zh'));
+    document.getElementById('btn-en').setAttribute('aria-pressed', String(lang === 'en'));
+    renderBoard(); renderDims(); renderTasks(); renderF(); renderCode();
+  }
+  document.querySelectorAll('.lang button').forEach(function (b) {
+    b.addEventListener('click', function () { setLang(b.getAttribute('data-set')); if (location.hash !== '#' + lang) location.hash = lang; });
+  });
+  window.addEventListener('hashchange', function () { var h = location.hash.slice(1); if (h === 'zh' || h === 'en') setLang(h); });
+  var h0 = location.hash.slice(1);
+  var nav = (navigator.language || '').toLowerCase();
+  setLang(h0 === 'zh' || h0 === 'en' ? h0 : (nav.indexOf('zh') === 0 ? 'zh' : 'en'));
+})();
+</script>
+
+<template data-task="F2" data-l="zh"><p>静态两家都 9 分（卡片底色都比原录屏偏灰）。差在动和手感：Opus 5.5 六次操作全部生效，入场动画、数字滚动和原录屏同步；GPT-6 Astra 左边缘右滑返回没反应，三次点环形图都闪烁，入场动画偏慢。自动比对 92.5 对 79.5，GPT-6 Astra 的「返回报表页」状态记 0。</p></template>
+<template data-task="F2" data-l="en"><p>Both score 9 on static fidelity (card backgrounds a little greyer than the original). The difference is motion and feel: all six of Opus 5.5's gestures work and its entrance animation and rolling numbers stay in sync with the original; GPT-6 Astra's left-edge swipe back does nothing, all three donut taps flicker and its entrance runs slow. Automatic comparison 92.5 vs 79.5, with GPT-6 Astra's "back to the report" state scoring 0.</p></template>
+<template data-task="B4" data-l="zh"><p>两家 17 条验收全过，去重都靠参数化插入加冲突忽略，不是先查后写。Opus 5.5 把鉴权、解析、读写、状态推导各拆一个模块，事件类型只定义一处；GPT-6 Astra 只有两个源文件，入口文件兼管路由、鉴权和内联 SQL，但数据库约束和确定性的乱序并发测试做得好，令牌比较不是常数时间。</p></template>
+<template data-task="B4" data-l="en"><p>Both pass all 17 checks, and both deduplicate with a parameterized insert that ignores conflicts rather than read-then-write. Opus 5.5 puts auth, parsing, data access and state derivation in separate modules and defines the event types once; GPT-6 Astra has two source files, with routing, auth and inline SQL in the entry file, but strong database constraints and deterministic out-of-order and concurrency tests; its token comparison is not constant-time.</p></template>
+<template data-task="S1" data-l="zh"><p>两家的修法几乎一样：两处比较都改成按整秒比。Opus 5.5 给取整函数写了注释，两个测试分别复现两条去重路径，简洁；GPT-6 Astra 多测了整秒边界和负时间戳，更稳，但测试冗长、写法绕。</p></template>
+<template data-task="S1" data-l="en"><p>Nearly identical fixes: both compare at whole-second precision in two places. Opus 5.5 documents its rounding helper and writes two concise tests, one per deduplication path; GPT-6 Astra also tests the second boundary and negative timestamps, which is more thorough, but its tests are long and convoluted.</p></template>
+<template data-task="S2" data-l="zh"><p>差距最大的一题。Opus 5.5 改动小而准：游标带上时间，保留原有「rowid 即时间」的设计，魔法数提成常量，挪动时新键必须严格落在两个邻居之间，否则整体重排。GPT-6 Astra 为了修翻页把搜索索引升级到新结构（新列、两个索引、JOIN、原地迁移），同毫秒排序更严谨，但远超修 bug 所需，还删掉了原有的性能注释、牵动旧测试。</p></template>
+<template data-task="S2" data-l="en"><p>The widest gap. Opus 5.5's change is small and precise: the cursor carries the timestamp, the original "rowid is time" design stays, a magic number becomes a constant, and a moved item's new key must fall strictly between its neighbors or the list is renumbered. GPT-6 Astra upgrades the search index to a new schema (new column, two indexes, a JOIN, an in-place migration) to fix paging. Its same-millisecond ordering is stricter, but the change goes far beyond the bug, removes an existing performance comment and forces old tests to change.</p></template>
+<template data-task="B2" data-l="zh"><p>两家 49 条验收全过。Opus 5.5 按资源拆处理函数、路由表带鉴权标记，校验、HTTP、数据库各自成模块，每个并发取舍都有注释，测试 1000 多行。GPT-6 Astra 的数据库约束最严（复合外键、层级检查、触发器保证原子加入），但代码更密，路由是一长串手写判断，强转更多。</p></template>
+<template data-task="B2" data-l="en"><p>Both pass all 49 checks. Opus 5.5 splits handlers by resource behind a routing table with auth flags, keeps validation, HTTP and database code in their own modules, comments every concurrency decision and writes over 1,000 lines of tests. GPT-6 Astra has the stricter database design (composite foreign keys, depth checks, a trigger for atomic joins) but denser code, a long hand-written routing chain and more casts.</p></template>
+<template data-task="R5" data-l="zh"><p>这一题 GPT-6 Astra 写得更好：用 @State 草稿加系统 Form、Picker，70 行清楚直接，还防了重复点击。Opus 5.5 用计算属性把改动叠在实时数据上、再配自定义 Binding，不直观；表单手搭，尺寸数字散落，代码量约多一倍。</p></template>
+<template data-task="R5" data-l="en"><p>GPT-6 Astra writes the better code here: a @State draft with the system Form and Picker, about 70 clear lines, with a guard against double taps. Opus 5.5 layers edits over live data through a computed property and custom Bindings, which is harder to follow, and builds the form by hand with scattered size constants, about twice the code.</p></template>
+<template data-task="R9" data-l="zh"><p>Opus 5.5 分层清楚：日期、金额、数据、界面各管一块，阈值提成常量，注释充分。GPT-6 Astra 一个类型包揽解析、日期、标签和月合计，阈值写死在视图里，每行新建一个日期格式器，测试另起了一个要手动编译的程序；不过它把取数和新增做成可注入，测试覆盖也广。</p></template>
+<template data-task="R9" data-l="en"><p>Opus 5.5 layers cleanly: dates, money, data and UI each in their own type, the threshold as a constant, well commented. GPT-6 Astra puts parsing, dates, labels and monthly totals in one type, hard-codes the threshold in the view, creates a date formatter per row and writes its tests as a separate program compiled by hand, though it makes fetching and adding injectable and covers a lot in tests.</p></template>

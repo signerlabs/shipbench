@@ -1,0 +1,140 @@
+ Sources/ClipData/Store/CloudWorker.swift  | 13 +++--
+ Tests/ClipDataTests/CloudMergeTests.swift | 93 +++++++++++++++++++++++++++++++
+ 2 files changed, 102 insertions(+), 4 deletions(-)
+diff --git a/Sources/ClipData/Store/CloudWorker.swift b/Sources/ClipData/Store/CloudWorker.swift
+index fb3ae51..8ada005 100644
+--- a/Sources/ClipData/Store/CloudWorker.swift
++++ b/Sources/ClipData/Store/CloudWorker.swift
+@@ -167,10 +167,11 @@ enum CloudMerge {
+     // MARK: - 先后规则
+ 
+     /// 合并时谁留下：最早创建的；再依次比其余字段，各台 Mac 比出同一个。
+-    /// 时间按整秒比：经 iCloud 同步来的日期精度不如本机原值（毫秒级取整方式待真机核实），比到秒以下两台 Mac 可能比出不同的保留者、
++    /// 时间按整秒向下取整后比：经 iCloud 同步来的日期会丢失毫秒以下精度，比到秒以下两台 Mac 可能比出不同的保留者、
+     /// 结果两份都被删；同一秒内的交给后面的字段（uuid 等）决定
+     static func pinboardPrecedes(_ a: PinboardRecord, _ b: PinboardRecord) -> Bool {
+-        (a.createdAt, a.sortKey, a.name, a.colorRaw) < (b.createdAt, b.sortKey, b.name, b.colorRaw)
++        (wholeSecond(a.createdAt), a.sortKey, a.name, a.colorRaw)
++            < (wholeSecond(b.createdAt), b.sortKey, b.name, b.colorRaw)
+     }
+ 
+     static func pinnedPrecedes(_ a: PinnedClip, _ b: PinnedClip) -> Bool {
+@@ -178,8 +179,12 @@ enum CloudMerge {
+     }
+ 
+     static func pinnedPrecedes(_ a: PinnedValue, _ b: PinnedValue) -> Bool {
+-        (a.createdAt, a.uuid.uuidString, a.pinboardID?.uuidString ?? "", a.pinSortKey, a.lastUsedAt, a.title ?? "")
+-            < (b.createdAt, b.uuid.uuidString, b.pinboardID?.uuidString ?? "", b.pinSortKey, b.lastUsedAt, b.title ?? "")
++        (wholeSecond(a.createdAt), a.uuid.uuidString, a.pinboardID?.uuidString ?? "", a.pinSortKey, wholeSecond(a.lastUsedAt), a.title ?? "")
++            < (wholeSecond(b.createdAt), b.uuid.uuidString, b.pinboardID?.uuidString ?? "", b.pinSortKey, wholeSecond(b.lastUsedAt), b.title ?? "")
++    }
++
++    private static func wholeSecond(_ date: Date) -> TimeInterval {
++        date.timeIntervalSince1970.rounded(.down)
+     }
+ 
+     /// 排好序、同 uuid 只留一份的 Pinboard：按排序键，相同再按 uuid（各台 Mac 排出同一个顺序）
+diff --git a/Tests/ClipDataTests/CloudMergeTests.swift b/Tests/ClipDataTests/CloudMergeTests.swift
+index ab6da86..2caaae6 100644
+--- a/Tests/ClipDataTests/CloudMergeTests.swift
++++ b/Tests/ClipDataTests/CloudMergeTests.swift
+@@ -85,6 +85,99 @@ import Testing
+         #expect(try await store.mergeCloudChanges() == false)
+     }
+ 
++    @Test func pinnedMergeConvergesAfterTimestampPrecisionLoss() async throws {
++        let a = UUID(uuidString: "AAAAAAAA-0000-0000-0000-000000000000")!
++        let b = UUID(uuidString: "BBBBBBBB-0000-0000-0000-000000000000")!
++        let boardID = UUID()
++        let second = Date(timeIntervalSince1970: 1_700_000_000)
++
++        // 两台 Mac 各有一份本机原值，另一份经同步丢了毫秒以下的精度。
++        // 直接比 Date 会让两台 Mac 都留下对方那份，互相同步删除后就一份不剩。
++        for localID in [a, b] {
++            let store = try await makeStore()
++            _ = try await store.createPinboard(id: boardID, name: "Work", color: .orange)
++            let remoteID = localID == a ? b : a
++            let localDate = second.addingTimeInterval(localID == a ? 0.123456 : 0.123654)
++            try await store.insertRemotePinned(id: localID, text: "shared snippet", pinboardID: boardID, createdAt: localDate)
++            try await store.insertRemotePinned(id: remoteID, text: "shared snippet", pinboardID: boardID, createdAt: second.addingTimeInterval(0.123))
++
++            #expect(try await store.mergeCloudChanges())
++            #expect(try await pinboard(store, boardID).map(\.id) == [a])
++            // 检查实际存储，避免只验证到缓存里的去重显示。
++            #expect(try await store.copies(of: a).count == 1)
++            #expect(try await store.copies(of: b).isEmpty)
++            #expect(try await store.mergeCloudChanges() == false)
++        }
++    }
++
++    @Test(arguments: [(0.123456, 0.123), (0.9, 0.1)])
++    func mergeOrderingIgnoresFractionalSeconds(later: TimeInterval, earlier: TimeInterval) {
++        let second = Date(timeIntervalSince1970: 1_700_000_000)
++        let boardA = PinboardRecord()
++        let boardB = PinboardRecord()
++        boardB.uuid = boardA.uuid
++        boardA.createdAt = second.addingTimeInterval(later)
++        boardB.createdAt = second.addingTimeInterval(earlier)
++        boardA.name = "Apple"
++        boardB.name = "Zebra"
++        #expect(CloudMerge.pinboardPrecedes(boardA, boardB))
++        #expect(!CloudMerge.pinboardPrecedes(boardB, boardA))
++
++        let a = PinnedClip()
++        let b = PinnedClip()
++        b.uuid = a.uuid
++        a.pinboardID = boardA.uuid
++        b.pinboardID = boardA.uuid
++        a.createdAt = boardA.createdAt
++        b.createdAt = boardB.createdAt
++        a.lastUsedAt = second.addingTimeInterval(60 + later)
++        b.lastUsedAt = second.addingTimeInterval(60 + earlier)
++        a.title = "Apple"
++        b.title = "Zebra"
++        // 同 uuid 时仍须忽略 createdAt、lastUsedAt 的小数部分，继续按标题比较。
++        #expect(CloudMerge.pinnedPrecedes(a, b))
++        #expect(!CloudMerge.pinnedPrecedes(b, a))
++        #expect(CloudMerge.pinnedPrecedes(PinnedValue(a), PinnedValue(b)))
++        #expect(!CloudMerge.pinnedPrecedes(PinnedValue(b), PinnedValue(a)))
++
++        // 剩余字段也相同就比不出先后，沿用不删除的保护规则。
++        boardB.name = boardA.name
++        b.title = a.title
++        #expect(!CloudMerge.pinboardPrecedes(boardA, boardB))
++        #expect(!CloudMerge.pinboardPrecedes(boardB, boardA))
++        #expect(!CloudMerge.pinnedPrecedes(a, b))
++        #expect(!CloudMerge.pinnedPrecedes(b, a))
++    }
++
++    @Test(arguments: [(0.9999, 1.0), (-0.0001, 0.0)])
++    func mergeOrderingPreservesWholeSecondBoundaries(earlier: TimeInterval, later: TimeInterval) {
++        let boardA = PinboardRecord()
++        let boardB = PinboardRecord()
++        boardB.uuid = boardA.uuid
++        boardA.createdAt = Date(timeIntervalSince1970: earlier)
++        boardB.createdAt = Date(timeIntervalSince1970: later)
++        boardA.name = "Zebra"
++        boardB.name = "Apple"
++        #expect(CloudMerge.pinboardPrecedes(boardA, boardB))
++        #expect(!CloudMerge.pinboardPrecedes(boardB, boardA))
++
++        let a = PinnedClip()
++        let b = PinnedClip()
++        b.uuid = a.uuid
++        a.createdAt = boardA.createdAt
++        b.createdAt = boardB.createdAt
++        a.lastUsedAt = boardA.createdAt
++        b.lastUsedAt = boardB.createdAt
++        a.title = "Zebra"
++        b.title = "Apple"
++        #expect(CloudMerge.pinnedPrecedes(a, b))
++        #expect(!CloudMerge.pinnedPrecedes(b, a))
++        // 创建时间相同后，跨整秒的 lastUsedAt 仍优先于标题。
++        a.createdAt = b.createdAt
++        #expect(CloudMerge.pinnedPrecedes(a, b))
++        #expect(!CloudMerge.pinnedPrecedes(b, a))
++    }
++
+     @Test func remoteRenameReachesHistoryAndSearch() async throws {
+         let store = try await makeStore()
+         let board = try await store.createPinboard(id: UUID(), name: "Work", color: .orange)

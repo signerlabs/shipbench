@@ -1,0 +1,190 @@
+ Sprout/SproutApp.swift           |   1 +
+ Sprout/Views/HabitEditView.swift | 128 +++++++++++++++++++++++++++++++++++++++
+ Sprout/Views/HabitListView.swift |  21 +++++--
+ 3 files changed, 144 insertions(+), 6 deletions(-)
+diff --git a/Sprout/SproutApp.swift b/Sprout/SproutApp.swift
+index ee48be1..7175805 100644
+--- a/Sprout/SproutApp.swift
++++ b/Sprout/SproutApp.swift
+@@ -5,6 +5,7 @@ struct SproutApp: App {
+     var body: some Scene {
+         WindowGroup {
+             HabitListView()
++                .swAlert()
+         }
+     }
+ }
+diff --git a/Sprout/Views/HabitEditView.swift b/Sprout/Views/HabitEditView.swift
+new file mode 100644
+index 0000000..05f664a
+--- /dev/null
++++ b/Sprout/Views/HabitEditView.swift
+@@ -0,0 +1,128 @@
++import SwiftUI
++
++/// Edit sheet for a habit: rename it and pick a color from `Habit.palette`.
++/// Present with `.sheet(item:)`, passing the tapped habit.
++struct HabitEditView: View {
++    /// The habit handed over by `.sheet(item:)`. Only used for its id, and as a
++    /// fallback if the store no longer has it.
++    let habit: Habit
++
++    @Environment(\.dismiss) private var dismiss
++    private let store = HabitStore.shared
++
++    // Only what the user has changed; untouched fields keep following the store.
++    @State private var editedName: String?
++    @State private var editedColorName: String?
++    @State private var isSaving = false
++
++    /// Palette keys in a stable order (`Habit.palette` is a dictionary).
++    private let colorNames = Habit.palette.keys.sorted()
++
++    private var draft: Habit {
++        var draft = store.habits.first { $0.id == habit.id } ?? habit
++        if let editedName { draft.name = editedName }
++        if let editedColorName { draft.colorName = editedColorName }
++        return draft
++    }
++
++    var body: some View {
++        VStack(alignment: .leading, spacing: 24) {
++            Text("Edit Habit")
++                .font(.headline)
++                .frame(maxWidth: .infinity)
++
++            VStack(alignment: .leading, spacing: 8) {
++                Text("Name")
++                    .font(.subheadline)
++                    .foregroundStyle(.secondary)
++                TextField("Habit name", text: Binding(
++                    get: { draft.name },
++                    set: { editedName = $0 }
++                ))
++                .submitLabel(.done)
++                .padding()
++                .overlay(
++                    RoundedRectangle(cornerRadius: 16)
++                        .strokeBorder(.secondary.opacity(0.5), lineWidth: 1)
++                )
++            }
++
++            VStack(alignment: .leading, spacing: 8) {
++                Text("Color")
++                    .font(.subheadline)
++                    .foregroundStyle(.secondary)
++                HStack(spacing: 8) {
++                    ForEach(colorNames, id: \.self) { colorName in
++                        colorSwatch(colorName, isSelected: colorName == draft.colorName)
++                    }
++                }
++            }
++
++            Spacer(minLength: 0)
++
++            HStack {
++                Button("Cancel") { dismiss() }
++                    .buttonStyle(.swSecondary)
++
++                Button(action: save) {
++                    Text("Save")
++                        .opacity(isSaving ? 0 : 1)
++                        .overlay {
++                            if isSaving { ProgressView().tint(.white) }
++                        }
++                }
++                .buttonStyle(.swPrimary)
++            }
++            .disabled(isSaving)
++        }
++        .padding()
++        .presentationDetents([.medium])
++        .presentationDragIndicator(.visible)
++        .interactiveDismissDisabled(isSaving)
++    }
++
++    private func colorSwatch(_ colorName: String, isSelected: Bool) -> some View {
++        Button {
++            editedColorName = colorName
++        } label: {
++            Circle()
++                .fill(Habit.palette[colorName] ?? .green)
++                .frame(width: 32, height: 32)
++                .overlay {
++                    if isSelected {
++                        Image(systemName: "checkmark")
++                            .font(.footnote.bold())
++                            .foregroundStyle(.white)
++                    }
++                }
++                .frame(width: 44, height: 44)
++                .contentShape(.rect)
++        }
++        .buttonStyle(.plain)
++        .accessibilityLabel(colorName.capitalized)
++        .accessibilityAddTraits(isSelected ? .isSelected : [])
++    }
++
++    private func save() {
++        let habit = draft
++        isSaving = true
++        Task {
++            do {
++                try await store.save(habit)
++                SWAlertManager.shared.show(.success, message: "Saved")
++                dismiss()
++            } catch {
++                SWAlertManager.shared.show(.error, message: error.localizedDescription)
++            }
++            isSaving = false
++        }
++    }
++}
++
++#Preview {
++    Color.clear
++        .sheet(isPresented: .constant(true)) {
++            HabitEditView(habit: HabitStore.shared.habits[0])
++        }
++        .swAlert()
++}
+diff --git a/Sprout/Views/HabitListView.swift b/Sprout/Views/HabitListView.swift
+index 09d951d..522e55c 100644
+--- a/Sprout/Views/HabitListView.swift
++++ b/Sprout/Views/HabitListView.swift
+@@ -2,20 +2,29 @@ import SwiftUI
+ 
+ struct HabitListView: View {
+     @State private var store = HabitStore.shared
++    @State private var editingHabit: Habit?
+ 
+     var body: some View {
+         NavigationStack {
+             List(store.habits) { habit in
+-                HStack(spacing: 12) {
+-                    Circle().fill(habit.color).frame(width: 12, height: 12)
+-                    Text(habit.name)
+-                    Spacer()
+-                    if let time = habit.reminderTime {
+-                        Text(time, style: .time).foregroundStyle(.secondary)
++                Button {
++                    editingHabit = habit
++                } label: {
++                    HStack(spacing: 12) {
++                        Circle().fill(habit.color).frame(width: 12, height: 12)
++                        Text(habit.name)
++                        Spacer()
++                        if let time = habit.reminderTime {
++                            Text(time, style: .time).foregroundStyle(.secondary)
++                        }
+                     }
+                 }
++                .tint(.primary) // keep row text from taking the button tint
+             }
+             .navigationTitle("Habits")
++            .sheet(item: $editingHabit) { habit in
++                HabitEditView(habit: habit)
++            }
+         }
+     }
+ }

@@ -1,0 +1,5328 @@
+{
+  "schemaVersion": 4,
+  "generatedAt": "2026-07-11",
+  "count": 313,
+  "note": "Clinic directory snapshot (public government registry fields only). Bundled as an offline fallback.",
+  "clinics": [
+    {
+      "id": "003b8e17dbed",
+      "name": "The Furries’ Keepers Pte Ltd",
+      "address": "326 Balestier Road",
+      "postalCode": "329758",
+      "latitude": 1.323794,
+      "longitude": 103.852069,
+      "services": [
+        "boarding"
+      ],
+      "is24h": false,
+      "licenceNos": [
+        "BD25021"
+      ],
+      "animalTypes": [],
+      "approvedActivity": "Pet Boarding (Cats & Dogs)"
+    },
+    {
+      "id": "01c472786e36",
+      "name": "Hello Human Wellness East Pte Ltd",
+      "address": "311 Joo Chiat Road",
+      "postalCode": "427562",
+      "latitude": 1.309461,
+      "longitude": 103.902502,
+      "services": [
+        "boarding"
+      ],
+      "is24h": false,
+      "licenceNos": [
+        "BD25033"
+      ],
+      "animalTypes": [],
+      "approvedActivity": "Pet Boarding (Dogs)"
+    },
+    {
+      "id": "022a74466c6e",
+      "name": "The Animal Retreat Pte Ltd",
+      "address": "177 Guillemard Road",
+      "postalCode": "399722",
+      "latitude": 1.310419,
+      "longitude": 103.880951,
+      "services": [
+        "boarding"
+      ],
+      "is24h": false,
+      "licenceNos": [
+        "BD25099"
+      ],
+      "animalTypes": [],
+      "approvedActivity": "Pet Boarding (Dogs)"
+    },
+    {
+      "id": "038e42298b82",
+      "name": "The Dog People Pte Ltd",
+      "address": "47 Guillemard Road (1st Storey)",
+      "postalCode": "399703",
+      "latitude": 1.309715,
+      "longitude": 103.878361,
+      "services": [
+        "boarding"
+      ],
+      "is24h": false,
+      "licenceNos": [
+        "BD25100"
+      ],
+      "animalTypes": [],
+      "approvedActivity": "Pet Boarding (Dogs)"
+    },
+    {
+      "id": "038f05f2f67d",
+      "name": "Nekoya Pte Ltd",
+      "address": "9 King Albert Park #02-20",
+      "postalCode": "598332",
+      "latitude": 1.336974,
+      "longitude": 103.779317,
+      "services": [
+        "boarding"
+      ],
+      "is24h": false,
+      "licenceNos": [
+        "BD25078"
+      ],
+      "animalTypes": [],
+      "approvedActivity": "Pet Boarding (Cats)"
+    },
+    {
+      "id": "040730e39039",
+      "name": "COMPANION ANIMAL SURGERY PTE LTD",
+      "address": "12 BOON TECK ROAD #01-05 NIL",
+      "postalCode": "329586",
+      "latitude": 1.326146,
+      "longitude": 103.84961,
+      "services": [
+        "vet"
+      ],
+      "is24h": true,
+      "licenceNos": [],
+      "animalTypes": [],
+      "approvedActivity": null
+    },
+    {
+      "id": "046c26287058",
+      "name": "Canine Cities Pte Ltd",
+      "address": "35 Hongkong Street #02-01",
+      "postalCode": "059674",
+      "latitude": 1.287397,
+      "longitude": 103.84719,
+      "services": [
+        "boarding"
+      ],
+      "is24h": false,
+      "licenceNos": [
+        "BD25083"
+      ],
+      "animalTypes": [],
+      "approvedActivity": "Pet Boarding (Dogs)"
+    },
+    {
+      "id": "046dc509f416",
+      "name": "CATDERLAND PTE. LTD.",
+      "address": "430 UPPER CHANGI ROAD #01- 27 EAST VILLAGE",
+      "postalCode": "487048",
+      "latitude": 1.331776,
+      "longitude": 103.946201,
+      "services": [
+        "petshop"
+      ],
+      "is24h": false,
+      "licenceNos": [
+        "AS23L00048"
+      ],
+      "animalTypes": [
+        "C"
+      ],
+      "approvedActivity": null
+    },
+    {
+      "id": "04d66b90ef8a",
+      "name": "PUPPYLAND SG PTE. LTD.",
+      "address": "285 TANJONG KATONG ROAD LEVEL 1",
+      "postalCode": "437068",
+      "latitude": 1.306811,
+      "longitude": 103.89587,
+      "services": [
+        "petshop"
+      ],
+      "is24h": false,
+      "licenceNos": [
+        "AS24A00008"
+      ],
+      "animalTypes": [
+        "D"
+      ],
+      "approvedActivity": null
+    },
+    {
+      "id": "05a2905cbce2",
+      "name": "MIAU MIAU PTE. LTD.",
+      "address": "51 JALAN TUA KONG LEVEL 1 SOUTH UNION PARK",
+      "postalCode": "457250",
+      "latitude": 1.315735,
+      "longitude": 103.925482,
+      "services": [
+        "petshop"
+      ],
+      "is24h": false,
+      "licenceNos": [
+        "AS25D00019"
+      ],
+      "animalTypes": [
+        "C"
+      ],
+      "approvedActivity": null
+    },
+    {
+      "id": "061e040e8f51",
+      "name": "THE GENTLE VET",
+      "address": "291 TANJONG KATONG ROAD NIL",
+      "postalCode": "437074",
+      "latitude": 1.306669,
+      "longitude": 103.895923,
+      "services": [
+        "vet"
+      ],
+      "is24h": false,
+      "licenceNos": [],
+      "animalTypes": [],
+      "approvedActivity": null
+    },
+    {
+      "id": "069ed24683eb",
+      "name": "SINGAPORE VETERINARY (SINGVET) ANIMAL CLINIC BEAUTY WORLD",
+      "address": "66 JALAN JURONG KECHIL JK BUILDING",
+      "postalCode": "598586",
+      "latitude": 1.340567,
+      "longitude": 103.773904,
+      "services": [
+        "vet"
+      ],
+      "is24h": false,
+      "licenceNos": [],
+      "animalTypes": [],
+      "approvedActivity": null
+    },
+    {
+      "id": "080a8aff8bdd",
+      "name": "DOGGIE DELIGHT PTE LTD",
+      "address": "28 GREENWOOD AVE",
+      "postalCode": "289227",
+      "latitude": 1.331702,
+      "longitude": 103.8066,
+      "services": [
+        "petshop"
+      ],
+      "is24h": false,
+      "licenceNos": [
+        "AS16A00005"
+      ],
+      "animalTypes": [
+        "D"
+      ],
+      "approvedActivity": null
+    },
+    {
+      "id": "09a83ed1ebce",
+      "name": "THE VISITING VETS CLINIC",
+      "address": "9 TAMAN SERASI #01-09 NIL",
+      "postalCode": "257720",
+      "latitude": 1.308472,
+      "longitude": 103.819136,
+      "services": [
+        "vet"
+      ],
+      "is24h": false,
+      "licenceNos": [],
+      "animalTypes": [],
+      "approvedActivity": null
+    },
+    {
+      "id": "0c7e6b32acc1",
+      "name": "XI MEOW PET PTE. LTD.",
+      "address": "80 CHANGI ROAD #02- 68 CENTROPOD @ CHANGI",
+      "postalCode": "419715",
+      "latitude": 1.316334,
+      "longitude": 103.900525,
+      "services": [
+        "petshop"
+      ],
+      "is24h": false,
+      "licenceNos": [
+        "AS22J00059"
+      ],
+      "animalTypes": [
+        "C"
+      ],
+      "approvedActivity": null
+    },
+    {
+      "id": "0ca2940582f6",
+      "name": "THE ANIMAL DOCTORS",
+      "address": "108 ANG MO KIO AVENUE 4 #01-96 KEBUN BARU HEIGHTS",
+      "postalCode": "560108",
+      "latitude": 1.370943,
+      "longitude": 103.837975,
+      "services": [
+        "vet"
+      ],
+      "is24h": false,
+      "licenceNos": [],
+      "animalTypes": [],
+      "approvedActivity": null
+    },
+    {
+      "id": "0d1d5727a37d",
+      "name": "TP ANIMAL CLINIC & WELLNESS CENTRE",
+      "address": "21 TAMPINES AVENUE 1 TEMASEK POLYTECHNIC",
+      "postalCode": "529757",
+      "latitude": 1.345292,
+      "longitude": 103.934225,
+      "services": [
+        "vet"
+      ],
+      "is24h": false,
+      "licenceNos": [],
+      "animalTypes": [],
+      "approvedActivity": null
+    },
+    {
+      "id": "0e91b6623895",
+      "name": "Two126 Pte Ltd",
+      "address": "804-806 Upper Bukit Timah Road",
+      "postalCode": "678142",
+      "latitude": 1.373152,
+      "longitude": 103.763185,
+      "services": [
+        "boarding"
+      ],
+      "is24h": false,
+      "licenceNos": [
+        "BD25039"
+      ],
+      "animalTypes": [],
+      "approvedActivity": "Pet Boarding (Dogs)"
+    },
+    {
+      "id": "0ed5da755579",
+      "name": "FRANKEL VETERINARY CENTRE",
+      "address": "101 FRANKEL AVENUE #01-na NIL",
+      "postalCode": "458224",
+      "latitude": 1.31465,
+      "longitude": 103.919415,
+      "services": [
+        "vet"
+      ],
+      "is24h": false,
+      "licenceNos": [],
+      "animalTypes": [],
+      "approvedActivity": null
+    },
+    {
+      "id": "0f2fd98d8914",
+      "name": "REHABVET CLINIC",
+      "address": "513 SERANGOON ROAD #01-01 NIL",
+      "postalCode": "218154",
+      "latitude": 1.314671,
+      "longitude": 103.857394,
+      "services": [
+        "vet"
+      ],
+      "is24h": false,
+      "licenceNos": [],
+      "animalTypes": [],
+      "approvedActivity": null
+    },
+    {
+      "id": "1000391c033c",
+      "name": "Kitnap Pte Ltd",
+      "address": "6A Kensington Park Road (2nd Storey)",
+      "postalCode": "557258",
+      "latitude": 1.364798,
+      "longitude": 103.86605,
+      "services": [
+        "boarding"
+      ],
+      "is24h": false,
+      "licenceNos": [
+        "BD25088"
+      ],
+      "animalTypes": [],
+      "approvedActivity": "Pet Boarding (Cats)"
+    },
+    {
+      "id": "10616a8d5310",
+      "name": "Mutts & Mittens Pte Ltd",
+      "address": "862 Upper Serangoon Road",
+      "postalCode": "534691",
+      "latitude": 1.358423,
+      "longitude": 103.883655,
+      "services": [
+        "boarding"
+      ],
+      "is24h": false,
+      "licenceNos": [
+        "BD25069"
+      ],
+      "animalTypes": [],
+      "approvedActivity": "Pet Boarding (Dogs)"
+    },
+    {
+      "id": "12001205c13a",
+      "name": "BRIGHTON VET CARE (SERANGOON GARDEN)",
+      "address": "74 SERANGOON GARDEN WAY SERANGOON GARDEN ESTATE",
+      "postalCode": "555970",
+      "latitude": 1.364229,
+      "longitude": 103.86523,
+      "services": [
+        "vet"
+      ],
+      "is24h": false,
+      "licenceNos": [],
+      "animalTypes": [],
+      "approvedActivity": null
+    },
+    {
+      "id": "12ed556cf983",
+      "name": "DESIGNER BENGAL SINGAPORE PTE. LTD.",
+      "address": "308 TELOK KURAU ROAD #01- 14 VIBES @ EAST COAST",
+      "postalCode": "423858",
+      "latitude": 1.309483,
+      "longitude": 103.91172,
+      "services": [
+        "petshop"
+      ],
+      "is24h": false,
+      "licenceNos": [
+        "AS25A00005"
+      ],
+      "animalTypes": [
+        "C"
+      ],
+      "approvedActivity": null
+    },
+    {
+      "id": "136df757f8f1",
+      "name": "Nekoya Pte Ltd",
+      "address": "59 Kampong Bahru Road #02-01",
+      "postalCode": "169367",
+      "latitude": 1.27657,
+      "longitude": 103.836014,
+      "services": [
+        "boarding"
+      ],
+      "is24h": false,
+      "licenceNos": [
+        "BD25077"
+      ],
+      "animalTypes": [],
+      "approvedActivity": "Pet Boarding (Cats)"
+    },
+    {
+      "id": "1398ce94d543",
+      "name": "Catpurra Cat Care",
+      "address": "767A Geylang Road #02",
+      "postalCode": "389664",
+      "latitude": 1.315114,
+      "longitude": 103.891167,
+      "services": [
+        "boarding"
+      ],
+      "is24h": false,
+      "licenceNos": [
+        "BD25072"
+      ],
+      "animalTypes": [],
+      "approvedActivity": "Pet Boarding (Cats)"
+    },
+    {
+      "id": "13b45f78f3c0",
+      "name": "KIN VETERINARY CLINIC",
+      "address": "780 UPPER BUKIT TIMAH ROAD NIL",
+      "postalCode": "678125",
+      "latitude": 1.372582,
+      "longitude": 103.763312,
+      "services": [
+        "vet"
+      ],
+      "is24h": false,
+      "licenceNos": [],
+      "animalTypes": [],
+      "approvedActivity": null
+    },
+    {
+      "id": "144ad9717fb4",
+      "name": "WAG A TAIL PTE. LTD.",
+      "address": "241 JOO CHIAT ROAD LEVEL 1",
+      "postalCode": "427498",
+      "latitude": 1.310926,
+      "longitude": 103.901476,
+      "services": [
+        "petshop"
+      ],
+      "is24h": false,
+      "licenceNos": [
+        "AS20J00033"
+      ],
+      "animalTypes": [
+        "D"
+      ],
+      "approvedActivity": null
+    },
+    {
+      "id": "166bf472bcb0",
+      "name": "Canine Solutions Pte Ltd",
+      "address": "118 Tembeling Road",
+      "postalCode": "423617",
+      "latitude": 1.311191,
+      "longitude": 103.902165,
+      "services": [
+        "boarding"
+      ],
+      "is24h": false,
+      "licenceNos": [
+        "BD25066"
+      ],
+      "animalTypes": [],
+      "approvedActivity": "Pet Boarding (Dogs)"
+    },
+    {
+      "id": "18faef32210b",
+      "name": "Tiny Paw LLP",
+      "address": "647 Geylang Road, Level 2",
+      "postalCode": "389577",
+      "latitude": 1.314475,
+      "longitude": 103.888109,
+      "services": [
+        "boarding"
+      ],
+      "is24h": false,
+      "licenceNos": [
+        "BD25028"
+      ],
+      "animalTypes": [],
+      "approvedActivity": "Pet Boarding (Cats)"
+    },
+    {
+      "id": "196541058ebe",
+      "name": "AAVC - ANIMAL & AVIAN VETERINARY CLINIC",
+      "address": "716 YISHUN STREET 71 #01-254 AAVC-ANIMAL & AVIAN VETERINARY CLINIC",
+      "postalCode": "760716",
+      "latitude": 1.426211,
+      "longitude": 103.827704,
+      "services": [
+        "vet"
+      ],
+      "is24h": false,
+      "licenceNos": [],
+      "animalTypes": [],
+      "approvedActivity": null
+    },
+    {
+      "id": "1a541e1cfaf9",
+      "name": "Nekoya Pte Ltd",
+      "address": "247A Jalan Kayu (Level 2)",
+      "postalCode": "799471",
+      "latitude": 1.396473,
+      "longitude": 103.872853,
+      "services": [
+        "boarding"
+      ],
+      "is24h": false,
+      "licenceNos": [
+        "BD25079"
+      ],
+      "animalTypes": [],
+      "approvedActivity": "Pet Boarding (Cats)"
+    },
+    {
+      "id": "1c3f9e8a5528",
+      "name": "Mutts & Mittens",
+      "address": "463 Joo Chiat Road 1st Storey",
+      "postalCode": "427675",
+      "latitude": 1.306772,
+      "longitude": 103.904631,
+      "services": [
+        "boarding"
+      ],
+      "is24h": false,
+      "licenceNos": [
+        "BD25011"
+      ],
+      "animalTypes": [],
+      "approvedActivity": "Pet Boarding (Dogs)"
+    },
+    {
+      "id": "1c82f489559f",
+      "name": "FURRYTAILS VETERINARY CLINIC PTE LTD",
+      "address": "2 JALAN LOKAM KENSINGTON SQUARE",
+      "postalCode": "537846",
+      "latitude": 1.345607,
+      "longitude": 103.882695,
+      "services": [
+        "vet"
+      ],
+      "is24h": false,
+      "licenceNos": [],
+      "animalTypes": [],
+      "approvedActivity": null
+    },
+    {
+      "id": "1e21b2dc77ac",
+      "name": "School of Pet Grooming",
+      "address": "59 Sungei Tengah Road Block W #01-54",
+      "postalCode": "699014",
+      "latitude": 1.381384,
+      "longitude": 103.725553,
+      "services": [
+        "boarding"
+      ],
+      "is24h": false,
+      "licenceNos": [
+        "BD25037"
+      ],
+      "animalTypes": [],
+      "approvedActivity": "Pet Boarding (Cats & Dogs)"
+    },
+    {
+      "id": "200cd1fa4bb4",
+      "name": "THE CATS COLLECTIVE PTE. LTD.",
+      "address": "183 JALAN PELIKAT #01- 104 THE PROMENADE@PELIKAT",
+      "postalCode": "537643",
+      "latitude": 1.355309,
+      "longitude": 103.887857,
+      "services": [
+        "petshop"
+      ],
+      "is24h": false,
+      "licenceNos": [
+        "AS25D00018"
+      ],
+      "animalTypes": [
+        "C"
+      ],
+      "approvedActivity": null
+    },
+    {
+      "id": "201c891b81d8",
+      "name": "CLOVER VET",
+      "address": "678 HOUGANG AVENUE 8 #01-503 NIL",
+      "postalCode": "530678",
+      "latitude": 1.370881,
+      "longitude": 103.884051,
+      "services": [
+        "vet"
+      ],
+      "is24h": false,
+      "licenceNos": [],
+      "animalTypes": [],
+      "approvedActivity": null
+    },
+    {
+      "id": "20ecd3d5adf3",
+      "name": "PICK A PET PTE. LTD.",
+      "address": "23 SERANGOON CENTRAL #04- 71 NEX MALL",
+      "postalCode": "556083",
+      "latitude": 1.350676,
+      "longitude": 103.871862,
+      "services": [
+        "petshop"
+      ],
+      "is24h": false,
+      "licenceNos": [
+        "AS11M00003"
+      ],
+      "animalTypes": [
+        "D"
+      ],
+      "approvedActivity": null
+    },
+    {
+      "id": "2159cb15805e",
+      "name": "HAPPYPAWS",
+      "address": "93 KOVAN ROAD #01- 01 VIBES @ KOVAN",
+      "postalCode": "548178",
+      "latitude": 1.354825,
+      "longitude": 103.877603,
+      "services": [
+        "petshop"
+      ],
+      "is24h": false,
+      "licenceNos": [
+        "AS21M00004"
+      ],
+      "animalTypes": [
+        "D"
+      ],
+      "approvedActivity": null
+    },
+    {
+      "id": "217290fb7111",
+      "name": "MOUNT PLEASANT VETERINARY CENTRE (2008)",
+      "address": "2 JALAN GELENGGANG SEMBAWANG HILLS ESTATE",
+      "postalCode": "578187",
+      "latitude": 1.373012,
+      "longitude": 103.829862,
+      "services": [
+        "vet"
+      ],
+      "is24h": false,
+      "licenceNos": [],
+      "animalTypes": [],
+      "approvedActivity": null
+    },
+    {
+      "id": "21731cebe362",
+      "name": "FUR FOLKS HOME",
+      "address": "1212 UPPER THOMSON ROAD NIL",
+      "postalCode": "787127",
+      "latitude": 1.400229,
+      "longitude": 103.817794,
+      "services": [
+        "vet"
+      ],
+      "is24h": false,
+      "licenceNos": [],
+      "animalTypes": [],
+      "approvedActivity": null
+    },
+    {
+      "id": "22862eec9666",
+      "name": "HOUSE OF MAINE",
+      "address": "183 JALAN PELIKAT #01- 82 THE PROMENADE@PELIKAT",
+      "postalCode": "537643",
+      "latitude": 1.355309,
+      "longitude": 103.887857,
+      "services": [
+        "petshop"
+      ],
+      "is24h": false,
+      "licenceNos": [
+        "AS25L00058"
+      ],
+      "animalTypes": [
+        "C"
+      ],
+      "approvedActivity": null
+    },
+    {
+      "id": "234e01acca20",
+      "name": "LIGHT OF LIFE VETERINARY CLINIC AND SERVICES LLP",
+      "address": "703 703, Bedok Reservoir road, #01-3 #01-3508 Select or enter",
+      "postalCode": "470703",
+      "latitude": 1.337165,
+      "longitude": 103.919893,
+      "services": [
+        "vet"
+      ],
+      "is24h": false,
+      "licenceNos": [],
+      "animalTypes": [],
+      "approvedActivity": null
+    },
+    {
+      "id": "24279526434a",
+      "name": "WAGGING WONDERS",
+      "address": "162 BUKIT MERAH CENTRAL #02- 3535",
+      "postalCode": "150162",
+      "latitude": 1.283837,
+      "longitude": 103.817466,
+      "services": [
+        "petshop"
+      ],
+      "is24h": false,
+      "licenceNos": [
+        "AS24J00047"
+      ],
+      "animalTypes": [
+        "D"
+      ],
+      "approvedActivity": null
+    },
+    {
+      "id": "2448ad18d3ee",
+      "name": "AMBER VETERINARY PRACTICE PTE LTD",
+      "address": "50 BURNFOOT TERRACE AMBER VETERINARY PRACTICE",
+      "postalCode": "459837",
+      "latitude": 1.312663,
+      "longitude": 103.922764,
+      "services": [
+        "vet"
+      ],
+      "is24h": false,
+      "licenceNos": [],
+      "animalTypes": [],
+      "approvedActivity": null
+    },
+    {
+      "id": "24ae2459f68b",
+      "name": "SGCATHOUSE INTERNATIONAL PTE. LTD.",
+      "address": "729 GEYLANG ROAD #01- 01",
+      "postalCode": "389640",
+      "latitude": 1.314933,
+      "longitude": 103.890266,
+      "services": [
+        "petshop"
+      ],
+      "is24h": false,
+      "licenceNos": [
+        "AS23L00056"
+      ],
+      "animalTypes": [
+        "D",
+        "C"
+      ],
+      "approvedActivity": null
+    },
+    {
+      "id": "267d3ce35902",
+      "name": "VETS FOR LIFE ANIMAL CLINIC",
+      "address": "27A LORONG LIPUT HOLLAND VILLAGE",
+      "postalCode": "277738",
+      "latitude": 1.310435,
+      "longitude": 103.794786,
+      "services": [
+        "vet"
+      ],
+      "is24h": false,
+      "licenceNos": [],
+      "animalTypes": [],
+      "approvedActivity": null
+    },
+    {
+      "id": "275be3ea3a80",
+      "name": "PUPPY KINGDOM PTE. LTD.",
+      "address": "3 JALAN ANAK BUKIT #01- 01 SHERWOOD TOWERS",
+      "postalCode": "588998",
+      "latitude": 1.338632,
+      "longitude": 103.778585,
+      "services": [
+        "petshop"
+      ],
+      "is24h": false,
+      "licenceNos": [
+        "AS23D00022"
+      ],
+      "animalTypes": [
+        "D"
+      ],
+      "approvedActivity": null
+    },
+    {
+      "id": "280c3ee6ff96",
+      "name": "EDMOND TAN VETERINARY SURGERY",
+      "address": "151 Serangoon North Avenue 2 #01-65 NIL",
+      "postalCode": "550151",
+      "latitude": 1.369422,
+      "longitude": 103.874351,
+      "services": [
+        "vet"
+      ],
+      "is24h": false,
+      "licenceNos": [],
+      "animalTypes": [],
+      "approvedActivity": null
+    },
+    {
+      "id": "295866eeeccb",
+      "name": "VES HOSPITAL",
+      "address": "232 WHITLEY ROAD MOUNT PLEASANT ANIMAL HOSPITAL",
+      "postalCode": "297824",
+      "latitude": 1.325607,
+      "longitude": 103.827091,
+      "services": [
+        "vet"
+      ],
+      "is24h": true,
+      "licenceNos": [],
+      "animalTypes": [],
+      "approvedActivity": null
+    },
+    {
+      "id": "29752a2378ce",
+      "name": "Puppy Colours Academy Pte Ltd",
+      "address": "182 Bukit Timah Road 2nd Storey",
+      "postalCode": "229853",
+      "latitude": 1.311615,
+      "longitude": 103.842531,
+      "services": [
+        "boarding"
+      ],
+      "is24h": false,
+      "licenceNos": [
+        "BD25038"
+      ],
+      "animalTypes": [],
+      "approvedActivity": "Pet Boarding (Dogs)"
+    },
+    {
+      "id": "2d18c8e246aa",
+      "name": "SUPERCOON",
+      "address": "3 SOUTH BUONA VISTA ROAD #B1- 63 VIVA VISTA",
+      "postalCode": "118136",
+      "latitude": 1.279803,
+      "longitude": 103.78591,
+      "services": [
+        "petshop"
+      ],
+      "is24h": false,
+      "licenceNos": [
+        "AS22L00067"
+      ],
+      "animalTypes": [
+        "C"
+      ],
+      "approvedActivity": null
+    },
+    {
+      "id": "2d24144f7bb1",
+      "name": "COTTON PUPS PRIVATE LIMITED",
+      "address": "114 ANG MO KIO AVENUE 4 #01- 367 KEBUN BARU HEIGHTS",
+      "postalCode": "560114",
+      "latitude": 1.37258,
+      "longitude": 103.836221,
+      "services": [
+        "petshop"
+      ],
+      "is24h": false,
+      "licenceNos": [
+        "AS21H00041"
+      ],
+      "animalTypes": [
+        "D"
+      ],
+      "approvedActivity": null
+    },
+    {
+      "id": "2f3eed9d798f",
+      "name": "BARKBUZZ PUPPY'S BOUTIQUE PTE. LTD.",
+      "address": "324B CHANGI ROAD LEVEL 1",
+      "postalCode": "419799",
+      "latitude": 1.317869,
+      "longitude": 103.907753,
+      "services": [
+        "petshop"
+      ],
+      "is24h": false,
+      "licenceNos": [
+        "AS22H00054"
+      ],
+      "animalTypes": [
+        "D"
+      ],
+      "approvedActivity": null
+    },
+    {
+      "id": "320f39ea30a6",
+      "name": "Woodgrove Pet Boarding & Supplies Pte Ltd",
+      "address": "30 Woodlands Avenue 1 #02-06/07",
+      "postalCode": "739065",
+      "latitude": 1.428988,
+      "longitude": 103.780917,
+      "services": [
+        "boarding"
+      ],
+      "is24h": false,
+      "licenceNos": [
+        "BD25071"
+      ],
+      "animalTypes": [],
+      "approvedActivity": "Pet Boarding (Cats)"
+    },
+    {
+      "id": "32aeb71f967c",
+      "name": "VETS FOR LIFE ANIMAL CLINIC PTE LTD",
+      "address": "491 RIVER VALLEY ROAD #01-05 NIL",
+      "postalCode": "248371",
+      "latitude": 1.293036,
+      "longitude": 103.827069,
+      "services": [
+        "vet"
+      ],
+      "is24h": false,
+      "licenceNos": [],
+      "animalTypes": [],
+      "approvedActivity": null
+    },
+    {
+      "id": "33305c8a03cb",
+      "name": "Shangri-Paw Pte Ltd",
+      "address": "587 Geylang Road #02-02 (2nd storey with attic)",
+      "postalCode": "389526",
+      "latitude": 1.314099,
+      "longitude": 103.886382,
+      "services": [
+        "boarding"
+      ],
+      "is24h": false,
+      "licenceNos": [
+        "BD25040"
+      ],
+      "animalTypes": [],
+      "approvedActivity": "Pet Boarding (Cats)"
+    },
+    {
+      "id": "337d7eb7e399",
+      "name": "MOFU HOUSE",
+      "address": "12 JALAN SELASEH LEVEL 1 SELETAR HILLS ESTATE",
+      "postalCode": "808438",
+      "latitude": 1.385992,
+      "longitude": 103.873189,
+      "services": [
+        "petshop"
+      ],
+      "is24h": false,
+      "licenceNos": [
+        "AS22M00002"
+      ],
+      "animalTypes": [
+        "D"
+      ],
+      "approvedActivity": null
+    },
+    {
+      "id": "344996929e33",
+      "name": "Mutts & Mittens Pte Ltd",
+      "address": "59 Sungei Tengah Road Block A #01-01, #01-02, Block B #01-03, #01-0",
+      "postalCode": "469901",
+      "latitude": 1.320767,
+      "longitude": 103.953958,
+      "services": [
+        "boarding"
+      ],
+      "is24h": false,
+      "licenceNos": [
+        "BD25054"
+      ],
+      "animalTypes": [],
+      "approvedActivity": "Pet Boarding (Dogs)"
+    },
+    {
+      "id": "366c5dd852f0",
+      "name": "FURIENDS VETERINARY CLINIC",
+      "address": "58 YIO CHU KANG ROAD NIL",
+      "postalCode": "545564",
+      "latitude": 1.357299,
+      "longitude": 103.875692,
+      "services": [
+        "vet"
+      ],
+      "is24h": false,
+      "licenceNos": [],
+      "animalTypes": [],
+      "approvedActivity": null
+    },
+    {
+      "id": "36ba1a3d440d",
+      "name": "POOCH'S IMAGE",
+      "address": "119 UPPER EAST COAST ROAD #01- 1",
+      "postalCode": "455244",
+      "latitude": 1.313617,
+      "longitude": 103.929359,
+      "services": [
+        "petshop"
+      ],
+      "is24h": false,
+      "licenceNos": [
+        "AS14G00013"
+      ],
+      "animalTypes": [
+        "D"
+      ],
+      "approvedActivity": null
+    },
+    {
+      "id": "3711f23b5b3e",
+      "name": "LILO CATTERY PTE. LTD.",
+      "address": "218 PASIR PANJANG ROAD #02- 13 ICON @ PASIR PANJANG",
+      "postalCode": "118579",
+      "latitude": 1.279487,
+      "longitude": 103.785756,
+      "services": [
+        "petshop"
+      ],
+      "is24h": false,
+      "licenceNos": [
+        "AS25L00060"
+      ],
+      "animalTypes": [
+        "C"
+      ],
+      "approvedActivity": null
+    },
+    {
+      "id": "3ac8a75fc0b4",
+      "name": "PET SPACE (SINGAPORE) PTE LTD",
+      "address": "482 SERANGOON ROAD #01-01 NIL",
+      "postalCode": "218149",
+      "latitude": 1.313747,
+      "longitude": 103.857217,
+      "services": [
+        "vet"
+      ],
+      "is24h": false,
+      "licenceNos": [],
+      "animalTypes": [],
+      "approvedActivity": null
+    },
+    {
+      "id": "3ad0a812097c",
+      "name": "BREAKFAST AT FLUFFY'S PTE. LTD.",
+      "address": "318 Joo Chiat Road (Level 1)",
+      "postalCode": "427569",
+      "latitude": 1.309301,
+      "longitude": 103.902238,
+      "services": [
+        "boarding"
+      ],
+      "is24h": false,
+      "licenceNos": [
+        "BD25003"
+      ],
+      "animalTypes": [],
+      "approvedActivity": "Pet Boarding (Dogs)"
+    },
+    {
+      "id": "3c93e9850ca7",
+      "name": "THE VET WARD",
+      "address": "112 LAVENDER STREET #01-01 CHANG HUA BUILDING",
+      "postalCode": "338728",
+      "latitude": 1.311257,
+      "longitude": 103.862765,
+      "services": [
+        "vet"
+      ],
+      "is24h": false,
+      "licenceNos": [],
+      "animalTypes": [],
+      "approvedActivity": null
+    },
+    {
+      "id": "3ca6321129e9",
+      "name": "SORA VET",
+      "address": "37 CHAI CHEE AVENUE #01-291 ANSAR GARDEN",
+      "postalCode": "461037",
+      "latitude": 1.325442,
+      "longitude": 103.926208,
+      "services": [
+        "vet"
+      ],
+      "is24h": false,
+      "licenceNos": [],
+      "animalTypes": [],
+      "approvedActivity": null
+    },
+    {
+      "id": "3cb2e55421d4",
+      "name": "ANIMAL WELLNESS REFERRAL CENTRE PTE LTD",
+      "address": "200 BUKIT TIMAH ROAD #01-01 ATLAND HOUSE",
+      "postalCode": "229862",
+      "latitude": 1.311843,
+      "longitude": 103.842073,
+      "services": [
+        "vet"
+      ],
+      "is24h": false,
+      "licenceNos": [],
+      "animalTypes": [],
+      "approvedActivity": null
+    },
+    {
+      "id": "3e570820731c",
+      "name": "HELLO HUMAN MOSHIKOMU PTE. LTD.",
+      "address": "169 STILL ROAD MEZZANINE STOREY BOON COURT",
+      "postalCode": "423999",
+      "latitude": 1.315765,
+      "longitude": 103.905391,
+      "services": [
+        "petshop"
+      ],
+      "is24h": false,
+      "licenceNos": [
+        "AS25A00010"
+      ],
+      "animalTypes": [
+        "D"
+      ],
+      "approvedActivity": null
+    },
+    {
+      "id": "4015d8d24778",
+      "name": "Meow & Wuff Pet Care Services",
+      "address": "59 Sungei Tengah Road Block E #01-10",
+      "postalCode": "699014",
+      "latitude": 1.381384,
+      "longitude": 103.725553,
+      "services": [
+        "boarding"
+      ],
+      "is24h": false,
+      "licenceNos": [
+        "BD25046"
+      ],
+      "animalTypes": [],
+      "approvedActivity": "Pet Boarding (Cats)"
+    },
+    {
+      "id": "40204d694fe1",
+      "name": "OMO OMO PET SHOP (PRIVATE LIMITED)",
+      "address": "259 UPPER THOMSON ROAD #01- 259 SOO CHOW GARDEN",
+      "postalCode": "574386",
+      "latitude": 1.353492,
+      "longitude": 103.833499,
+      "services": [
+        "petshop"
+      ],
+      "is24h": false,
+      "licenceNos": [
+        "AS22B00015"
+      ],
+      "animalTypes": [
+        "D"
+      ],
+      "approvedActivity": null
+    },
+    {
+      "id": "412c085a290e",
+      "name": "DIAMOND WINGS HOLDING PTE. LTD.",
+      "address": "741A GEYLANG ROAD LEVEL 2",
+      "postalCode": "389651",
+      "latitude": 1.314994,
+      "longitude": 103.890546,
+      "services": [
+        "petshop",
+        "boarding"
+      ],
+      "is24h": false,
+      "licenceNos": [
+        "AS25C00015",
+        "BD25035"
+      ],
+      "animalTypes": [
+        "D"
+      ],
+      "approvedActivity": "Pet Boarding (Dogs)"
+    },
+    {
+      "id": "416100d11024",
+      "name": "AMBER CAT VET PTE LTD",
+      "address": "48 BURNFOOT TERRACE FRANKEL ESTATE",
+      "postalCode": "459836",
+      "latitude": 1.312644,
+      "longitude": 103.92269,
+      "services": [
+        "vet"
+      ],
+      "is24h": false,
+      "licenceNos": [],
+      "animalTypes": [],
+      "approvedActivity": null
+    },
+    {
+      "id": "41755846984c",
+      "name": "GENTLE OAK VETERINARY CLINIC",
+      "address": "21 GHIM MOH ROAD #01-225 NIL",
+      "postalCode": "270021",
+      "latitude": 1.310103,
+      "longitude": 103.788546,
+      "services": [
+        "vet"
+      ],
+      "is24h": false,
+      "licenceNos": [],
+      "animalTypes": [],
+      "approvedActivity": null
+    },
+    {
+      "id": "41d4f882fa4a",
+      "name": "PETS AVENUE VETERINARY CLINIC AND REFERRALS",
+      "address": "328 CHANGI ROAD #01-01 TEDGE",
+      "postalCode": "419803",
+      "latitude": 1.318067,
+      "longitude": 103.908811,
+      "services": [
+        "vet"
+      ],
+      "is24h": false,
+      "licenceNos": [],
+      "animalTypes": [],
+      "approvedActivity": null
+    },
+    {
+      "id": "42629e792914",
+      "name": "Cozy Cats Lodge Pte Ltd",
+      "address": "21 Kreta Ayer Road",
+      "postalCode": "088991",
+      "latitude": 1.280434,
+      "longitude": 103.842274,
+      "services": [
+        "boarding"
+      ],
+      "is24h": false,
+      "licenceNos": [
+        "BD26004"
+      ],
+      "animalTypes": [],
+      "approvedActivity": "Pet Boarding (Cats)"
+    },
+    {
+      "id": "43d339cac4a0",
+      "name": "THE ANIMAL CLINIC",
+      "address": "109 Clementi Street 11 #01-19 NIL",
+      "postalCode": "120109",
+      "latitude": 1.321891,
+      "longitude": 103.770595,
+      "services": [
+        "vet"
+      ],
+      "is24h": false,
+      "licenceNos": [],
+      "animalTypes": [],
+      "approvedActivity": null
+    },
+    {
+      "id": "454fd1c49279",
+      "name": "FELINE & PETS INC PTE. LTD.",
+      "address": "3 SOUTH BUONA VISTA ROAD #B1- 27 VIVA VISTA",
+      "postalCode": "118136",
+      "latitude": 1.279803,
+      "longitude": 103.78591,
+      "services": [
+        "petshop"
+      ],
+      "is24h": false,
+      "licenceNos": [
+        "AS24B00017"
+      ],
+      "animalTypes": [
+        "C"
+      ],
+      "approvedActivity": null
+    },
+    {
+      "id": "464e1027d07d",
+      "name": "MOUNT PLEASANT ANIMAL MEDICAL CENTRE (BEDOK)",
+      "address": "158 BEDOK SOUTH AVENUE 3 #01-577 NIL",
+      "postalCode": "460158",
+      "latitude": 1.31867,
+      "longitude": 103.945106,
+      "services": [
+        "vet"
+      ],
+      "is24h": false,
+      "licenceNos": [],
+      "animalTypes": [],
+      "approvedActivity": null
+    },
+    {
+      "id": "4711be2c8d91",
+      "name": "MOUNT PLEASANT ANIMAL MEDICAL CENTRE (CLEMENTI)",
+      "address": "105 CLEMENTI STREET 12 #01-18 SUNSET WAY RESIDENCE",
+      "postalCode": "120105",
+      "latitude": 1.322712,
+      "longitude": 103.769888,
+      "services": [
+        "vet"
+      ],
+      "is24h": false,
+      "licenceNos": [],
+      "animalTypes": [],
+      "approvedActivity": null
+    },
+    {
+      "id": "47195ef95b6b",
+      "name": "XI MEOW PET PTE. LTD.",
+      "address": "277 JOO CHIAT ROAD #02- 01",
+      "postalCode": "427531",
+      "latitude": 1.310226,
+      "longitude": 103.902023,
+      "services": [
+        "petshop"
+      ],
+      "is24h": false,
+      "licenceNos": [
+        "AS25L00061"
+      ],
+      "animalTypes": [
+        "C"
+      ],
+      "approvedActivity": null
+    },
+    {
+      "id": "4754e86b161b",
+      "name": "Catopia Pte Ltd",
+      "address": "46 Dunlop Street #02-00",
+      "postalCode": "209375",
+      "latitude": 1.304984,
+      "longitude": 103.853769,
+      "services": [
+        "boarding"
+      ],
+      "is24h": false,
+      "licenceNos": [
+        "BD25010"
+      ],
+      "animalTypes": [],
+      "approvedActivity": "Pet Boarding (Cats)"
+    },
+    {
+      "id": "47d68259e069",
+      "name": "PROPET",
+      "address": "21 KALIDASA AVENUE LEVEL 1 TEACHER'S HOUSING ESTATE",
+      "postalCode": "789400",
+      "latitude": 1.381446,
+      "longitude": 103.829658,
+      "services": [
+        "petshop"
+      ],
+      "is24h": false,
+      "licenceNos": [
+        "AS20L00062"
+      ],
+      "animalTypes": [
+        "D"
+      ],
+      "approvedActivity": null
+    },
+    {
+      "id": "490ac2e7af98",
+      "name": "Pet Pads Pte. Ltd.",
+      "address": "6 Ruby Lane",
+      "postalCode": "328281",
+      "latitude": 1.327501,
+      "longitude": 103.866822,
+      "services": [
+        "boarding"
+      ],
+      "is24h": false,
+      "licenceNos": [
+        "BD26001"
+      ],
+      "animalTypes": [],
+      "approvedActivity": "Pet Boarding (Dogs)"
+    },
+    {
+      "id": "4963582b558f",
+      "name": "FURGIVE YOU PTE. LTD.",
+      "address": "278 EAST COAST ROAD LEVEL 1",
+      "postalCode": "428944",
+      "latitude": 1.3081,
+      "longitude": 103.909006,
+      "services": [
+        "petshop"
+      ],
+      "is24h": false,
+      "licenceNos": [
+        "AS24C00019"
+      ],
+      "animalTypes": [
+        "D"
+      ],
+      "approvedActivity": null
+    },
+    {
+      "id": "497e9ffbf113",
+      "name": "ADVANCED VETCARE",
+      "address": "26 JALAN PARI BURONG PICARDY GARDEN",
+      "postalCode": "488692",
+      "latitude": 1.333773,
+      "longitude": 103.948696,
+      "services": [
+        "vet"
+      ],
+      "is24h": true,
+      "licenceNos": [],
+      "animalTypes": [],
+      "approvedActivity": null
+    },
+    {
+      "id": "49b059acd429",
+      "name": "THE PET PHYSICIAN",
+      "address": "2 JALAN PARI BURONG PICARDY GARDENS",
+      "postalCode": "488668",
+      "latitude": 1.333431,
+      "longitude": 103.947926,
+      "services": [
+        "vet"
+      ],
+      "is24h": false,
+      "licenceNos": [],
+      "animalTypes": [],
+      "approvedActivity": null
+    },
+    {
+      "id": "4b82dca69b79",
+      "name": "PETS AVENUE VETERINARY CLINIC (UPPER THOMSON)",
+      "address": "193 UPPER THOMSON ROAD YEW LIAN PARK",
+      "postalCode": "574338",
+      "latitude": 1.351668,
+      "longitude": 103.835244,
+      "services": [
+        "vet"
+      ],
+      "is24h": false,
+      "licenceNos": [],
+      "animalTypes": [],
+      "approvedActivity": null
+    },
+    {
+      "id": "4b9a7a84dae6",
+      "name": "THE EYE SPECIALIST FOR ANIMALS",
+      "address": "299 TANJONG KATONG ROAD NIL",
+      "postalCode": "437082",
+      "latitude": 1.306435,
+      "longitude": 103.896023,
+      "services": [
+        "vet"
+      ],
+      "is24h": false,
+      "licenceNos": [],
+      "animalTypes": [],
+      "approvedActivity": null
+    },
+    {
+      "id": "4bc053fabdcc",
+      "name": "DIAMOND WINGS HOLDING PTE. LTD.",
+      "address": "151 SERANGOON NORTH AVENUE 2 #01- 71",
+      "postalCode": "550151",
+      "latitude": 1.369422,
+      "longitude": 103.874351,
+      "services": [
+        "petshop"
+      ],
+      "is24h": false,
+      "licenceNos": [
+        "AS25M00004"
+      ],
+      "animalTypes": [
+        "D"
+      ],
+      "approvedActivity": null
+    },
+    {
+      "id": "4c07c1d9e227",
+      "name": "COLLABSPACE PTE. LTD.",
+      "address": "799 NORTH BRIDGE ROAD LEVEL 1",
+      "postalCode": "198767",
+      "latitude": 1.304125,
+      "longitude": 103.860285,
+      "services": [
+        "petshop"
+      ],
+      "is24h": false,
+      "licenceNos": [
+        "AS20A00013"
+      ],
+      "animalTypes": [
+        "D"
+      ],
+      "approvedActivity": null
+    },
+    {
+      "id": "4c51f3daa3ff",
+      "name": "PASSION VETERINARY CLINIC PTE LTD",
+      "address": "111 WOODLANDS STREET 13 #01-86 NIL",
+      "postalCode": "730111",
+      "latitude": 1.437944,
+      "longitude": 103.782059,
+      "services": [
+        "vet"
+      ],
+      "is24h": false,
+      "licenceNos": [],
+      "animalTypes": [],
+      "approvedActivity": null
+    },
+    {
+      "id": "4cc45bd92034",
+      "name": "PASSION VETERINARY CLINIC",
+      "address": "136 MARSILING ROAD #01-2180 NIL",
+      "postalCode": "730136",
+      "latitude": 1.438321,
+      "longitude": 103.777752,
+      "services": [
+        "vet"
+      ],
+      "is24h": false,
+      "licenceNos": [],
+      "animalTypes": [],
+      "approvedActivity": null
+    },
+    {
+      "id": "4dec36baba93",
+      "name": "THE ANIMAL CLINIC (KATONG BRANCH)",
+      "address": "55 LORONG L TELOK KURAU #01-63 BRIGHT CENTRE",
+      "postalCode": "425500",
+      "latitude": 1.311821,
+      "longitude": 103.910557,
+      "services": [
+        "vet"
+      ],
+      "is24h": false,
+      "licenceNos": [],
+      "animalTypes": [],
+      "approvedActivity": null
+    },
+    {
+      "id": "4e3d7dd9d3d5",
+      "name": "SPCA COMMUNITY ANIMAL CLINIC",
+      "address": "50 SUNGEI TENGAH ROAD #01-01 NIL",
+      "postalCode": "699012",
+      "latitude": 1.380572,
+      "longitude": 103.731961,
+      "services": [
+        "vet"
+      ],
+      "is24h": false,
+      "licenceNos": [],
+      "animalTypes": [],
+      "approvedActivity": null
+    },
+    {
+      "id": "4e7179f97bc3",
+      "name": "PET ME PLEASE SG PTE. LTD.",
+      "address": "509 BALESTIER ROAD LEVELS 1 AND 2",
+      "postalCode": "329848",
+      "latitude": 1.326366,
+      "longitude": 103.84682,
+      "services": [
+        "petshop"
+      ],
+      "is24h": false,
+      "licenceNos": [
+        "AS23F00028"
+      ],
+      "animalTypes": [
+        "D"
+      ],
+      "approvedActivity": null
+    },
+    {
+      "id": "4efb1dc82ba5",
+      "name": "Neko Malu Malu Pte. Ltd.",
+      "address": "59D Jalan Malu Malu, 1st Storey",
+      "postalCode": "769674",
+      "latitude": 1.443323,
+      "longitude": 103.825509,
+      "services": [
+        "boarding"
+      ],
+      "is24h": false,
+      "licenceNos": [
+        "BD25030"
+      ],
+      "animalTypes": [],
+      "approvedActivity": "Pet Boarding (Cats)"
+    },
+    {
+      "id": "4f28d6d28fb0",
+      "name": "Toutou Service Pte Ltd",
+      "address": "592D Balestier Road (1st Storey)",
+      "postalCode": "329902",
+      "latitude": 1.32682,
+      "longitude": 103.842523,
+      "services": [
+        "boarding"
+      ],
+      "is24h": false,
+      "licenceNos": [
+        "BD25104"
+      ],
+      "animalTypes": [],
+      "approvedActivity": "Pet Boarding (Dogs)"
+    },
+    {
+      "id": "50a25e1b0961",
+      "name": "PETS' STATION HOLDING PTE LTD",
+      "address": "16A MAJU AVENUE LEVEL 2",
+      "postalCode": "556692",
+      "latitude": 1.365034,
+      "longitude": 103.865774,
+      "services": [
+        "petshop"
+      ],
+      "is24h": false,
+      "licenceNos": [
+        "AS92M0588"
+      ],
+      "animalTypes": [
+        "D",
+        "C"
+      ],
+      "approvedActivity": null
+    },
+    {
+      "id": "53a3cc93b3e2",
+      "name": "THE RITZ-CATTON PTE. LTD.",
+      "address": "255B GEYLANG ROAD LEVEL 3",
+      "postalCode": "389312",
+      "latitude": 1.312473,
+      "longitude": 103.877335,
+      "services": [
+        "petshop",
+        "boarding"
+      ],
+      "is24h": false,
+      "licenceNos": [
+        "AS25K00053",
+        "BD25105"
+      ],
+      "animalTypes": [
+        "C"
+      ],
+      "approvedActivity": "Pet Boarding (Cats)"
+    },
+    {
+      "id": "54540c1d3e92",
+      "name": "PETS PHILOSOPHY PTE. LTD.",
+      "address": "932 YISHUN CENTRAL 1 #01- 91",
+      "postalCode": "760932",
+      "latitude": 1.426362,
+      "longitude": 103.83715,
+      "services": [
+        "petshop"
+      ],
+      "is24h": false,
+      "licenceNos": [
+        "AS24B00016"
+      ],
+      "animalTypes": [
+        "D"
+      ],
+      "approvedActivity": null
+    },
+    {
+      "id": "54e2a63782b1",
+      "name": "ISLAND VETERINARY CLINIC PTE LTD",
+      "address": "114 JURONG EAST STREET 13 #01-404 NIL",
+      "postalCode": "600114",
+      "latitude": 1.339214,
+      "longitude": 103.73461,
+      "services": [
+        "vet"
+      ],
+      "is24h": false,
+      "licenceNos": [],
+      "animalTypes": [],
+      "approvedActivity": null
+    },
+    {
+      "id": "54f5d04deaba",
+      "name": "ANIMAL WORLD VETERINARY CLINIC",
+      "address": "16 YIO CHU KANG ROAD NIL",
+      "postalCode": "545527",
+      "latitude": 1.354721,
+      "longitude": 103.877692,
+      "services": [
+        "vet"
+      ],
+      "is24h": false,
+      "licenceNos": [],
+      "animalTypes": [],
+      "approvedActivity": null
+    },
+    {
+      "id": "5536c1ce52ba",
+      "name": "ANIMAL MEDICAL CENTRE (VET@RV)",
+      "address": "78 INDUS ROAD #01-487 ANIMAL MEDICAL CENTRE (VET@RV)",
+      "postalCode": "161078",
+      "latitude": 1.291304,
+      "longitude": 103.827448,
+      "services": [
+        "vet"
+      ],
+      "is24h": false,
+      "licenceNos": [],
+      "animalTypes": [],
+      "approvedActivity": null
+    },
+    {
+      "id": "553b3fb75dec",
+      "name": "ALYSSADOLLS PET INTERNATIONAL PTE. LTD.",
+      "address": "170 EAST COAST ROAD LEVEL 1",
+      "postalCode": "428876",
+      "latitude": 1.306532,
+      "longitude": 103.906205,
+      "services": [
+        "petshop",
+        "boarding"
+      ],
+      "is24h": false,
+      "licenceNos": [
+        "AS23K00050",
+        "BD25041"
+      ],
+      "animalTypes": [
+        "C"
+      ],
+      "approvedActivity": "Pet Boarding (Cats)"
+    },
+    {
+      "id": "55c7c42107ed",
+      "name": "Chubbys Crib LLP",
+      "address": "479 Sims Avenue 1st Storey",
+      "postalCode": "387551",
+      "latitude": 1.316189,
+      "longitude": 103.88754,
+      "services": [
+        "boarding"
+      ],
+      "is24h": false,
+      "licenceNos": [
+        "BD25032"
+      ],
+      "animalTypes": [],
+      "approvedActivity": "Pet Boarding (Dogs)"
+    },
+    {
+      "id": "566f9be887aa",
+      "name": "WOOF LOOF PTE. LTD.",
+      "address": "148 JOO CHIAT ROAD #01- 01",
+      "postalCode": "427426",
+      "latitude": 1.313272,
+      "longitude": 103.899433,
+      "services": [
+        "petshop"
+      ],
+      "is24h": false,
+      "licenceNos": [
+        "AS24F00031"
+      ],
+      "animalTypes": [
+        "D"
+      ],
+      "approvedActivity": null
+    },
+    {
+      "id": "56ef83063b37",
+      "name": "ALL PAWS LOFT",
+      "address": "3 SOUTH BUONA VISTA ROAD #B1- 29 VIVA VISTA",
+      "postalCode": "118136",
+      "latitude": 1.279803,
+      "longitude": 103.78591,
+      "services": [
+        "petshop"
+      ],
+      "is24h": false,
+      "licenceNos": [
+        "AS25K00055"
+      ],
+      "animalTypes": [
+        "D"
+      ],
+      "approvedActivity": null
+    },
+    {
+      "id": "5741479bc0de",
+      "name": "MOON PETS PTE. LTD.",
+      "address": "193 UPPER PAYA LEBAR ROAD LEVEL 1",
+      "postalCode": "534872",
+      "latitude": 1.340234,
+      "longitude": 103.884915,
+      "services": [
+        "petshop"
+      ],
+      "is24h": false,
+      "licenceNos": [
+        "AS24A00010"
+      ],
+      "animalTypes": [
+        "D"
+      ],
+      "approvedActivity": null
+    },
+    {
+      "id": "5a36ffc96920",
+      "name": "VETS FOR PETS (LENGKOK BAHRU)",
+      "address": "57 LENGKOK BAHRU #01-475 NIL",
+      "postalCode": "151057",
+      "latitude": 1.288211,
+      "longitude": 103.814148,
+      "services": [
+        "vet"
+      ],
+      "is24h": false,
+      "licenceNos": [],
+      "animalTypes": [],
+      "approvedActivity": null
+    },
+    {
+      "id": "5cd099f8814a",
+      "name": "Fyfy's Love Pet Services",
+      "address": "90 Joo Chiat Road, #02-01",
+      "postalCode": "427384",
+      "latitude": 1.314318,
+      "longitude": 103.898712,
+      "services": [
+        "boarding"
+      ],
+      "is24h": false,
+      "licenceNos": [
+        "BD25059"
+      ],
+      "animalTypes": [],
+      "approvedActivity": "Pet Boarding (Dogs)"
+    },
+    {
+      "id": "5cd43a73fd57",
+      "name": "STARS VETERINARY CLINIC (HOUGANG VILLAGE)",
+      "address": "681 HOUGANG AVENUE 8 #01-841 NIL",
+      "postalCode": "530681",
+      "latitude": 1.373111,
+      "longitude": 103.885637,
+      "services": [
+        "vet"
+      ],
+      "is24h": false,
+      "licenceNos": [],
+      "animalTypes": [],
+      "approvedActivity": null
+    },
+    {
+      "id": "5d590336be29",
+      "name": "VETMEDIC ANIMAL CLINIC AND SURGERY",
+      "address": "52 JALAN MALU-MALU SEMBAWANG SPRINGS ESTATE",
+      "postalCode": "769667",
+      "latitude": 1.443516,
+      "longitude": 103.826114,
+      "services": [
+        "vet"
+      ],
+      "is24h": false,
+      "licenceNos": [],
+      "animalTypes": [],
+      "approvedActivity": null
+    },
+    {
+      "id": "5e27f5707e90",
+      "name": "Koyado Hounds Pte Ltd",
+      "address": "572A Serangoon Road (2nd Storey)",
+      "postalCode": "218187",
+      "latitude": 1.314631,
+      "longitude": 103.857906,
+      "services": [
+        "boarding"
+      ],
+      "is24h": false,
+      "licenceNos": [
+        "BD25089"
+      ],
+      "animalTypes": [],
+      "approvedActivity": "Pet Boarding (Dogs)"
+    },
+    {
+      "id": "5e960fed537d",
+      "name": "MONSTER PET VET",
+      "address": "6 EVERTON PARK #01-16 NIL",
+      "postalCode": "080006",
+      "latitude": 1.276674,
+      "longitude": 103.838789,
+      "services": [
+        "vet"
+      ],
+      "is24h": false,
+      "licenceNos": [],
+      "animalTypes": [],
+      "approvedActivity": null
+    },
+    {
+      "id": "608b79e116bd",
+      "name": "THE PAWSERY RETREAT LP",
+      "address": "212 TELOK KURAU ROAD #03- 216 BRIGHT CENTRE",
+      "postalCode": "423835",
+      "latitude": 1.312089,
+      "longitude": 103.910595,
+      "services": [
+        "petshop",
+        "boarding"
+      ],
+      "is24h": false,
+      "licenceNos": [
+        "AS25C00014",
+        "BD25043"
+      ],
+      "animalTypes": [
+        "D"
+      ],
+      "approvedActivity": "Pet Boarding (Dogs)"
+    },
+    {
+      "id": "60ea75c258c0",
+      "name": "PET OF MINE PRIVATE LIMITED",
+      "address": "2 RUBY LANE LEVEL 1",
+      "postalCode": "328277",
+      "latitude": 1.327615,
+      "longitude": 103.866861,
+      "services": [
+        "petshop"
+      ],
+      "is24h": false,
+      "licenceNos": [
+        "AS22D00028"
+      ],
+      "animalTypes": [
+        "D"
+      ],
+      "approvedActivity": null
+    },
+    {
+      "id": "61265ecbcdcc",
+      "name": "Mewtants & Woofs",
+      "address": "9 King Albert Park #01-37",
+      "postalCode": "598332",
+      "latitude": 1.336974,
+      "longitude": 103.779317,
+      "services": [
+        "boarding"
+      ],
+      "is24h": false,
+      "licenceNos": [
+        "BD25090"
+      ],
+      "animalTypes": [],
+      "approvedActivity": "Pet Boarding (Cats & Dogs)"
+    },
+    {
+      "id": "61f159d5d45e",
+      "name": "PAWFESSIONAL PTE. LTD.",
+      "address": "1026 SEMBAWANG ROAD LEVEL 1",
+      "postalCode": "758499",
+      "latitude": 1.45346,
+      "longitude": 103.832593,
+      "services": [
+        "petshop"
+      ],
+      "is24h": false,
+      "licenceNos": [
+        "AS17M00002"
+      ],
+      "animalTypes": [
+        "D"
+      ],
+      "approvedActivity": null
+    },
+    {
+      "id": "63fba4711019",
+      "name": "CLINIC FOR PETS",
+      "address": "1015 GEYLANG EAST AVENUE 3 #01-141 GEYLANG EAST INDUSTRIAL ESTATE",
+      "postalCode": "389730",
+      "latitude": 1.319415,
+      "longitude": 103.890765,
+      "services": [
+        "vet"
+      ],
+      "is24h": false,
+      "licenceNos": [],
+      "animalTypes": [],
+      "approvedActivity": null
+    },
+    {
+      "id": "68a40a2b0fc4",
+      "name": "LITTLE BLACK NOSE",
+      "address": "2 JALAN LOKAM #01- 42 KENSINGTON SQUARE",
+      "postalCode": "537846",
+      "latitude": 1.345607,
+      "longitude": 103.882695,
+      "services": [
+        "petshop"
+      ],
+      "is24h": false,
+      "licenceNos": [
+        "AS21H00035"
+      ],
+      "animalTypes": [
+        "D"
+      ],
+      "approvedActivity": null
+    },
+    {
+      "id": "695bb92c72f8",
+      "name": "PICK A PET PTE. LTD.",
+      "address": "1 HARBOURFRONT WALK #03- 03 VIVO CITY",
+      "postalCode": "098585",
+      "latitude": 1.264314,
+      "longitude": 103.822073,
+      "services": [
+        "petshop"
+      ],
+      "is24h": false,
+      "licenceNos": [
+        "AS18F00024"
+      ],
+      "animalTypes": [
+        "D"
+      ],
+      "approvedActivity": null
+    },
+    {
+      "id": "69cdfbf59a1c",
+      "name": "Inuhomes Pte Ltd",
+      "address": "480 MacPherson Road (1st Storey)",
+      "postalCode": "368193",
+      "latitude": 1.332034,
+      "longitude": 103.883063,
+      "services": [
+        "boarding"
+      ],
+      "is24h": false,
+      "licenceNos": [
+        "BD25087"
+      ],
+      "animalTypes": [],
+      "approvedActivity": "Pet Boarding (Dogs)"
+    },
+    {
+      "id": "6a9f2d27a118",
+      "name": "PAWS & CLAWS VETERINARY SURGERY",
+      "address": "6 SIN MING ROAD #01-04 SIN MING PLAZA",
+      "postalCode": "575585",
+      "latitude": 1.352864,
+      "longitude": 103.836407,
+      "services": [
+        "vet"
+      ],
+      "is24h": false,
+      "licenceNos": [],
+      "animalTypes": [],
+      "approvedActivity": null
+    },
+    {
+      "id": "6ae4b0599623",
+      "name": "PET ME PLEASE SG PTE. LTD.",
+      "address": "58 JOO CHIAT PLACE 1ST STOREY",
+      "postalCode": "427782",
+      "latitude": 1.31339,
+      "longitude": 103.901698,
+      "services": [
+        "petshop"
+      ],
+      "is24h": false,
+      "licenceNos": [
+        "AS26B00014"
+      ],
+      "animalTypes": [
+        "D"
+      ],
+      "approvedActivity": null
+    },
+    {
+      "id": "6bc31f77e2d9",
+      "name": "MOUNT PLEASANT VETERINARY CENTRE (EAST)",
+      "address": "152 EAST COAST ROAD NIL",
+      "postalCode": "428855",
+      "latitude": 1.306315,
+      "longitude": 103.905878,
+      "services": [
+        "vet"
+      ],
+      "is24h": false,
+      "licenceNos": [],
+      "animalTypes": [],
+      "approvedActivity": null
+    },
+    {
+      "id": "6dca6c574645",
+      "name": "ATLAS VETERINARY CLINIC & SURGERY",
+      "address": "163 BUKIT MERAH CENTRAL #3-3579 NIL",
+      "postalCode": "150163",
+      "latitude": 1.283703,
+      "longitude": 103.817052,
+      "services": [
+        "vet"
+      ],
+      "is24h": false,
+      "licenceNos": [],
+      "animalTypes": [],
+      "approvedActivity": null
+    },
+    {
+      "id": "6e5befbda2e8",
+      "name": "MOUNT PLEASANT ANIMAL MEDICAL CENTRE (FARRER)",
+      "address": "3 QUEEN'S ROAD #02-141 FARRER GARDENS",
+      "postalCode": "260003",
+      "latitude": 1.318333,
+      "longitude": 103.808097,
+      "services": [
+        "vet"
+      ],
+      "is24h": false,
+      "licenceNos": [],
+      "animalTypes": [],
+      "approvedActivity": null
+    },
+    {
+      "id": "6fb49893d047",
+      "name": "PETSVALE GROOMERS' HUB PTE. LTD.",
+      "address": "114 YIO CHU KANG ROAD",
+      "postalCode": "545581",
+      "latitude": 1.358633,
+      "longitude": 103.874584,
+      "services": [
+        "petshop"
+      ],
+      "is24h": false,
+      "licenceNos": [
+        "AS24K00054"
+      ],
+      "animalTypes": [
+        "D",
+        "C"
+      ],
+      "approvedActivity": null
+    },
+    {
+      "id": "728a68be5702",
+      "name": "9 Lives Collective Pte Ltd",
+      "address": "769A Geylang Road (2nd Storey & Attic)",
+      "postalCode": "389665",
+      "latitude": 1.315078,
+      "longitude": 103.891211,
+      "services": [
+        "boarding"
+      ],
+      "is24h": false,
+      "licenceNos": [
+        "BD25082"
+      ],
+      "animalTypes": [],
+      "approvedActivity": "Pet Boarding (Cats)"
+    },
+    {
+      "id": "72d90db9f153",
+      "name": "Pet Boarding Centre",
+      "address": "59 Sungei Tengah Road Block K #02-18, Block L #02-20",
+      "postalCode": "699014",
+      "latitude": 1.381384,
+      "longitude": 103.725553,
+      "services": [
+        "boarding"
+      ],
+      "is24h": false,
+      "licenceNos": [
+        "BD25027"
+      ],
+      "animalTypes": [],
+      "approvedActivity": "Pet Boarding (Cats & Dogs)"
+    },
+    {
+      "id": "73259f296a94",
+      "name": "Inugoya Pte Ltd",
+      "address": "150 Joo Chiat Road, #01-01",
+      "postalCode": "427428",
+      "latitude": 1.313234,
+      "longitude": 103.899464,
+      "services": [
+        "boarding"
+      ],
+      "is24h": false,
+      "licenceNos": [
+        "BD25024"
+      ],
+      "animalTypes": [],
+      "approvedActivity": "Pet Boarding (Dogs)"
+    },
+    {
+      "id": "733469ef30b1",
+      "name": "Purr Edition Singapore Pte Ltd",
+      "address": "259 Jalan Besar, 2nd Storey Office & Attic",
+      "postalCode": "208934",
+      "latitude": 1.310238,
+      "longitude": 103.858259,
+      "services": [
+        "boarding"
+      ],
+      "is24h": false,
+      "licenceNos": [
+        "BD25065"
+      ],
+      "animalTypes": [],
+      "approvedActivity": "Pet Boarding (Cats)"
+    },
+    {
+      "id": "766249beac17",
+      "name": "Pupperton Hotel Pte Ltd",
+      "address": "16 Lorong 10 Geylang #01-01",
+      "postalCode": "399049",
+      "latitude": 1.311114,
+      "longitude": 103.877554,
+      "services": [
+        "boarding"
+      ],
+      "is24h": false,
+      "licenceNos": [
+        "BD25031"
+      ],
+      "animalTypes": [],
+      "approvedActivity": "Pet Boarding (Dogs)"
+    },
+    {
+      "id": "78b2a3012246",
+      "name": "Cat Paradise Pte Ltd",
+      "address": "169 Joo Chiat Road #02-01",
+      "postalCode": "427729",
+      "latitude": 1.312573,
+      "longitude": 103.900344,
+      "services": [
+        "boarding"
+      ],
+      "is24h": false,
+      "licenceNos": [
+        "BD25081"
+      ],
+      "animalTypes": [],
+      "approvedActivity": "Pet Boarding (Cats)"
+    },
+    {
+      "id": "78bea4a09581",
+      "name": "ACE VET CARE",
+      "address": "271 BALESTIER ROAD VICTORY POINT",
+      "postalCode": "329722",
+      "latitude": 1.322422,
+      "longitude": 103.85259,
+      "services": [
+        "vet"
+      ],
+      "is24h": false,
+      "licenceNos": [],
+      "animalTypes": [],
+      "approvedActivity": null
+    },
+    {
+      "id": "792ee484ad35",
+      "name": "PET CLINIC PTE LTD",
+      "address": "211 SERANGOON AVENUE 4 #01-12 NIL",
+      "postalCode": "550211",
+      "latitude": 1.356317,
+      "longitude": 103.873175,
+      "services": [
+        "vet"
+      ],
+      "is24h": false,
+      "licenceNos": [],
+      "animalTypes": [],
+      "approvedActivity": null
+    },
+    {
+      "id": "798359a3ceb0",
+      "name": "THE VETERINARY CLINIC @ TAMPINES PTE LTD",
+      "address": "476 TAMPINES STREET 44 #01-201 NIL",
+      "postalCode": "520476",
+      "latitude": 1.360923,
+      "longitude": 103.953359,
+      "services": [
+        "vet"
+      ],
+      "is24h": false,
+      "licenceNos": [],
+      "animalTypes": [],
+      "approvedActivity": null
+    },
+    {
+      "id": "799983cdfa9f",
+      "name": "NAM SANG VETERINARY CLINIC PTE LTD",
+      "address": "2 Balestier Road, Balesti #01-699 NIL",
+      "postalCode": "320002",
+      "latitude": 1.325896,
+      "longitude": 103.842935,
+      "services": [
+        "vet"
+      ],
+      "is24h": false,
+      "licenceNos": [],
+      "animalTypes": [],
+      "approvedActivity": null
+    },
+    {
+      "id": "7a0caa2c04cb",
+      "name": "PETS AVENUE VETERINARY CLINIC (BEAUTY WORLD)",
+      "address": "50 JALAN JURONG KECHIL JK BUILDING",
+      "postalCode": "598578",
+      "latitude": 1.340556,
+      "longitude": 103.774342,
+      "services": [
+        "vet"
+      ],
+      "is24h": false,
+      "licenceNos": [],
+      "animalTypes": [],
+      "approvedActivity": null
+    },
+    {
+      "id": "7a2d5bd404d5",
+      "name": "The Collar Club Pte Ltd",
+      "address": "478 River Valley Road (Level 1)",
+      "postalCode": "248363",
+      "latitude": 1.293572,
+      "longitude": 103.82634,
+      "services": [
+        "boarding"
+      ],
+      "is24h": false,
+      "licenceNos": [
+        "BD25061"
+      ],
+      "animalTypes": [],
+      "approvedActivity": "Pet Boarding (Cats & Dogs)"
+    },
+    {
+      "id": "7b6613e4d0a3",
+      "name": "PASTEQUE PTE. LTD.",
+      "address": "308 TELOK KURAU ROAD #01- 13 VIBES @ EAST COAST",
+      "postalCode": "423858",
+      "latitude": 1.309483,
+      "longitude": 103.91172,
+      "services": [
+        "petshop"
+      ],
+      "is24h": false,
+      "licenceNos": [
+        "AS25D00022"
+      ],
+      "animalTypes": [
+        "D"
+      ],
+      "approvedActivity": null
+    },
+    {
+      "id": "7b8621da1481",
+      "name": "DR PAWS VET CARE",
+      "address": "77 LUCKY HEIGHTS LUCKY COURT",
+      "postalCode": "467626",
+      "latitude": 1.318482,
+      "longitude": 103.941514,
+      "services": [
+        "vet"
+      ],
+      "is24h": false,
+      "licenceNos": [],
+      "animalTypes": [],
+      "approvedActivity": null
+    },
+    {
+      "id": "7d36b4b45d9f",
+      "name": "AVH ANIMAL ARK VETERINARY GROUP",
+      "address": "139 TAMPINES STREET 11 #01-54 NIL",
+      "postalCode": "521139",
+      "latitude": 1.346161,
+      "longitude": 103.944509,
+      "services": [
+        "vet"
+      ],
+      "is24h": false,
+      "licenceNos": [],
+      "animalTypes": [],
+      "approvedActivity": null
+    },
+    {
+      "id": "7e7e7bfa0539",
+      "name": "Mutts & Mittens Pte Ltd",
+      "address": "412A Joo Chiat Road (Level 2 & Level 3)",
+      "postalCode": "427637",
+      "latitude": 1.307147,
+      "longitude": 103.903859,
+      "services": [
+        "boarding"
+      ],
+      "is24h": false,
+      "licenceNos": [
+        "BD25053"
+      ],
+      "animalTypes": [],
+      "approvedActivity": "Pet Boarding (Cats)"
+    },
+    {
+      "id": "7fca42c3bf7f",
+      "name": "Wagging Tails N Playful Paws",
+      "address": "40 Yio Chu Kang Road",
+      "postalCode": "545555",
+      "latitude": 1.356858,
+      "longitude": 103.875918,
+      "services": [
+        "boarding"
+      ],
+      "is24h": false,
+      "licenceNos": [
+        "BD25067"
+      ],
+      "animalTypes": [],
+      "approvedActivity": "Pet Boarding (Dogs)"
+    },
+    {
+      "id": "8023b189e8ed",
+      "name": "Savvy Pets Pte Ltd",
+      "address": "406A Joo Chiat Road",
+      "postalCode": "427634",
+      "latitude": 1.307266,
+      "longitude": 103.903785,
+      "services": [
+        "boarding"
+      ],
+      "is24h": false,
+      "licenceNos": [
+        "BD25015"
+      ],
+      "animalTypes": [],
+      "approvedActivity": "Pet Boarding (Dogs)"
+    },
+    {
+      "id": "8311903d65de",
+      "name": "LIVELOVEFIGHT PTE. LTD.",
+      "address": "239 JOO CHIAT ROAD LEVEL 1",
+      "postalCode": "427496",
+      "latitude": 1.310965,
+      "longitude": 103.901449,
+      "services": [
+        "petshop"
+      ],
+      "is24h": false,
+      "licenceNos": [
+        "AS25J00045"
+      ],
+      "animalTypes": [
+        "D"
+      ],
+      "approvedActivity": null
+    },
+    {
+      "id": "8465af01dd6e",
+      "name": "OUBAO ASIA PTE. LTD.",
+      "address": "810 GEYLANG ROAD #03- 141 CITY PLAZA",
+      "postalCode": "409286",
+      "latitude": 1.314787,
+      "longitude": 103.893472,
+      "services": [
+        "petshop"
+      ],
+      "is24h": false,
+      "licenceNos": [
+        "AS24F00030"
+      ],
+      "animalTypes": [
+        "C"
+      ],
+      "approvedActivity": null
+    },
+    {
+      "id": "85afce359ae6",
+      "name": "PETPAT SG PTE LTD",
+      "address": "323 Joo Chiat Road (2nd Storey)",
+      "postalCode": "427580",
+      "latitude": 1.309229,
+      "longitude": 103.902698,
+      "services": [
+        "boarding"
+      ],
+      "is24h": false,
+      "licenceNos": [
+        "BD25095"
+      ],
+      "animalTypes": [],
+      "approvedActivity": "Pet Boarding (Cats)"
+    },
+    {
+      "id": "868e8cc803e5",
+      "name": "BLUEWATER VET ACUPUNCTURE & REHABILITATION",
+      "address": "6 SIN MING ROAD #01-09 SIN MING PLAZA",
+      "postalCode": "575585",
+      "latitude": 1.352864,
+      "longitude": 103.836407,
+      "services": [
+        "vet"
+      ],
+      "is24h": false,
+      "licenceNos": [],
+      "animalTypes": [],
+      "approvedActivity": null
+    },
+    {
+      "id": "870f45ff1c76",
+      "name": "BRIGHTON VET CARE (BUKIT TIMAH)",
+      "address": "611 BUKIT TIMAH ROAD NIL",
+      "postalCode": "269712",
+      "latitude": 1.324315,
+      "longitude": 103.809445,
+      "services": [
+        "vet"
+      ],
+      "is24h": false,
+      "licenceNos": [],
+      "animalTypes": [],
+      "approvedActivity": null
+    },
+    {
+      "id": "8743b9da2154",
+      "name": "BRIGHTON VET CARE (KATONG)",
+      "address": "438 JOO CHIAT ROAD NIL",
+      "postalCode": "427651",
+      "latitude": 1.306631,
+      "longitude": 103.904252,
+      "services": [
+        "vet"
+      ],
+      "is24h": false,
+      "licenceNos": [],
+      "animalTypes": [],
+      "approvedActivity": null
+    },
+    {
+      "id": "88062990882a",
+      "name": "MEOW MEOW WONDER PTE. LTD.",
+      "address": "71 JALAN BESAR LEVEL 2",
+      "postalCode": "208816",
+      "latitude": 1.305257,
+      "longitude": 103.855073,
+      "services": [
+        "petshop"
+      ],
+      "is24h": false,
+      "licenceNos": [
+        "AS25E00024"
+      ],
+      "animalTypes": [
+        "C"
+      ],
+      "approvedActivity": null
+    },
+    {
+      "id": "883785439d0b",
+      "name": "GAIA VETERINARY CENTRE (JALAN BESAR)",
+      "address": "415 JALAN BESAR NIL",
+      "postalCode": "209016",
+      "latitude": 1.31404,
+      "longitude": 103.859884,
+      "services": [
+        "vet"
+      ],
+      "is24h": false,
+      "licenceNos": [],
+      "animalTypes": [],
+      "approvedActivity": null
+    },
+    {
+      "id": "88ef4e2e99e2",
+      "name": "GENETIQUE PRIVATE LIMITED",
+      "address": "101 DESKER ROAD LEVEL 1",
+      "postalCode": "209623",
+      "latitude": 1.308521,
+      "longitude": 103.856235,
+      "services": [
+        "petshop"
+      ],
+      "is24h": false,
+      "licenceNos": [
+        "AS24B00015"
+      ],
+      "animalTypes": [
+        "C"
+      ],
+      "approvedActivity": null
+    },
+    {
+      "id": "8a416dd0c58d",
+      "name": "ANIMAL WELLNESS CENTRE PTE LTD",
+      "address": "1 VISTA EXCHANGE GREEN #01-15 THE STAR",
+      "postalCode": "138617",
+      "latitude": 1.306951,
+      "longitude": 103.788287,
+      "services": [
+        "vet"
+      ],
+      "is24h": false,
+      "licenceNos": [],
+      "animalTypes": [],
+      "approvedActivity": null
+    },
+    {
+      "id": "8b6c20f23da0",
+      "name": "Little Pawcious",
+      "address": "801 Geylang Road #02-01",
+      "postalCode": "389681",
+      "latitude": 1.315225,
+      "longitude": 103.891921,
+      "services": [
+        "boarding"
+      ],
+      "is24h": false,
+      "licenceNos": [
+        "BD25045"
+      ],
+      "animalTypes": [],
+      "approvedActivity": "Pet Boarding (Cats)"
+    },
+    {
+      "id": "8ca1fbede509",
+      "name": "WOODGROVE VETERINARY SERVICES PTE LTD",
+      "address": "10 WOODLANDS SQUARE #01-41 WOODS SQUARE",
+      "postalCode": "737714",
+      "latitude": 1.434758,
+      "longitude": 103.785365,
+      "services": [
+        "vet"
+      ],
+      "is24h": false,
+      "licenceNos": [],
+      "animalTypes": [],
+      "approvedActivity": null
+    },
+    {
+      "id": "8d0373ecc820",
+      "name": "OASIS VET",
+      "address": "15 VENUS ROAD WINDSOR PARK",
+      "postalCode": "574302",
+      "latitude": 1.358409,
+      "longitude": 103.827546,
+      "services": [
+        "vet"
+      ],
+      "is24h": false,
+      "licenceNos": [],
+      "animalTypes": [],
+      "approvedActivity": null
+    },
+    {
+      "id": "8e1f738b485b",
+      "name": "ART OF PETS GROOMING SCHOOL PTE. LTD.",
+      "address": "40 SIGLAP DRIVE LEVEL 1 FRANKEL ESTATE",
+      "postalCode": "456165",
+      "latitude": 1.316085,
+      "longitude": 103.919872,
+      "services": [
+        "petshop"
+      ],
+      "is24h": false,
+      "licenceNos": [
+        "AS25K00052"
+      ],
+      "animalTypes": [
+        "D"
+      ],
+      "approvedActivity": null
+    },
+    {
+      "id": "8edd9b751f75",
+      "name": "TOP PEDIGREE",
+      "address": "462 CRAWFORD LANE #02- 31 CRAWFORD COURT",
+      "postalCode": "190462",
+      "latitude": 1.304586,
+      "longitude": 103.860841,
+      "services": [
+        "petshop"
+      ],
+      "is24h": false,
+      "licenceNos": [
+        "AS24F00033"
+      ],
+      "animalTypes": [
+        "D"
+      ],
+      "approvedActivity": null
+    },
+    {
+      "id": "8f643a160a70",
+      "name": "SINMA GLOBAL PTE. LTD.",
+      "address": "599 GEYLANG ROAD LEVEL 1",
+      "postalCode": "389538",
+      "latitude": 1.314206,
+      "longitude": 103.886699,
+      "services": [
+        "petshop"
+      ],
+      "is24h": false,
+      "licenceNos": [
+        "AS25E00023"
+      ],
+      "animalTypes": [
+        "C"
+      ],
+      "approvedActivity": null
+    },
+    {
+      "id": "8f725d2fd530",
+      "name": "LANDON VETERINARY SPECIALIST HOSPITAL",
+      "address": "41 ENG KONG TERRACE ENG KONG PARK",
+      "postalCode": "599013",
+      "latitude": 1.336206,
+      "longitude": 103.768909,
+      "services": [
+        "vet"
+      ],
+      "is24h": true,
+      "licenceNos": [],
+      "animalTypes": [],
+      "approvedActivity": null
+    },
+    {
+      "id": "90676a115771",
+      "name": "VET CENTRAL",
+      "address": "69 LORONG 4 TOA PAYOH TOA PAYOH VISTA",
+      "postalCode": "310069",
+      "latitude": 1.334181,
+      "longitude": 103.852707,
+      "services": [
+        "vet"
+      ],
+      "is24h": false,
+      "licenceNos": [],
+      "animalTypes": [],
+      "approvedActivity": null
+    },
+    {
+      "id": "911a695bd5b0",
+      "name": "EVERVET VETERINARY CLINIC PTE LTD",
+      "address": "123 BEDOK NORTH STREET 2 #01-154 NIL",
+      "postalCode": "460123",
+      "latitude": 1.329199,
+      "longitude": 103.937343,
+      "services": [
+        "vet"
+      ],
+      "is24h": false,
+      "licenceNos": [],
+      "animalTypes": [],
+      "approvedActivity": null
+    },
+    {
+      "id": "9122edb67da6",
+      "name": "FLUFFYDOLLS CATFE PTE. LTD.",
+      "address": "555A BALESTIER ROAD LEVEL 2",
+      "postalCode": "329871",
+      "latitude": 1.326328,
+      "longitude": 103.844799,
+      "services": [
+        "petshop"
+      ],
+      "is24h": false,
+      "licenceNos": [
+        "AS22L00066"
+      ],
+      "animalTypes": [
+        "C"
+      ],
+      "approvedActivity": null
+    },
+    {
+      "id": "91e4e948b9db",
+      "name": "Pawtel & Friends Pte Ltd",
+      "address": "142 Jalan Besar (1st Storey)",
+      "postalCode": "208860",
+      "latitude": 1.306802,
+      "longitude": 103.856461,
+      "services": [
+        "boarding"
+      ],
+      "is24h": false,
+      "licenceNos": [
+        "BD25097"
+      ],
+      "animalTypes": [],
+      "approvedActivity": "Pet Boarding (Dogs)"
+    },
+    {
+      "id": "924fd593bda5",
+      "name": "C&J Pawsome LLP",
+      "address": "228 Changi Road Icon @ changi #03-04",
+      "postalCode": "419741",
+      "latitude": 1.317242,
+      "longitude": 103.90469,
+      "services": [
+        "boarding"
+      ],
+      "is24h": false,
+      "licenceNos": [
+        "BD25006"
+      ],
+      "animalTypes": [],
+      "approvedActivity": "Pet Boarding (Dogs)"
+    },
+    {
+      "id": "925dfb6ef8bd",
+      "name": "THE PROJECT CRITTERS PTE. LTD.",
+      "address": "108 ANG MO KIO AVENUE 4 #01- 92 KEBUN BARU HEIGHTS",
+      "postalCode": "560108",
+      "latitude": 1.370943,
+      "longitude": 103.837975,
+      "services": [
+        "petshop"
+      ],
+      "is24h": false,
+      "licenceNos": [
+        "AS25H00042"
+      ],
+      "animalTypes": [
+        "C"
+      ],
+      "approvedActivity": null
+    },
+    {
+      "id": "928bfa618717",
+      "name": "THE CAT VET",
+      "address": "2 PANDAN VALLEY #B1-204D ACACIA COURT",
+      "postalCode": "597626",
+      "latitude": 1.320442,
+      "longitude": 103.778972,
+      "services": [
+        "vet"
+      ],
+      "is24h": false,
+      "licenceNos": [],
+      "animalTypes": [],
+      "approvedActivity": null
+    },
+    {
+      "id": "92f90cc2939a",
+      "name": "ATLAS VETERINARY CLINIC & SURGERY",
+      "address": "163 BUKIT MERAH CENTRAL #03-3573 NIL",
+      "postalCode": "150163",
+      "latitude": 1.283703,
+      "longitude": 103.817052,
+      "services": [
+        "vet"
+      ],
+      "is24h": false,
+      "licenceNos": [],
+      "animalTypes": [],
+      "approvedActivity": null
+    },
+    {
+      "id": "93ade47e283b",
+      "name": "SPRING VETERINARY CARE",
+      "address": "123 HOUGANG AVENUE 1 #01-1412 NIL",
+      "postalCode": "530123",
+      "latitude": 1.353383,
+      "longitude": 103.886259,
+      "services": [
+        "vet"
+      ],
+      "is24h": false,
+      "licenceNos": [],
+      "animalTypes": [],
+      "approvedActivity": null
+    },
+    {
+      "id": "949b0865de90",
+      "name": "The Wagington Pet Hotels Int’l Pte Ltd",
+      "address": "27B Loewen Road",
+      "postalCode": "248850",
+      "latitude": 1.302892,
+      "longitude": 103.811572,
+      "services": [
+        "boarding"
+      ],
+      "is24h": false,
+      "licenceNos": [
+        "BD25070"
+      ],
+      "animalTypes": [],
+      "approvedActivity": "Pet Boarding (Cats & Dogs)"
+    },
+    {
+      "id": "94fa188263cd",
+      "name": "JAMES TAN VETERINARY CENTRE PTE LTD",
+      "address": "230 WHITLEY ROAD JAMES TAN HOSPITAL",
+      "postalCode": "297823",
+      "latitude": 1.325939,
+      "longitude": 103.827197,
+      "services": [
+        "vet"
+      ],
+      "is24h": false,
+      "licenceNos": [],
+      "animalTypes": [],
+      "approvedActivity": null
+    },
+    {
+      "id": "951ff0666142",
+      "name": "MY CATTOON",
+      "address": "53 JOO CHIAT PLACE LEVEL 1",
+      "postalCode": "427777",
+      "latitude": 1.313579,
+      "longitude": 103.901077,
+      "services": [
+        "petshop"
+      ],
+      "is24h": false,
+      "licenceNos": [
+        "AS25G00034"
+      ],
+      "animalTypes": [
+        "C"
+      ],
+      "approvedActivity": null
+    },
+    {
+      "id": "95913e385dad",
+      "name": "Petpat SG Pte Ltd",
+      "address": "221A Upper Thomson Road (2nd Storey)",
+      "postalCode": "574353",
+      "latitude": 1.352714,
+      "longitude": 103.83453,
+      "services": [
+        "boarding"
+      ],
+      "is24h": false,
+      "licenceNos": [
+        "BD25096"
+      ],
+      "animalTypes": [],
+      "approvedActivity": "Pet Boarding (Cats)"
+    },
+    {
+      "id": "96d748d227f7",
+      "name": "TIARA PETS (SG) PTE. LTD.",
+      "address": "266A JOO CHIAT ROAD LEVEL 2 AND ATTIC",
+      "postalCode": "427520",
+      "latitude": 1.311032,
+      "longitude": 103.901045,
+      "services": [
+        "petshop"
+      ],
+      "is24h": false,
+      "licenceNos": [
+        "AS22J00060"
+      ],
+      "animalTypes": [
+        "D",
+        "C"
+      ],
+      "approvedActivity": null
+    },
+    {
+      "id": "9735086e6651",
+      "name": "MY FAMILY VET CLINIC AND SURGERY PTE LTD",
+      "address": "265 BUKIT BATOK EAST AVENUE 4 #01-403 NIL",
+      "postalCode": "650265",
+      "latitude": 1.350008,
+      "longitude": 103.759863,
+      "services": [
+        "vet"
+      ],
+      "is24h": false,
+      "licenceNos": [],
+      "animalTypes": [],
+      "approvedActivity": null
+    },
+    {
+      "id": "9740183d3775",
+      "name": "SMITTEN KITTENS PTE. LTD.",
+      "address": "162 JOO CHIAT ROAD #02- 02",
+      "postalCode": "427437",
+      "latitude": 1.312904,
+      "longitude": 103.899711,
+      "services": [
+        "petshop"
+      ],
+      "is24h": false,
+      "licenceNos": [
+        "AS23H00041"
+      ],
+      "animalTypes": [
+        "C"
+      ],
+      "approvedActivity": null
+    },
+    {
+      "id": "9782d2d6911e",
+      "name": "E HOBBY PETS AND SUPPLIES",
+      "address": "2 JALAN LOKAM #01- 39 KENSINGTON SQUARE",
+      "postalCode": "537846",
+      "latitude": 1.345607,
+      "longitude": 103.882695,
+      "services": [
+        "petshop"
+      ],
+      "is24h": false,
+      "licenceNos": [
+        "AS18K00046"
+      ],
+      "animalTypes": [
+        "D"
+      ],
+      "approvedActivity": null
+    },
+    {
+      "id": "97e96e0045ca",
+      "name": "POINT VETERINARY SURGERY",
+      "address": "541 JURONG WEST AVENUE 1 #01-1044 NIL",
+      "postalCode": "640541",
+      "latitude": 1.351043,
+      "longitude": 103.715983,
+      "services": [
+        "vet"
+      ],
+      "is24h": false,
+      "licenceNos": [],
+      "animalTypes": [],
+      "approvedActivity": null
+    },
+    {
+      "id": "9847ac7a6ff5",
+      "name": "Pampered Pets Relocation & Lodging Pte Ltd",
+      "address": "1 Vista Exchange Green #01-14/15 The Star Vista",
+      "postalCode": "138617",
+      "latitude": 1.306951,
+      "longitude": 103.788287,
+      "services": [
+        "boarding"
+      ],
+      "is24h": false,
+      "licenceNos": [
+        "BD25068"
+      ],
+      "animalTypes": [],
+      "approvedActivity": "Pet Boarding (Dogs)"
+    },
+    {
+      "id": "98df7ad8ed2a",
+      "name": "PET CARE CENTRE AND CLINIC PTE LTD",
+      "address": "4 WARINGIN PARK PET CARE CENTRE & CLINIC",
+      "postalCode": "416318",
+      "latitude": 1.322185,
+      "longitude": 103.918135,
+      "services": [
+        "vet"
+      ],
+      "is24h": false,
+      "licenceNos": [],
+      "animalTypes": [],
+      "approvedActivity": null
+    },
+    {
+      "id": "991a274d05d8",
+      "name": "One Pawscent Pte Ltd",
+      "address": "48 Yio Chu Kang Road",
+      "postalCode": "545559",
+      "latitude": 1.357053,
+      "longitude": 103.875816,
+      "services": [
+        "boarding"
+      ],
+      "is24h": false,
+      "licenceNos": [
+        "BD25092"
+      ],
+      "animalTypes": [],
+      "approvedActivity": "Pet Boarding (Dogs)"
+    },
+    {
+      "id": "992a9f3ce7fb",
+      "name": "CAT CONNOISSEUR PTE. LTD.",
+      "address": "9 SIN MING ROAD #B1- 03/04 THOMSON V ONE",
+      "postalCode": "575630",
+      "latitude": 1.353195,
+      "longitude": 103.835565,
+      "services": [
+        "petshop"
+      ],
+      "is24h": false,
+      "licenceNos": [
+        "AS24J00043"
+      ],
+      "animalTypes": [
+        "C"
+      ],
+      "approvedActivity": null
+    },
+    {
+      "id": "9b17a5371ad0",
+      "name": "NAMLY VETERINARY SURGERY PTE LTD",
+      "address": "74 NAMLY PLACE SHAMROCK PARK",
+      "postalCode": "267223",
+      "latitude": 1.324272,
+      "longitude": 103.796778,
+      "services": [
+        "vet"
+      ],
+      "is24h": false,
+      "licenceNos": [],
+      "animalTypes": [],
+      "approvedActivity": null
+    },
+    {
+      "id": "9b62e2a7020d",
+      "name": "VET AFFINITY PTE LTD",
+      "address": "151 BUKIT BATOK STREET 11 #01-248 NIL",
+      "postalCode": "650151",
+      "latitude": 1.348747,
+      "longitude": 103.744211,
+      "services": [
+        "vet"
+      ],
+      "is24h": false,
+      "licenceNos": [],
+      "animalTypes": [],
+      "approvedActivity": null
+    },
+    {
+      "id": "9bab0e449263",
+      "name": "DOG AVENUE",
+      "address": "1074 SERANGOON ROAD LEVEL 1",
+      "postalCode": "328179",
+      "latitude": 1.323352,
+      "longitude": 103.864752,
+      "services": [
+        "petshop"
+      ],
+      "is24h": false,
+      "licenceNos": [
+        "AS09J00027"
+      ],
+      "animalTypes": [
+        "D"
+      ],
+      "approvedActivity": null
+    },
+    {
+      "id": "a0890829dbc7",
+      "name": "MARANATHA VETERINARY CLINIC",
+      "address": "77 TELOK BLANGAH DRIVE #01-234 NIL",
+      "postalCode": "100077",
+      "latitude": 1.273942,
+      "longitude": 103.808817,
+      "services": [
+        "vet"
+      ],
+      "is24h": false,
+      "licenceNos": [],
+      "animalTypes": [],
+      "approvedActivity": null
+    },
+    {
+      "id": "a0f51dae523b",
+      "name": "Waggy Potato Private Limited",
+      "address": "643 Geylang Road",
+      "postalCode": "389573",
+      "latitude": 1.31446,
+      "longitude": 103.888029,
+      "services": [
+        "boarding"
+      ],
+      "is24h": false,
+      "licenceNos": [
+        "BD25004"
+      ],
+      "animalTypes": [],
+      "approvedActivity": "Pet Boarding (Dogs)"
+    },
+    {
+      "id": "a189f908da4b",
+      "name": "PICK A PET PTE. LTD.",
+      "address": "1 VISTA EXCHANGE GREEN #01- 14 THE STAR VISTA",
+      "postalCode": "138617",
+      "latitude": 1.306951,
+      "longitude": 103.788287,
+      "services": [
+        "petshop"
+      ],
+      "is24h": false,
+      "licenceNos": [
+        "AS20M00004"
+      ],
+      "animalTypes": [
+        "D"
+      ],
+      "approvedActivity": null
+    },
+    {
+      "id": "a235ffd724c6",
+      "name": "Pets Republic Pte Ltd",
+      "address": "2 Jurong Gateway Road #01-03/04",
+      "postalCode": "608512",
+      "latitude": 1.33664,
+      "longitude": 103.744772,
+      "services": [
+        "boarding"
+      ],
+      "is24h": false,
+      "licenceNos": [
+        "BD25014"
+      ],
+      "animalTypes": [],
+      "approvedActivity": "Pet Boarding (Dogs)"
+    },
+    {
+      "id": "a2ce958a605a",
+      "name": "GENESIS VETERINARY CLINIC",
+      "address": "935 YISHUN CENTRAL 1 #01-43 NIL",
+      "postalCode": "760935",
+      "latitude": 1.42518,
+      "longitude": 103.836596,
+      "services": [
+        "vet"
+      ],
+      "is24h": false,
+      "licenceNos": [],
+      "animalTypes": [],
+      "approvedActivity": null
+    },
+    {
+      "id": "a2ea3476feac",
+      "name": "P.A.W (PEOPLE ANIMAL WELLNESS) VETERINARY CENTRE PTE LTD",
+      "address": "112 Bukit Purmei Road #01-207 NIL",
+      "postalCode": "090112",
+      "latitude": 1.274529,
+      "longitude": 103.825933,
+      "services": [
+        "vet"
+      ],
+      "is24h": false,
+      "licenceNos": [],
+      "animalTypes": [],
+      "approvedActivity": null
+    },
+    {
+      "id": "a315bec8999e",
+      "name": "SPRING VETERINARY CARE PUNGGOL",
+      "address": "681 PUNGGOL DRIVE #01-16A NIL",
+      "postalCode": "820681",
+      "latitude": 1.402596,
+      "longitude": 103.912962,
+      "services": [
+        "vet"
+      ],
+      "is24h": false,
+      "licenceNos": [],
+      "animalTypes": [],
+      "approvedActivity": null
+    },
+    {
+      "id": "a38953a8fab3",
+      "name": "TOWN VETS ANIMAL CLINIC PTE LTD",
+      "address": "22 HAVELOCK ROAD #01-687 NIL",
+      "postalCode": "160022",
+      "latitude": 1.288746,
+      "longitude": 103.828824,
+      "services": [
+        "vet"
+      ],
+      "is24h": false,
+      "licenceNos": [],
+      "animalTypes": [],
+      "approvedActivity": null
+    },
+    {
+      "id": "a49702647a8d",
+      "name": "Inudoki Private Limited",
+      "address": "218 Pasir Panjang Road Icon@Pasir Panjang #02-11",
+      "postalCode": "118579",
+      "latitude": 1.279487,
+      "longitude": 103.785756,
+      "services": [
+        "boarding"
+      ],
+      "is24h": false,
+      "licenceNos": [
+        "BD26002"
+      ],
+      "animalTypes": [],
+      "approvedActivity": "Pet Boarding (Dogs)"
+    },
+    {
+      "id": "a49a2e01c502",
+      "name": "VETS FOR LIFE ANIMAL CLINIC",
+      "address": "330 TANJONG KATONG ROAD NIL",
+      "postalCode": "437106",
+      "latitude": 1.304164,
+      "longitude": 103.896327,
+      "services": [
+        "vet"
+      ],
+      "is24h": false,
+      "licenceNos": [],
+      "animalTypes": [],
+      "approvedActivity": null
+    },
+    {
+      "id": "a5f093a67beb",
+      "name": "OHANA VETCARE",
+      "address": "258 PASIR RIS STREET 21 #04-01 NIL",
+      "postalCode": "510258",
+      "latitude": 1.367074,
+      "longitude": 103.964632,
+      "services": [
+        "vet"
+      ],
+      "is24h": false,
+      "licenceNos": [],
+      "animalTypes": [],
+      "approvedActivity": null
+    },
+    {
+      "id": "a622309bbbb5",
+      "name": "UNITED VETERINARY CLINIC PTE LTD",
+      "address": "107 ANG MO KIO AVENUE 4 #01-148 KEBUN BARU HEIGHTS",
+      "postalCode": "560107",
+      "latitude": 1.371384,
+      "longitude": 103.837381,
+      "services": [
+        "vet"
+      ],
+      "is24h": false,
+      "licenceNos": [],
+      "animalTypes": [],
+      "approvedActivity": null
+    },
+    {
+      "id": "a716e430acec",
+      "name": "Tara Pet Care",
+      "address": "59 Sungei Tengah Road Block W #01-53",
+      "postalCode": "699014",
+      "latitude": 1.381384,
+      "longitude": 103.725553,
+      "services": [
+        "boarding"
+      ],
+      "is24h": false,
+      "licenceNos": [
+        "BD25036"
+      ],
+      "animalTypes": [],
+      "approvedActivity": "Pet Boarding (Dogs)"
+    },
+    {
+      "id": "a87b8d008c74",
+      "name": "APEX VETERINARY MEDICAL CENTRE PTE LTD PUNGGOL",
+      "address": "418 NORTHSHORE DRIVE #02-0213 NIL",
+      "postalCode": "820418",
+      "latitude": 1.417962,
+      "longitude": 103.901323,
+      "services": [
+        "vet"
+      ],
+      "is24h": false,
+      "licenceNos": [],
+      "animalTypes": [],
+      "approvedActivity": null
+    },
+    {
+      "id": "a8ea5f251852",
+      "name": "HILLSIDE VETERINARY SURGERY",
+      "address": "787A UPPER SERANGOON ROAD NIL",
+      "postalCode": "534655",
+      "latitude": 1.355496,
+      "longitude": 103.879296,
+      "services": [
+        "vet"
+      ],
+      "is24h": false,
+      "licenceNos": [],
+      "animalTypes": [],
+      "approvedActivity": null
+    },
+    {
+      "id": "a8f8d570ea97",
+      "name": "Tails Up Pte Ltd",
+      "address": "2 Netheravon Road Block A",
+      "postalCode": "508503",
+      "latitude": 1.390951,
+      "longitude": 103.986891,
+      "services": [
+        "boarding"
+      ],
+      "is24h": false,
+      "licenceNos": [
+        "BD25022"
+      ],
+      "animalTypes": [],
+      "approvedActivity": "Pet Boarding (Dogs)"
+    },
+    {
+      "id": "ab33746cf0f5",
+      "name": "GOLDEN PAWS PTE. LTD.",
+      "address": "19 ENG KONG TERRACE LEVEL 1 ENG KONG PARK",
+      "postalCode": "598991",
+      "latitude": 1.336409,
+      "longitude": 103.768271,
+      "services": [
+        "petshop"
+      ],
+      "is24h": false,
+      "licenceNos": [
+        "AS25G00033"
+      ],
+      "animalTypes": [
+        "D"
+      ],
+      "approvedActivity": null
+    },
+    {
+      "id": "ac22692d685b",
+      "name": "BOW WOW PET CORNER",
+      "address": "94 YIO CHU KANG ROAD",
+      "postalCode": "545573",
+      "latitude": 1.358218,
+      "longitude": 103.874929,
+      "services": [
+        "petshop"
+      ],
+      "is24h": false,
+      "licenceNos": [
+        "AS12K00038"
+      ],
+      "animalTypes": [
+        "D"
+      ],
+      "approvedActivity": null
+    },
+    {
+      "id": "ae06b5e364a7",
+      "name": "AB Dog Boarding, Daycare and Retail LLP",
+      "address": "136 Owen Road",
+      "postalCode": "218938",
+      "latitude": 1.314377,
+      "longitude": 103.85268,
+      "services": [
+        "boarding"
+      ],
+      "is24h": false,
+      "licenceNos": [
+        "BD25051"
+      ],
+      "animalTypes": [],
+      "approvedActivity": "Pet Boarding (Dogs)"
+    },
+    {
+      "id": "aecaa75629e6",
+      "name": "DAILY DOGS @ BRIGHTON PTE. LTD.",
+      "address": "65 BRIGHTON CRESCENT LEVEL 1 SERANGOON GARDEN ESTATE",
+      "postalCode": "559211",
+      "latitude": 1.362708,
+      "longitude": 103.871133,
+      "services": [
+        "petshop"
+      ],
+      "is24h": false,
+      "licenceNos": [
+        "AS19L00054"
+      ],
+      "animalTypes": [
+        "D"
+      ],
+      "approvedActivity": null
+    },
+    {
+      "id": "af05922077e9",
+      "name": "FORELSKET FLUFFS PTE. LTD.",
+      "address": "17B TEO HONG ROAD LEVEL 3",
+      "postalCode": "088329",
+      "latitude": 1.279995,
+      "longitude": 103.840824,
+      "services": [
+        "petshop"
+      ],
+      "is24h": false,
+      "licenceNos": [
+        "AS23E00025"
+      ],
+      "animalTypes": [
+        "D"
+      ],
+      "approvedActivity": null
+    },
+    {
+      "id": "b01f32d26283",
+      "name": "PAW LOVE HOUSE",
+      "address": "3 SOUTH BUONA VISTA ROAD #B1- 26 VIVA VISTA",
+      "postalCode": "118136",
+      "latitude": 1.279803,
+      "longitude": 103.78591,
+      "services": [
+        "petshop"
+      ],
+      "is24h": false,
+      "licenceNos": [
+        "AS25F00028"
+      ],
+      "animalTypes": [
+        "D"
+      ],
+      "approvedActivity": null
+    },
+    {
+      "id": "b09049d8b2bc",
+      "name": "A G PETS TOA PAYOH",
+      "address": "69 LORONG 4 TOA PAYOH #01- 367",
+      "postalCode": "310069",
+      "latitude": 1.334181,
+      "longitude": 103.852707,
+      "services": [
+        "petshop"
+      ],
+      "is24h": false,
+      "licenceNos": [
+        "AS90M0570"
+      ],
+      "animalTypes": [
+        "D",
+        "C",
+        "SM",
+        "B",
+        "F"
+      ],
+      "approvedActivity": null
+    },
+    {
+      "id": "b28d75ce5f30",
+      "name": "PAWRADISE PET PTE. LTD.",
+      "address": "170 UPPER BUKIT TIMAH ROAD #02- 26 BUKIT TIMAH SHOPPING CENTRE",
+      "postalCode": "588179",
+      "latitude": 1.343165,
+      "longitude": 103.776031,
+      "services": [
+        "petshop"
+      ],
+      "is24h": false,
+      "licenceNos": [
+        "AS25E00027"
+      ],
+      "animalTypes": [
+        "C"
+      ],
+      "approvedActivity": null
+    },
+    {
+      "id": "b2bb83517a72",
+      "name": "Happy Rolling",
+      "address": "479 Geylang Road #02-01",
+      "postalCode": "389438",
+      "latitude": 1.313584,
+      "longitude": 103.883474,
+      "services": [
+        "boarding"
+      ],
+      "is24h": false,
+      "licenceNos": [
+        "BD25073"
+      ],
+      "animalTypes": [],
+      "approvedActivity": "Pet Boarding (Cats)"
+    },
+    {
+      "id": "b36dd8a0f000",
+      "name": "Pooch Nannies Pte Ltd",
+      "address": "173A Joo Chiat Road 2nd Storey",
+      "postalCode": "427444",
+      "latitude": 1.312474,
+      "longitude": 103.900392,
+      "services": [
+        "boarding"
+      ],
+      "is24h": false,
+      "licenceNos": [
+        "BD25048"
+      ],
+      "animalTypes": [],
+      "approvedActivity": "Pet Boarding (Dogs)"
+    },
+    {
+      "id": "b37cc372c255",
+      "name": "The Pet Heroes Pte Ltd",
+      "address": "26A Kandahar Street (2nd Storey & Roof Mezzanine)",
+      "postalCode": "198888",
+      "latitude": 1.302149,
+      "longitude": 103.85967,
+      "services": [
+        "boarding"
+      ],
+      "is24h": false,
+      "licenceNos": [
+        "BD25103"
+      ],
+      "animalTypes": [],
+      "approvedActivity": "Pet Boarding (Cats)"
+    },
+    {
+      "id": "b38052b1e728",
+      "name": "PETS&CO PTE. LTD.",
+      "address": "345 GEYLANG ROAD #03- 13 GEYLANG ROAD",
+      "postalCode": "389366",
+      "latitude": 1.312978,
+      "longitude": 103.879771,
+      "services": [
+        "petshop"
+      ],
+      "is24h": false,
+      "licenceNos": [
+        "AS23G00035"
+      ],
+      "animalTypes": [
+        "D"
+      ],
+      "approvedActivity": null
+    },
+    {
+      "id": "b4888a6d9b16",
+      "name": "ADVANCED VETCARE",
+      "address": "283 OUTRAM ROAD NIL",
+      "postalCode": "169068",
+      "latitude": 1.285689,
+      "longitude": 103.834476,
+      "services": [
+        "vet"
+      ],
+      "is24h": false,
+      "licenceNos": [],
+      "animalTypes": [],
+      "approvedActivity": null
+    },
+    {
+      "id": "b4a9d59ec409",
+      "name": "BARKWAY PET HEALTH PTE. LTD.",
+      "address": "169 MACPHERSON ROAD #01-00 NIL",
+      "postalCode": "348535",
+      "latitude": 1.329867,
+      "longitude": 103.87396,
+      "services": [
+        "vet"
+      ],
+      "is24h": false,
+      "licenceNos": [],
+      "animalTypes": [],
+      "approvedActivity": null
+    },
+    {
+      "id": "b4dc7a0817ad",
+      "name": "THE LITTLEST THINGS PTE. LTD.",
+      "address": "80 CHANGI ROAD #02- 03 CENTROPOD @ CHANGI",
+      "postalCode": "419715",
+      "latitude": 1.316334,
+      "longitude": 103.900525,
+      "services": [
+        "petshop",
+        "boarding"
+      ],
+      "is24h": false,
+      "licenceNos": [
+        "AS23H00044",
+        "BD25101"
+      ],
+      "animalTypes": [
+        "C"
+      ],
+      "approvedActivity": "Pet Boarding (Cats)"
+    },
+    {
+      "id": "b593d452143f",
+      "name": "Ryokan Genetique Pte Ltd",
+      "address": "101 Desker Road",
+      "postalCode": "209623",
+      "latitude": 1.308521,
+      "longitude": 103.856235,
+      "services": [
+        "boarding"
+      ],
+      "is24h": false,
+      "licenceNos": [
+        "BD25056"
+      ],
+      "animalTypes": [],
+      "approvedActivity": "Pet Boarding (Cats)"
+    },
+    {
+      "id": "b59e62f0f246",
+      "name": "CATSMART SUPPLY AND DISTRIBUTION PTE. LTD.",
+      "address": "14 JALAN LEBAN LEVEL 1 SEMBAWANG HILLS ESTATE",
+      "postalCode": "577553",
+      "latitude": 1.37158,
+      "longitude": 103.829255,
+      "services": [
+        "petshop"
+      ],
+      "is24h": false,
+      "licenceNos": [
+        "AS17B00013"
+      ],
+      "animalTypes": [
+        "C"
+      ],
+      "approvedActivity": null
+    },
+    {
+      "id": "b66c7ba7795a",
+      "name": "AVH ANIMAL ARK VETERINARY GROUP (SPRINGLEAF)",
+      "address": "5 MANDAI ROAD NIL",
+      "postalCode": "779391",
+      "latitude": 1.402266,
+      "longitude": 103.816751,
+      "services": [
+        "vet"
+      ],
+      "is24h": false,
+      "licenceNos": [],
+      "animalTypes": [],
+      "approvedActivity": null
+    },
+    {
+      "id": "b6e218ee43fd",
+      "name": "STARS VETERINARY CLINIC PTE LTD",
+      "address": "211 HOUGANG STREET 21 #01-301 NIL",
+      "postalCode": "530211",
+      "latitude": 1.359623,
+      "longitude": 103.887717,
+      "services": [
+        "vet"
+      ],
+      "is24h": false,
+      "licenceNos": [],
+      "animalTypes": [],
+      "approvedActivity": null
+    },
+    {
+      "id": "b8013ccaea9c",
+      "name": "Doggie Retreat and Spa Pte. Ltd.",
+      "address": "12 East Coast Road",
+      "postalCode": "428723",
+      "latitude": 1.303975,
+      "longitude": 103.90237,
+      "services": [
+        "boarding"
+      ],
+      "is24h": false,
+      "licenceNos": [
+        "BD25085"
+      ],
+      "animalTypes": [],
+      "approvedActivity": "Pet Boarding (Dogs)"
+    },
+    {
+      "id": "b846412d2d4d",
+      "name": "THE PUP LIFE PTE. LTD.",
+      "address": "496 MACPHERSON ROAD LEVEL 1",
+      "postalCode": "368201",
+      "latitude": 1.332122,
+      "longitude": 103.883448,
+      "services": [
+        "petshop"
+      ],
+      "is24h": false,
+      "licenceNos": [
+        "AS21K00054"
+      ],
+      "animalTypes": [
+        "D"
+      ],
+      "approvedActivity": null
+    },
+    {
+      "id": "b97c7197a910",
+      "name": "BARKOPIA PTE. LTD.",
+      "address": "1210 UPPER THOMSON ROAD LEVEL 1",
+      "postalCode": "787126",
+      "latitude": 1.400171,
+      "longitude": 103.817818,
+      "services": [
+        "petshop"
+      ],
+      "is24h": false,
+      "licenceNos": [
+        "AS23F00029"
+      ],
+      "animalTypes": [
+        "D"
+      ],
+      "approvedActivity": null
+    },
+    {
+      "id": "ba713a081b75",
+      "name": "Shun Yuan Trading & Construction Pte Ltd",
+      "address": "59 Sungei Tengah Road Block A #02-01",
+      "postalCode": "699014",
+      "latitude": 1.381384,
+      "longitude": 103.725553,
+      "services": [
+        "boarding"
+      ],
+      "is24h": false,
+      "licenceNos": [
+        "BD25009"
+      ],
+      "animalTypes": [],
+      "approvedActivity": "Pet Boarding (Dogs)"
+    },
+    {
+      "id": "bafb9c90e6b5",
+      "name": "Furmummy Pte Ltd",
+      "address": "505 Balestier Road, #01-00",
+      "postalCode": "329846",
+      "latitude": 1.326368,
+      "longitude": 103.846877,
+      "services": [
+        "boarding"
+      ],
+      "is24h": false,
+      "licenceNos": [
+        "BD25063"
+      ],
+      "animalTypes": [],
+      "approvedActivity": "Pet Boarding (Dogs)"
+    },
+    {
+      "id": "bb3ad6899c38",
+      "name": "Petbnb Pte Ltd",
+      "address": "218 Pasir Panjang Road #01-08 Icon@Pasir Panjang",
+      "postalCode": "118579",
+      "latitude": 1.279487,
+      "longitude": 103.785756,
+      "services": [
+        "boarding"
+      ],
+      "is24h": false,
+      "licenceNos": [
+        "BD25094"
+      ],
+      "animalTypes": [],
+      "approvedActivity": "Pet Boarding (Dogs)"
+    },
+    {
+      "id": "be279a39251d",
+      "name": "VET PRACTICE PTE LTD",
+      "address": "31 HOLLAND CLOSE #01-219 NIL",
+      "postalCode": "270031",
+      "latitude": 1.307022,
+      "longitude": 103.797024,
+      "services": [
+        "vet"
+      ],
+      "is24h": false,
+      "licenceNos": [],
+      "animalTypes": [],
+      "approvedActivity": null
+    },
+    {
+      "id": "be47d5359012",
+      "name": "Felis Catus Pte Ltd",
+      "address": "182 Yio Chu Kang Road 1st & 2nd storey",
+      "postalCode": "545629",
+      "latitude": 1.361941,
+      "longitude": 103.873586,
+      "services": [
+        "boarding"
+      ],
+      "is24h": false,
+      "licenceNos": [
+        "BD25012"
+      ],
+      "animalTypes": [],
+      "approvedActivity": "Pet Boarding (Cats)"
+    },
+    {
+      "id": "bfd39f8126cb",
+      "name": "DREAMPETS",
+      "address": "481 SIMS AVENUE LEVEL 1",
+      "postalCode": "387553",
+      "latitude": 1.316199,
+      "longitude": 103.887591,
+      "services": [
+        "petshop"
+      ],
+      "is24h": false,
+      "licenceNos": [
+        "AS23B00010"
+      ],
+      "animalTypes": [
+        "C"
+      ],
+      "approvedActivity": null
+    },
+    {
+      "id": "c02cbc1099f1",
+      "name": "GAIA VETERINARY CENTRE (PARKSUITES)",
+      "address": "24 HOLLAND GROVE ROAD #01-12 PARKSUITES",
+      "postalCode": "278803",
+      "latitude": 1.316928,
+      "longitude": 103.783221,
+      "services": [
+        "vet"
+      ],
+      "is24h": false,
+      "licenceNos": [],
+      "animalTypes": [],
+      "approvedActivity": null
+    },
+    {
+      "id": "c15c81d7fa81",
+      "name": "MY ANIMAL DISPENSARY PTE LTD",
+      "address": "1 WEST COAST DRIVE #01-15 NEWEST",
+      "postalCode": "128020",
+      "latitude": 1.316413,
+      "longitude": 103.757451,
+      "services": [
+        "vet"
+      ],
+      "is24h": false,
+      "licenceNos": [],
+      "animalTypes": [],
+      "approvedActivity": null
+    },
+    {
+      "id": "c3044124b849",
+      "name": "OMNIVET",
+      "address": "31 JALAN MAS PUTEH PASIR PANJANG GARDENS",
+      "postalCode": "128633",
+      "latitude": 1.308423,
+      "longitude": 103.76216,
+      "services": [
+        "vet"
+      ],
+      "is24h": false,
+      "licenceNos": [],
+      "animalTypes": [],
+      "approvedActivity": null
+    },
+    {
+      "id": "c3d680bf882c",
+      "name": "SINGAPORE VETERINARY (SINGVET) ANIMAL CLINIC PTE LTD",
+      "address": "768 WOODLANDS AVENUE 6 #01-11 WOODLANDS MART",
+      "postalCode": "730768",
+      "latitude": 1.445751,
+      "longitude": 103.79812,
+      "services": [
+        "vet"
+      ],
+      "is24h": false,
+      "licenceNos": [],
+      "animalTypes": [],
+      "approvedActivity": null
+    },
+    {
+      "id": "c43e7cba2c09",
+      "name": "DIAMOND WINGS HOLDING PTE. LTD.",
+      "address": "151 SERANGOON NORTH AVENUE 2 #01- 73",
+      "postalCode": "550151",
+      "latitude": 1.369422,
+      "longitude": 103.874351,
+      "services": [
+        "petshop"
+      ],
+      "is24h": false,
+      "licenceNos": [
+        "AS25D00017"
+      ],
+      "animalTypes": [
+        "C"
+      ],
+      "approvedActivity": null
+    },
+    {
+      "id": "c4615bb1aa77",
+      "name": "PAWS & CLAWS VETERINARY SURGERY",
+      "address": "285 YISHUN AVENUE 6 #01-06 FICUS VALE",
+      "postalCode": "760285",
+      "latitude": 1.43994,
+      "longitude": 103.839382,
+      "services": [
+        "vet"
+      ],
+      "is24h": false,
+      "licenceNos": [],
+      "animalTypes": [],
+      "approvedActivity": null
+    },
+    {
+      "id": "c4ab35cfba70",
+      "name": "SILKY INTERNATIONAL HOLDINGS PTE. LTD.",
+      "address": "46 JALAN LIMBOK NANYANG PARK",
+      "postalCode": "548728",
+      "latitude": 1.365023,
+      "longitude": 103.8755,
+      "services": [
+        "petshop"
+      ],
+      "is24h": false,
+      "licenceNos": [
+        "AS16J00033"
+      ],
+      "animalTypes": [
+        "D"
+      ],
+      "approvedActivity": null
+    },
+    {
+      "id": "c4d0c0a9df4f",
+      "name": "PAWS AND WOOFERS PTE. LTD.",
+      "address": "482 GEYLANG ROAD LEVELS 1 AND 2",
+      "postalCode": "389441",
+      "latitude": 1.313377,
+      "longitude": 103.884499,
+      "services": [
+        "petshop"
+      ],
+      "is24h": false,
+      "licenceNos": [
+        "AS20K00051"
+      ],
+      "animalTypes": [],
+      "approvedActivity": null
+    },
+    {
+      "id": "c645db7703d1",
+      "name": "The Bears Day Out",
+      "address": "264 Joo Chiat Road",
+      "postalCode": "427518",
+      "latitude": 1.31107,
+      "longitude": 103.901013,
+      "services": [
+        "boarding"
+      ],
+      "is24h": false,
+      "licenceNos": [
+        "BD25044"
+      ],
+      "animalTypes": [],
+      "approvedActivity": "Pet Boarding (Dogs)"
+    },
+    {
+      "id": "c69082004a6c",
+      "name": "OUBAO ASIA PTE. LTD.",
+      "address": "810 GEYLANG ROAD #03- 136 CITY PLAZA",
+      "postalCode": "409286",
+      "latitude": 1.314787,
+      "longitude": 103.893472,
+      "services": [
+        "petshop"
+      ],
+      "is24h": false,
+      "licenceNos": [
+        "AS25J00047"
+      ],
+      "animalTypes": [
+        "C",
+        "SM"
+      ],
+      "approvedActivity": null
+    },
+    {
+      "id": "c6c949bd47e4",
+      "name": "ADVANCED VETCARE @ BALESTIER",
+      "address": "564A BALESTIER ROAD NIL",
+      "postalCode": "329880",
+      "latitude": 1.326967,
+      "longitude": 103.844376,
+      "services": [
+        "vet"
+      ],
+      "is24h": false,
+      "licenceNos": [],
+      "animalTypes": [],
+      "approvedActivity": null
+    },
+    {
+      "id": "c711f2414554",
+      "name": "LITTLE CATS & CO PTE. LTD.",
+      "address": "190 JOO CHIAT ROAD #04- 01",
+      "postalCode": "427461",
+      "latitude": 1.31239,
+      "longitude": 103.900084,
+      "services": [
+        "petshop"
+      ],
+      "is24h": false,
+      "licenceNos": [
+        "AS21F00025"
+      ],
+      "animalTypes": [
+        "C"
+      ],
+      "approvedActivity": null
+    },
+    {
+      "id": "c7ecb0f095fa",
+      "name": "T&J Cat Lover Pte. Ltd.",
+      "address": "787, Geylang Road, #02-01",
+      "postalCode": "389674",
+      "latitude": 1.315202,
+      "longitude": 103.89165,
+      "services": [
+        "boarding"
+      ],
+      "is24h": false,
+      "licenceNos": [
+        "BD25080"
+      ],
+      "animalTypes": [],
+      "approvedActivity": "Pet Boarding (Cats)"
+    },
+    {
+      "id": "c88cb212536d",
+      "name": "PURRFECT MEOWS",
+      "address": "3 SOUTH BUONA VISTA ROAD #B1- 62 VIVA VISTA",
+      "postalCode": "118136",
+      "latitude": 1.279803,
+      "longitude": 103.78591,
+      "services": [
+        "petshop"
+      ],
+      "is24h": false,
+      "licenceNos": [
+        "AS20K00054"
+      ],
+      "animalTypes": [
+        "C"
+      ],
+      "approvedActivity": null
+    },
+    {
+      "id": "c88e409767e1",
+      "name": "PETS AVENUE VETERINARY CLINIC (FARRER)",
+      "address": "8 EMPRESS ROAD #01-11 FARRER GARDENS",
+      "postalCode": "260008",
+      "latitude": 1.316412,
+      "longitude": 103.805374,
+      "services": [
+        "vet"
+      ],
+      "is24h": false,
+      "licenceNos": [],
+      "animalTypes": [],
+      "approvedActivity": null
+    },
+    {
+      "id": "c95a68ff30cc",
+      "name": "TOA PAYOH VETS PTE LTD",
+      "address": "1002 TOA PAYOH INDUSTRIAL PARK #01-1477 TOA PAYOH INDUSTRIAL PARK",
+      "postalCode": "319074",
+      "latitude": 1.334944,
+      "longitude": 103.861041,
+      "services": [
+        "vet"
+      ],
+      "is24h": false,
+      "licenceNos": [],
+      "animalTypes": [],
+      "approvedActivity": null
+    },
+    {
+      "id": "c95ee626f9f2",
+      "name": "BEECROFT ANIMAL SPECIALIST AND EMERGENCY HOSPITAL",
+      "address": "991E ALEXANDRA ROAD #01-27 NIL",
+      "postalCode": "119973",
+      "latitude": 1.273258,
+      "longitude": 103.802921,
+      "services": [
+        "vet"
+      ],
+      "is24h": true,
+      "licenceNos": [],
+      "animalTypes": [],
+      "approvedActivity": null
+    },
+    {
+      "id": "c96065a45957",
+      "name": "THE LITTLE RASCALS",
+      "address": "263 TANJONG KATONG ROAD #01- 03 SUITES@ KATONG",
+      "postalCode": "437050",
+      "latitude": 1.307803,
+      "longitude": 103.895551,
+      "services": [
+        "petshop"
+      ],
+      "is24h": false,
+      "licenceNos": [
+        "AS24D00023"
+      ],
+      "animalTypes": [
+        "D"
+      ],
+      "approvedActivity": null
+    },
+    {
+      "id": "ca7976ab847d",
+      "name": "THE PROJECT CRITTERS PTE. LTD.",
+      "address": "144 UPPER BUKIT TIMAH ROAD #04- 12 BEAUTY WORLD CENTRE",
+      "postalCode": "588177",
+      "latitude": 1.342413,
+      "longitude": 103.776539,
+      "services": [
+        "petshop"
+      ],
+      "is24h": false,
+      "licenceNos": [
+        "AS23G00037"
+      ],
+      "animalTypes": [
+        "C"
+      ],
+      "approvedActivity": null
+    },
+    {
+      "id": "cad9146de637",
+      "name": "MOUNT PLEASANT VETERINARY CENTRE (YISHUN)",
+      "address": "236 YISHUN RING ROAD #01-1010 YISHUN HEARTS",
+      "postalCode": "760236",
+      "latitude": 1.434168,
+      "longitude": 103.838999,
+      "services": [
+        "vet"
+      ],
+      "is24h": false,
+      "licenceNos": [],
+      "animalTypes": [],
+      "approvedActivity": null
+    },
+    {
+      "id": "cb1472e34a15",
+      "name": "MAINECOON CATTERY SG",
+      "address": "180 JOO CHIAT ROAD #02- 02",
+      "postalCode": "427451",
+      "latitude": 1.312517,
+      "longitude": 103.899877,
+      "services": [
+        "petshop"
+      ],
+      "is24h": false,
+      "licenceNos": [
+        "AS24E00026"
+      ],
+      "animalTypes": [
+        "C"
+      ],
+      "approvedActivity": null
+    },
+    {
+      "id": "cc9123d1977d",
+      "name": "MINIMIAO",
+      "address": "85 MAUDE ROAD LEVEL 4",
+      "postalCode": "208357",
+      "latitude": 1.308304,
+      "longitude": 103.857795,
+      "services": [
+        "petshop"
+      ],
+      "is24h": false,
+      "licenceNos": [
+        "AS25L00057"
+      ],
+      "animalTypes": [
+        "C"
+      ],
+      "approvedActivity": null
+    },
+    {
+      "id": "cce73145c3bc",
+      "name": "TINY TAILS PTE. LTD.",
+      "address": "6 WARINGIN PARK #01- 00 SIN CHUAN GARDEN",
+      "postalCode": "416320",
+      "latitude": 1.322134,
+      "longitude": 103.918072,
+      "services": [
+        "petshop"
+      ],
+      "is24h": false,
+      "licenceNos": [
+        "AS25J00049"
+      ],
+      "animalTypes": [
+        "D"
+      ],
+      "approvedActivity": null
+    },
+    {
+      "id": "cf5356c436ec",
+      "name": "Popcats Pte Ltd",
+      "address": "34 South Bridge Road 04-01",
+      "postalCode": "058668",
+      "latitude": 1.288143,
+      "longitude": 103.848502,
+      "services": [
+        "boarding"
+      ],
+      "is24h": false,
+      "licenceNos": [
+        "BD25052"
+      ],
+      "animalTypes": [],
+      "approvedActivity": "Pet Boarding (Cats)"
+    },
+    {
+      "id": "cf77bfc37df3",
+      "name": "EVERVET VETERINARY CLINIC",
+      "address": "212 CHANGI ROAD #01-212 NIL",
+      "postalCode": "419735",
+      "latitude": 1.31715,
+      "longitude": 103.903965,
+      "services": [
+        "vet"
+      ],
+      "is24h": false,
+      "licenceNos": [],
+      "animalTypes": [],
+      "approvedActivity": null
+    },
+    {
+      "id": "d0f1dc2fab18",
+      "name": "SUPERDOGS PTE. LTD.",
+      "address": "506 MACPHERSON ROAD LEVEL 1",
+      "postalCode": "368206",
+      "latitude": 1.332208,
+      "longitude": 103.883703,
+      "services": [
+        "petshop"
+      ],
+      "is24h": false,
+      "licenceNos": [
+        "AS22B00013"
+      ],
+      "animalTypes": [
+        "D"
+      ],
+      "approvedActivity": null
+    },
+    {
+      "id": "d30422809dd6",
+      "name": "MAO SG",
+      "address": "9 YIO CHU KANG ROAD #01- 36 SPACE @ KOVAN",
+      "postalCode": "545523",
+      "latitude": 1.354665,
+      "longitude": 103.876884,
+      "services": [
+        "petshop"
+      ],
+      "is24h": false,
+      "licenceNos": [
+        "AS24J00045"
+      ],
+      "animalTypes": [
+        "C"
+      ],
+      "approvedActivity": null
+    },
+    {
+      "id": "d3086877b663",
+      "name": "CURIOUS TAILS PTE. LTD.",
+      "address": "2 BALESTIER ROAD #01- 701 BALESTIER HILL SHOPPING CENTRE",
+      "postalCode": "320002",
+      "latitude": 1.325896,
+      "longitude": 103.842935,
+      "services": [
+        "petshop"
+      ],
+      "is24h": false,
+      "licenceNos": [
+        "AS24J00046"
+      ],
+      "animalTypes": [
+        "D"
+      ],
+      "approvedActivity": null
+    },
+    {
+      "id": "d3adc4997fb9",
+      "name": "Tender Loving Cats Pte Ltd",
+      "address": "600 Geylang Road #02-00",
+      "postalCode": "389539",
+      "latitude": 1.314073,
+      "longitude": 103.88803,
+      "services": [
+        "boarding"
+      ],
+      "is24h": false,
+      "licenceNos": [
+        "BD25025"
+      ],
+      "animalTypes": [],
+      "approvedActivity": "Pet Boarding (Cats)"
+    },
+    {
+      "id": "d47ac1771ac1",
+      "name": "COLLABSPACE PTE. LTD.",
+      "address": "372 JOO CHIAT ROAD LEVEL 1",
+      "postalCode": "427617",
+      "latitude": 1.308037,
+      "longitude": 103.903162,
+      "services": [
+        "petshop"
+      ],
+      "is24h": false,
+      "licenceNos": [
+        "AS25H00039"
+      ],
+      "animalTypes": [
+        "D"
+      ],
+      "approvedActivity": null
+    },
+    {
+      "id": "d52b5c8d2737",
+      "name": "Pawhaus & Dognassium Doggie Daycare",
+      "address": "55 Lorong L Telok Kurau #02-65 Bright Centre",
+      "postalCode": "425500",
+      "latitude": 1.311821,
+      "longitude": 103.910557,
+      "services": [
+        "boarding"
+      ],
+      "is24h": false,
+      "licenceNos": [
+        "BD25093"
+      ],
+      "animalTypes": [],
+      "approvedActivity": "Pet Boarding (Dogs)"
+    },
+    {
+      "id": "d6d7076e0aab",
+      "name": "Wong Ling Kennel",
+      "address": "59 Sungei Tengah Road Block M #02-22",
+      "postalCode": "699014",
+      "latitude": 1.381384,
+      "longitude": 103.725553,
+      "services": [
+        "boarding"
+      ],
+      "is24h": false,
+      "licenceNos": [
+        "BD25013"
+      ],
+      "animalTypes": [],
+      "approvedActivity": "Pet Boarding (Cats & Dogs)"
+    },
+    {
+      "id": "d6ecbd9569ec",
+      "name": "WELLFOND PETS THOMSON LIMITED LIABILITY PARTNERSHIP",
+      "address": "197 UPPER THOMSON ROAD YEW LIAN PARK",
+      "postalCode": "574341",
+      "latitude": 1.351778,
+      "longitude": 103.835217,
+      "services": [
+        "petshop"
+      ],
+      "is24h": false,
+      "licenceNos": [
+        "AS15A00001"
+      ],
+      "animalTypes": [
+        "D"
+      ],
+      "approvedActivity": null
+    },
+    {
+      "id": "d70554b50272",
+      "name": "Iguru Pets Pte Ltd",
+      "address": "39 Kampong Bahru Road",
+      "postalCode": "169357",
+      "latitude": 1.276858,
+      "longitude": 103.836326,
+      "services": [
+        "boarding"
+      ],
+      "is24h": false,
+      "licenceNos": [
+        "BD25086"
+      ],
+      "animalTypes": [],
+      "approvedActivity": "Pet Boarding (Dogs)"
+    },
+    {
+      "id": "d7d56bd45735",
+      "name": "THE ANIMAL DOCTORS (TIONG BAHRU)",
+      "address": "11A BOON TIONG ROAD #02-07 TIONG BAHRU VIEW",
+      "postalCode": "161011",
+      "latitude": 1.286366,
+      "longitude": 103.82879,
+      "services": [
+        "vet"
+      ],
+      "is24h": false,
+      "licenceNos": [],
+      "animalTypes": [],
+      "approvedActivity": null
+    },
+    {
+      "id": "d9ae0c01c8ee",
+      "name": "ACACIA VET & SURGERY",
+      "address": "338 ANG MO KIO AVENUE 1 #01-1671 TECK GHEE COURT",
+      "postalCode": "560338",
+      "latitude": 1.363896,
+      "longitude": 103.848987,
+      "services": [
+        "vet"
+      ],
+      "is24h": false,
+      "licenceNos": [],
+      "animalTypes": [],
+      "approvedActivity": null
+    },
+    {
+      "id": "da1b7d2e7377",
+      "name": "WEST COAST VETCARE PTE LTD",
+      "address": "612 CLEMENTI WEST STREET 1 #01-300 NIL",
+      "postalCode": "120612",
+      "latitude": 1.303442,
+      "longitude": 103.768633,
+      "services": [
+        "vet"
+      ],
+      "is24h": false,
+      "licenceNos": [],
+      "animalTypes": [],
+      "approvedActivity": null
+    },
+    {
+      "id": "db02a9d8dbd7",
+      "name": "PETS AVENUE VETERINARY CLINIC (RIVER VALLEY)",
+      "address": "241 RIVER VALLEY ROAD #02-01 GIANURN BUILDING",
+      "postalCode": "238298",
+      "latitude": 1.294241,
+      "longitude": 103.841856,
+      "services": [
+        "vet"
+      ],
+      "is24h": false,
+      "licenceNos": [],
+      "animalTypes": [],
+      "approvedActivity": null
+    },
+    {
+      "id": "db9117496b32",
+      "name": "HOPE VETERINARY CARE",
+      "address": "1017 UPPER SERANGOON ROAD #01-01 NIL",
+      "postalCode": "534755",
+      "latitude": 1.362808,
+      "longitude": 103.887549,
+      "services": [
+        "vet"
+      ],
+      "is24h": false,
+      "licenceNos": [],
+      "animalTypes": [],
+      "approvedActivity": null
+    },
+    {
+      "id": "dc21f0e06b48",
+      "name": "THE JOYOUS VET PTE LTD",
+      "address": "475 Choa Chu Kang Ave 3 #01-30A NIL",
+      "postalCode": "680475",
+      "latitude": 1.378056,
+      "longitude": 103.738932,
+      "services": [
+        "vet"
+      ],
+      "is24h": false,
+      "licenceNos": [],
+      "animalTypes": [],
+      "approvedActivity": null
+    },
+    {
+      "id": "dd030d59adf4",
+      "name": "GENESIS RAGDOLL",
+      "address": "80 CHANGI ROAD #02- 53 CENTROPOD @ CHANGI",
+      "postalCode": "419715",
+      "latitude": 1.316334,
+      "longitude": 103.900525,
+      "services": [
+        "petshop"
+      ],
+      "is24h": false,
+      "licenceNos": [
+        "AS23L00049"
+      ],
+      "animalTypes": [
+        "C"
+      ],
+      "approvedActivity": null
+    },
+    {
+      "id": "dd7664415810",
+      "name": "LE PETS KINGDOM PTE. LTD.",
+      "address": "14 LIM TUA TOW ROAD",
+      "postalCode": "547738",
+      "latitude": 1.353978,
+      "longitude": 103.877289,
+      "services": [
+        "petshop"
+      ],
+      "is24h": false,
+      "licenceNos": [
+        "AS24L00056"
+      ],
+      "animalTypes": [
+        "D"
+      ],
+      "approvedActivity": null
+    },
+    {
+      "id": "dd870992d9e9",
+      "name": "Pawlidays Pte Ltd",
+      "address": "9 Rochdale Road (1st Storey)",
+      "postalCode": "535822",
+      "latitude": 1.343534,
+      "longitude": 103.883482,
+      "services": [
+        "boarding"
+      ],
+      "is24h": false,
+      "licenceNos": [
+        "BD25110"
+      ],
+      "animalTypes": [],
+      "approvedActivity": "Pet Boarding (Dogs)"
+    },
+    {
+      "id": "dee49c31b292",
+      "name": "CARE VETERINARY CLINIC PTE LTD",
+      "address": "124 LORONG 1 TOA PAYOH #01-473 NIL",
+      "postalCode": "310124",
+      "latitude": 1.338649,
+      "longitude": 103.844627,
+      "services": [
+        "vet"
+      ],
+      "is24h": false,
+      "licenceNos": [],
+      "animalTypes": [],
+      "approvedActivity": null
+    },
+    {
+      "id": "deebd2d17242",
+      "name": "DIAMOND WINGS HOLDING PTE. LTD.",
+      "address": "320 TANJONG KATONG ROAD LEVEL 1",
+      "postalCode": "437101",
+      "latitude": 1.304398,
+      "longitude": 103.896253,
+      "services": [
+        "petshop"
+      ],
+      "is24h": false,
+      "licenceNos": [
+        "AS20K00049"
+      ],
+      "animalTypes": [
+        "D",
+        "C"
+      ],
+      "approvedActivity": null
+    },
+    {
+      "id": "e34336a9f05f",
+      "name": "CANOPY VETERINARY CENTRE",
+      "address": "1 YUAN CHING ROAD #03-03 SUPERBOWL JURONG",
+      "postalCode": "618640",
+      "latitude": 1.325906,
+      "longitude": 103.724523,
+      "services": [
+        "vet"
+      ],
+      "is24h": false,
+      "licenceNos": [],
+      "animalTypes": [],
+      "approvedActivity": null
+    },
+    {
+      "id": "e427cc645d38",
+      "name": "CATSNCO",
+      "address": "237B JOO CHIAT ROAD LEVEL 3",
+      "postalCode": "427494",
+      "latitude": 1.311003,
+      "longitude": 103.901422,
+      "services": [
+        "petshop"
+      ],
+      "is24h": false,
+      "licenceNos": [
+        "AS25G00035"
+      ],
+      "animalTypes": [
+        "C"
+      ],
+      "approvedActivity": null
+    },
+    {
+      "id": "e58c666169c1",
+      "name": "WELLFOND PETS PTE. LTD.",
+      "address": "328 TANJONG KATONG ROAD LEVEL 1",
+      "postalCode": "437105",
+      "latitude": 1.304211,
+      "longitude": 103.896312,
+      "services": [
+        "petshop"
+      ],
+      "is24h": false,
+      "licenceNos": [
+        "AS13H00026"
+      ],
+      "animalTypes": [
+        "D"
+      ],
+      "approvedActivity": null
+    },
+    {
+      "id": "e5c83be255bf",
+      "name": "Fluff Ave Private Limited",
+      "address": "8 Jalan Masjid (Level 1)",
+      "postalCode": "418927",
+      "latitude": 1.319618,
+      "longitude": 103.912711,
+      "services": [
+        "boarding"
+      ],
+      "is24h": false,
+      "licenceNos": [
+        "BD25005"
+      ],
+      "animalTypes": [],
+      "approvedActivity": "Pet Boarding (Dogs)"
+    },
+    {
+      "id": "e6fb267f2904",
+      "name": "JL International Pet Relocation Pte. Ltd.",
+      "address": "479 Joo Chiat Road (2nd Storey)",
+      "postalCode": "427684",
+      "latitude": 1.306333,
+      "longitude": 103.90484,
+      "services": [
+        "boarding"
+      ],
+      "is24h": false,
+      "licenceNos": [
+        "BD26003"
+      ],
+      "animalTypes": [],
+      "approvedActivity": "Pet Boarding (Dogs)"
+    },
+    {
+      "id": "e83c33a7f1fa",
+      "name": "JIREH VETERINARY CLINIC PTE LTD",
+      "address": "530 BALESTIER ROAD #01-04 NIL",
+      "postalCode": "329857",
+      "latitude": 1.327169,
+      "longitude": 103.845519,
+      "services": [
+        "vet"
+      ],
+      "is24h": false,
+      "licenceNos": [],
+      "animalTypes": [],
+      "approvedActivity": null
+    },
+    {
+      "id": "e8e0763c79c2",
+      "name": "POPPII POPPII PTE. LTD.",
+      "address": "524 MACPHERSON ROAD LEVEL 1",
+      "postalCode": "368215",
+      "latitude": 1.332302,
+      "longitude": 103.884254,
+      "services": [
+        "petshop"
+      ],
+      "is24h": false,
+      "licenceNos": [
+        "AS24A00005"
+      ],
+      "animalTypes": [
+        "D"
+      ],
+      "approvedActivity": null
+    },
+    {
+      "id": "eab403039717",
+      "name": "36 Pets Pte Ltd",
+      "address": "462 Macpherson Road (1st storey)",
+      "postalCode": "368180",
+      "latitude": 1.331928,
+      "longitude": 103.882584,
+      "services": [
+        "boarding"
+      ],
+      "is24h": false,
+      "licenceNos": [
+        "BD25108"
+      ],
+      "animalTypes": [],
+      "approvedActivity": "Pet Boarding (Cats)"
+    },
+    {
+      "id": "ec28b438d897",
+      "name": "Treat Your Dog Pte Ltd",
+      "address": "212 Telok Kurau Road #04-214",
+      "postalCode": "423835",
+      "latitude": 1.312089,
+      "longitude": 103.910595,
+      "services": [
+        "boarding"
+      ],
+      "is24h": false,
+      "licenceNos": [
+        "BD25057"
+      ],
+      "animalTypes": [],
+      "approvedActivity": "Pet Boarding (Dogs)"
+    },
+    {
+      "id": "ec31ca0cbf46",
+      "name": "ALLPETS & AQUALIFE VETS PTE LTD",
+      "address": "24 JALAN KELULUT #01-01 NIL",
+      "postalCode": "809041",
+      "latitude": 1.383418,
+      "longitude": 103.875621,
+      "services": [
+        "vet"
+      ],
+      "is24h": false,
+      "licenceNos": [],
+      "animalTypes": [],
+      "approvedActivity": null
+    },
+    {
+      "id": "ee3b63af7254",
+      "name": "Nine2Five Pte Ltd",
+      "address": "56 Sembawang Rd #01-05, Hong Heng Mansion",
+      "postalCode": "779086",
+      "latitude": 1.402969,
+      "longitude": 103.818313,
+      "services": [
+        "boarding"
+      ],
+      "is24h": false,
+      "licenceNos": [
+        "BD25023"
+      ],
+      "animalTypes": [],
+      "approvedActivity": "Pet Boarding (Cats & Dogs)"
+    },
+    {
+      "id": "ef00861c1da6",
+      "name": "VETS FOR PETS PTE LTD",
+      "address": "519 JURONG WEST STREET 52 #01-157 NIL",
+      "postalCode": "640519",
+      "latitude": 1.345538,
+      "longitude": 103.717583,
+      "services": [
+        "vet"
+      ],
+      "is24h": false,
+      "licenceNos": [],
+      "animalTypes": [],
+      "approvedActivity": null
+    },
+    {
+      "id": "ef3ce00d1f33",
+      "name": "TT PETS",
+      "address": "3 SOUTH BUONA VISTA ROAD #B1- 24 VIVA VISTA",
+      "postalCode": "118136",
+      "latitude": 1.279803,
+      "longitude": 103.78591,
+      "services": [
+        "petshop"
+      ],
+      "is24h": false,
+      "licenceNos": [
+        "AS23B00011"
+      ],
+      "animalTypes": [
+        "D"
+      ],
+      "approvedActivity": null
+    },
+    {
+      "id": "f0c61f68a6c3",
+      "name": "Super Cuddles Pte Ltd",
+      "address": "71A Geylang Road",
+      "postalCode": "389194",
+      "latitude": 1.310694,
+      "longitude": 103.872684,
+      "services": [
+        "boarding"
+      ],
+      "is24h": false,
+      "licenceNos": [
+        "BD25008"
+      ],
+      "animalTypes": [],
+      "approvedActivity": "Pet Boarding (Dogs)"
+    },
+    {
+      "id": "f11685a6f6de",
+      "name": "VET PRACTICE PTE LTD",
+      "address": "21 LORONG KILAT #01-04 SUN COURT",
+      "postalCode": "598123",
+      "latitude": 1.340856,
+      "longitude": 103.773139,
+      "services": [
+        "vet"
+      ],
+      "is24h": false,
+      "licenceNos": [],
+      "animalTypes": [],
+      "approvedActivity": null
+    },
+    {
+      "id": "f1a8762b5da2",
+      "name": "LUXEMIAO PTE. LTD.",
+      "address": "1 HARBOURFRONT WALK #02- 96 VIVOCITY",
+      "postalCode": "098585",
+      "latitude": 1.264314,
+      "longitude": 103.822073,
+      "services": [
+        "petshop"
+      ],
+      "is24h": false,
+      "licenceNos": [
+        "AS26M00003"
+      ],
+      "animalTypes": [
+        "C"
+      ],
+      "approvedActivity": null
+    },
+    {
+      "id": "f24b7b252674",
+      "name": "CUDDLES AND PURRS",
+      "address": "183 JALAN PELIKAT #01- 96/97 THE PROMENADE@PELIKAT",
+      "postalCode": "537643",
+      "latitude": 1.355309,
+      "longitude": 103.887857,
+      "services": [
+        "petshop"
+      ],
+      "is24h": false,
+      "licenceNos": [
+        "AS25H00041"
+      ],
+      "animalTypes": [
+        "C"
+      ],
+      "approvedActivity": null
+    },
+    {
+      "id": "f270cb52caef",
+      "name": "CATACURE PTE. LTD.",
+      "address": "582 GEYLANG ROAD LEVEL 5",
+      "postalCode": "389521",
+      "latitude": 1.313956,
+      "longitude": 103.887472,
+      "services": [
+        "petshop",
+        "boarding"
+      ],
+      "is24h": false,
+      "licenceNos": [
+        "AS25M00001",
+        "BD25049"
+      ],
+      "animalTypes": [
+        "C"
+      ],
+      "approvedActivity": "Pet Boarding (Cats)"
+    },
+    {
+      "id": "f3fcaf60d14b",
+      "name": "The PUP Life Grooming & Hotel Pte Ltd",
+      "address": "494 Macpherson Road",
+      "postalCode": "368200",
+      "latitude": 1.332107,
+      "longitude": 103.883396,
+      "services": [
+        "boarding"
+      ],
+      "is24h": false,
+      "licenceNos": [
+        "BD25017"
+      ],
+      "animalTypes": [],
+      "approvedActivity": "Pet Boarding (Dogs)"
+    },
+    {
+      "id": "f5660401feb4",
+      "name": "BLUECREST CATTERY PTE. LTD.",
+      "address": "3 SOUTH BUONA VISTA ROAD #B1- 43 VIVA VISTA",
+      "postalCode": "118136",
+      "latitude": 1.279803,
+      "longitude": 103.78591,
+      "services": [
+        "petshop"
+      ],
+      "is24h": false,
+      "licenceNos": [
+        "AS20K00053"
+      ],
+      "animalTypes": [
+        "C"
+      ],
+      "approvedActivity": null
+    },
+    {
+      "id": "f5f0c0168c76",
+      "name": "CAT CONNOISSEUR PTE. LTD.",
+      "address": "362 JOO CHIAT ROAD #03- 01",
+      "postalCode": "427607",
+      "latitude": 1.308274,
+      "longitude": 103.903036,
+      "services": [
+        "petshop",
+        "boarding"
+      ],
+      "is24h": false,
+      "licenceNos": [
+        "AS24A00006",
+        "BD25075"
+      ],
+      "animalTypes": [
+        "C"
+      ],
+      "approvedActivity": "Pet Boarding (Cats)"
+    },
+    {
+      "id": "f64efcf330a5",
+      "name": "FEIMAO ENTERPRISES PTE. LTD.",
+      "address": "337 JOO CHIAT ROAD LEVEL 1",
+      "postalCode": "427590",
+      "latitude": 1.30905,
+      "longitude": 103.903009,
+      "services": [
+        "petshop"
+      ],
+      "is24h": false,
+      "licenceNos": [
+        "AS21L00073"
+      ],
+      "animalTypes": [
+        "D",
+        "C"
+      ],
+      "approvedActivity": null
+    },
+    {
+      "id": "f8303a9e75c1",
+      "name": "THE VETERINARY CLINIC",
+      "address": "31 LORONG LIPUT HOLLAND VILLAGE",
+      "postalCode": "277742",
+      "latitude": 1.310641,
+      "longitude": 103.794924,
+      "services": [
+        "vet"
+      ],
+      "is24h": false,
+      "licenceNos": [],
+      "animalTypes": [],
+      "approvedActivity": null
+    },
+    {
+      "id": "f85d6371dc49",
+      "name": "Meowradise Inn",
+      "address": "257A Geylang Road (2nd Storey)",
+      "postalCode": "389313",
+      "latitude": 1.312481,
+      "longitude": 103.877385,
+      "services": [
+        "boarding"
+      ],
+      "is24h": false,
+      "licenceNos": [
+        "BD25047"
+      ],
+      "animalTypes": [],
+      "approvedActivity": "Pet Boarding (Cats)"
+    },
+    {
+      "id": "fa0fa2c48173",
+      "name": "FUREVER LOVE PTE. LTD.",
+      "address": "466 MACPHERSON ROAD LEVEL 1",
+      "postalCode": "368184",
+      "latitude": 1.33195,
+      "longitude": 103.882681,
+      "services": [
+        "petshop"
+      ],
+      "is24h": false,
+      "licenceNos": [
+        "AS22D00025"
+      ],
+      "animalTypes": [
+        "D"
+      ],
+      "approvedActivity": null
+    },
+    {
+      "id": "fa70e082f368",
+      "name": "ANIMAL ARTS ACADEMY PTE. LTD.",
+      "address": "9 KENSINGTON PARK ROAD SERANGOON GARDEN ESTATE",
+      "postalCode": "557261",
+      "latitude": 1.364991,
+      "longitude": 103.866078,
+      "services": [
+        "petshop"
+      ],
+      "is24h": false,
+      "licenceNos": [
+        "AS15K00028"
+      ],
+      "animalTypes": [
+        "D"
+      ],
+      "approvedActivity": null
+    },
+    {
+      "id": "fa7350603f66",
+      "name": "THE CATS COLLECTIVE PTE. LTD.",
+      "address": "183 JALAN PELIKAT #01- 114 THE PROMENADE@PELIKAT",
+      "postalCode": "537643",
+      "latitude": 1.355309,
+      "longitude": 103.887857,
+      "services": [
+        "petshop"
+      ],
+      "is24h": false,
+      "licenceNos": [
+        "AS25J00046"
+      ],
+      "animalTypes": [
+        "C"
+      ],
+      "approvedActivity": null
+    },
+    {
+      "id": "fb2254ff0a13",
+      "name": "VET CENTRAL (SWAN LAKE) PTE LTD",
+      "address": "9 SWAN LAKE AVENUE OPERA ESTATE",
+      "postalCode": "455708",
+      "latitude": 1.321128,
+      "longitude": 103.924131,
+      "services": [
+        "vet"
+      ],
+      "is24h": false,
+      "licenceNos": [],
+      "animalTypes": [],
+      "approvedActivity": null
+    },
+    {
+      "id": "fb3e8e916421",
+      "name": "APEX VETERINARY CLINIC",
+      "address": "462 RIVER VALLEY ROAD NIL",
+      "postalCode": "248347",
+      "latitude": 1.293861,
+      "longitude": 103.826744,
+      "services": [
+        "vet"
+      ],
+      "is24h": false,
+      "licenceNos": [],
+      "animalTypes": [],
+      "approvedActivity": null
+    },
+    {
+      "id": "fb5f85ade4fb",
+      "name": "Cat's Cradle Private Limited",
+      "address": "802 North Bridge Road #02-01",
+      "postalCode": "198770",
+      "latitude": 1.303764,
+      "longitude": 103.860398,
+      "services": [
+        "boarding"
+      ],
+      "is24h": false,
+      "licenceNos": [
+        "BD25042"
+      ],
+      "animalTypes": [],
+      "approvedActivity": "Pet Boarding (Cats)"
+    },
+    {
+      "id": "fc318a9f9f41",
+      "name": "WESTWIDE VETERINARY EMERGENCY AND REFERRAL HOSPITAL",
+      "address": "86 SERANGOON GARDEN WAY SERANGOON GARDEN ESTATE",
+      "postalCode": "555982",
+      "latitude": 1.364388,
+      "longitude": 103.864937,
+      "services": [
+        "vet"
+      ],
+      "is24h": true,
+      "licenceNos": [],
+      "animalTypes": [],
+      "approvedActivity": null
+    },
+    {
+      "id": "fd6b04d296b0",
+      "name": "Vegaspalace",
+      "address": "63 Syed Alwi Road #01-01",
+      "postalCode": "207642",
+      "latitude": 1.307638,
+      "longitude": 103.857551,
+      "services": [
+        "boarding"
+      ],
+      "is24h": false,
+      "licenceNos": [
+        "BD25106"
+      ],
+      "animalTypes": [],
+      "approvedActivity": "Pet Boarding (Dogs)"
+    },
+    {
+      "id": "fd92fa4ec8c2",
+      "name": "KUCINTA KATZE PTE. LTD.",
+      "address": "474 MACPHERSON ROAD LEVEL 1",
+      "postalCode": "368190",
+      "latitude": 1.331991,
+      "longitude": 103.882874,
+      "services": [
+        "petshop"
+      ],
+      "is24h": false,
+      "licenceNos": [
+        "AS25J00048"
+      ],
+      "animalTypes": [
+        "C"
+      ],
+      "approvedActivity": null
+    },
+    {
+      "id": "fe61a72cf855",
+      "name": "CATZILLA PTE. LTD.",
+      "address": "261 GEYLANG ROAD LEVEL 2",
+      "postalCode": "389317",
+      "latitude": 1.312482,
+      "longitude": 103.877489,
+      "services": [
+        "petshop",
+        "boarding"
+      ],
+      "is24h": false,
+      "licenceNos": [
+        "AS23L00050",
+        "BD25050"
+      ],
+      "animalTypes": [
+        "C"
+      ],
+      "approvedActivity": "Pet Boarding (Cats)"
+    },
+    {
+      "id": "fe8c5bf341e3",
+      "name": "KAI VETS PTE LTD",
+      "address": "144 TAMPINES STREET 12 #01-392 NIL",
+      "postalCode": "521144",
+      "latitude": 1.348419,
+      "longitude": 103.943726,
+      "services": [
+        "vet"
+      ],
+      "is24h": false,
+      "licenceNos": [],
+      "animalTypes": [],
+      "approvedActivity": null
+    },
+    {
+      "id": "ffd14563f955",
+      "name": "Catnap Private Limited",
+      "address": "9 One-North Gateway #01-46",
+      "postalCode": "138643",
+      "latitude": 1.301733,
+      "longitude": 103.790001,
+      "services": [
+        "boarding"
+      ],
+      "is24h": false,
+      "licenceNos": [
+        "BD25084"
+      ],
+      "animalTypes": [],
+      "approvedActivity": "Pet Boarding (Cats)"
+    }
+  ]
+}

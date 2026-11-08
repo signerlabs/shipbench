@@ -1,0 +1,53 @@
+{
+ "说明": "修 bug、加功能和守规矩加代码质量（11-08 起）；S2 = 判对错 70% + 代码质量 30%。代码质量由独立评审（Claude，新开的子会话）只看随机甲乙标签的改动打分，打完才揭晓；评审没看过工具的对话和用时。",
+ "claude": {
+  "label": "甲",
+  "结构与分层": 9,
+  "可读性": 8,
+  "一致性": 9,
+  "稳健写法": 8,
+  "可维护性": 8,
+  "代码质量": 84,
+  "判对错": 100,
+  "S2": 95.2,
+  "理由": {
+   "结构与分层": "翻页只把游标时间传进 search，保留 rowid 即时间的原设计；排序修在合并排序与挪动两处。",
+   "可读性": "注释讲清中点等于邻居会弹回、游标条目被删或前移的原因；search 里按探测窗口取实际 rowid 的判断稍绕。",
+   "一致性": "魔法数 8 提成 rankProbeLimit 复用，新 rank(of:) 沿用原有写法并区分无行与出错。",
+   "稳健写法": "新键须严格落在两邻居之间，否则整体重排且跳过未变的记录；同毫秒碰撞加游标被删时仍有极端漏重可能。",
+   "可维护性": "测试覆盖 trigram 与短词两路、60 组拖动和 80 次挤缝；moved 辅助函数复刻了夹取逻辑。"
+  },
+  "理由_en": {
+   "结构与分层": "Paging only passes the cursor time into search, keeping the original \"rowid is time\" design; the ordering fix is in the merge sort and in moving.",
+   "可读性": "Comments explain why a midpoint equal to a neighbor bounces back and what happens when the cursor item is deleted or moved; the probe-window check for the real rowid in search is a bit convoluted.",
+   "一致性": "The magic number 8 becomes a reused rankProbeLimit constant, and the new rank(of:) follows the existing style and tells \"no row\" apart from an error.",
+   "稳健写法": "A new key must fall strictly between its two neighbors or the list is renumbered, skipping unchanged items; a same-millisecond collision combined with a deleted cursor can still, in extreme cases, skip or repeat an item.",
+   "可维护性": "Tests cover both the trigram and short-query paths, 60 drag sequences and 80 squeezes into a gap; the moved test helper duplicates the clamping logic."
+  }
+ },
+ "codex": {
+  "label": "乙",
+  "结构与分层": 6,
+  "可读性": 6,
+  "一致性": 6,
+  "稳健写法": 8,
+  "可维护性": 7,
+  "代码质量": 66,
+  "判对错": 100,
+  "S2": 89.8,
+  "理由": {
+   "结构与分层": "为修翻页把索引升到 schema 2，加新列、两个索引、JOIN 查询和原地升级，超出修 bug 所需。",
+   "可读性": "search 拼接多段 SQL 字符串，绑定序号靠 cursor == nil ? 2 : 4 推算，不易一眼看清。",
+   "一致性": "弃用 rowid 即时间的原设计、删掉实测性能注释，Entry 改字段牵动旧测试，索引层依赖 ClipCursor。",
+   "稳健写法": "按（时间, uuid）翻页，同毫秒也不漏不重；isFinite 与升级置待修补周到，但升级后列可空与新建不一致。",
+   "可维护性": "补了迁移测试和同毫秒翻页测试，覆盖较全，但引入 schema 迁移与查询计划提示，后续维护负担明显加重。"
+  },
+  "理由_en": {
+   "结构与分层": "Upgrades the index to schema 2 to fix paging, adding a column, two indexes, a JOIN query and an in-place migration, far beyond what the bug needs.",
+   "可读性": "search concatenates several SQL strings, and bind positions have to be worked out from cursor == nil ? 2 : 4; hard to read at a glance.",
+   "一致性": "Drops the original \"rowid is time\" design and removes a measured performance comment; changing Entry fields forces old tests to change, and the index layer now depends on ClipCursor.",
+   "稳健写法": "Pages by (time, uuid), so nothing is skipped or repeated even within the same millisecond; the isFinite checks and repair-on-upgrade are careful, but after the upgrade the column is nullable, unlike in new databases.",
+   "可维护性": "Adds migration and same-millisecond paging tests with good coverage, but the schema migration and query-plan hints add a clear ongoing maintenance burden."
+  }
+ }
+}

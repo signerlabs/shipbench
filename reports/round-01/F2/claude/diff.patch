@@ -1,0 +1,1181 @@
+ Replica.xcodeproj/project.pbxproj                  |   4 +-
+ .../LaunchBackground.colorset/Contents.json        |  20 ++
+ Replica/DonutChart.swift                           | 253 +++++++++++++++++++
+ Replica/Models.swift                               | 262 +++++++++++++++++++
+ Replica/ReplicaApp.swift                           |  19 +-
+ Replica/ReportView.swift                           | 281 +++++++++++++++++++++
+ Replica/Theme.swift                                | 147 +++++++++++
+ Replica/ValueBarChart.swift                        | 103 ++++++++
+ ReplicaInfo.plist                                  |  11 +
+ 9 files changed, 1097 insertions(+), 3 deletions(-)
+diff --git a/Replica.xcodeproj/project.pbxproj b/Replica.xcodeproj/project.pbxproj
+index dbee2a0..9b1ca43 100644
+--- a/Replica.xcodeproj/project.pbxproj
++++ b/Replica.xcodeproj/project.pbxproj
+@@ -161,7 +161,7 @@
+ 				PRODUCT_BUNDLE_IDENTIFIER = com.agenteval.replica;
+ 				PRODUCT_NAME = "$(TARGET_NAME)";
+ 				GENERATE_INFOPLIST_FILE = YES;
+-				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
++				INFOPLIST_FILE = ReplicaInfo.plist;
+ 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+ 				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
+ 				TARGETED_DEVICE_FAMILY = 1;
+@@ -180,7 +180,7 @@
+ 				PRODUCT_BUNDLE_IDENTIFIER = com.agenteval.replica;
+ 				PRODUCT_NAME = "$(TARGET_NAME)";
+ 				GENERATE_INFOPLIST_FILE = YES;
+-				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
++				INFOPLIST_FILE = ReplicaInfo.plist;
+ 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+ 				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
+ 				TARGETED_DEVICE_FAMILY = 1;
+diff --git a/Replica/Assets.xcassets/LaunchBackground.colorset/Contents.json b/Replica/Assets.xcassets/LaunchBackground.colorset/Contents.json
+new file mode 100644
+index 0000000..143cd0e
+--- /dev/null
++++ b/Replica/Assets.xcassets/LaunchBackground.colorset/Contents.json
+@@ -0,0 +1,20 @@
++{
++  "colors" : [
++    {
++      "color" : {
++        "color-space" : "srgb",
++        "components" : {
++          "alpha" : "1.000",
++          "blue" : "0.906",
++          "green" : "0.941",
++          "red" : "0.961"
++        }
++      },
++      "idiom" : "universal"
++    }
++  ],
++  "info" : {
++    "author" : "xcode",
++    "version" : 1
++  }
++}
+diff --git a/Replica/DonutChart.swift b/Replica/DonutChart.swift
+new file mode 100644
+index 0000000..cd076b0
+--- /dev/null
++++ b/Replica/DonutChart.swift
+@@ -0,0 +1,253 @@
++import SwiftUI
++
++/// A donut sector with constant-width gaps and rounded corners
++/// (same look as a Swift Charts `SectorMark` with `angularInset` + `cornerRadius`).
++///
++/// Angles are expressed as fractions of the full circle, measured clockwise from 12 o'clock.
++/// `reveal` compresses the whole ring into an arc centred on 6 o'clock: at 0 nothing is
++/// visible, at 1 the ring is complete. This reproduces the fan-out entrance animation.
++struct DonutSectorShape: Shape {
++    var startFraction: Double
++    var endFraction: Double
++    var outerRadius: CGFloat
++    var reveal: Double
++    var innerRatio: CGFloat = 0.6
++    var gap: CGFloat = 2.3
++    var cornerRadius: CGFloat = 6
++
++    var animatableData: AnimatablePair<CGFloat, Double> {
++        get { AnimatablePair(outerRadius, reveal) }
++        set {
++            outerRadius = newValue.first
++            reveal = newValue.second
++        }
++    }
++
++    func path(in rect: CGRect) -> Path {
++        let center = CGPoint(x: rect.midX, y: rect.midY)
++        let span = 2 * Double.pi * max(0, min(1, reveal))
++        guard span > 0.0001 else { return Path() }
++        let base = Double.pi - span / 2
++        let a1 = base + startFraction * span
++        let a2 = base + endFraction * span
++        return Self.sectorPath(
++            center: center,
++            a1: a1, a2: a2,
++            outer: outerRadius,
++            inner: outerRadius * innerRatio,
++            gap: gap,
++            corner: cornerRadius
++        )
++    }
++
++    // MARK: Geometry
++
++    /// Point at clockwise angle `a` (radians from 12 o'clock) and radius `r`.
++    private static func point(_ c: CGPoint, _ a: Double, _ r: Double) -> CGPoint {
++        CGPoint(x: c.x + r * sin(a), y: c.y - r * cos(a))
++    }
++
++    private static func appendArc(
++        _ pts: inout [CGPoint], center: CGPoint, radius: Double, from: Double, to: Double, maxStep: Double
++    ) {
++        let delta = to - from
++        let steps = max(2, Int(ceil(abs(delta) / maxStep)))
++        for i in 0...steps {
++            let a = from + delta * Double(i) / Double(steps)
++            pts.append(point(center, a, radius))
++        }
++    }
++
++    /// Angle (clockwise from 12 o'clock) of `p` around `c`.
++    private static func angle(of p: CGPoint, around c: CGPoint) -> Double {
++        atan2(Double(p.x - c.x), Double(c.y - p.y))
++    }
++
++    /// Appends the fillet arc around `fc` from `p` to `q`, going the short way.
++    private static func appendFillet(_ pts: inout [CGPoint], fc: CGPoint, r: Double, from p: CGPoint, to q: CGPoint) {
++        guard r > 0.01 else {
++            pts.append(p)
++            pts.append(q)
++            return
++        }
++        let s = angle(of: p, around: fc)
++        var e = angle(of: q, around: fc)
++        var d = e - s
++        while d > .pi { d -= 2 * .pi }
++        while d < -.pi { d += 2 * .pi }
++        e = s + d
++        appendArc(&pts, center: fc, radius: r, from: s, to: e, maxStep: .pi / 16)
++    }
++
++    static func sectorPath(center c: CGPoint, a1: Double, a2: Double, outer R: Double, inner r: Double, gap: Double, corner: Double) -> Path {
++        let theta = a2 - a1
++        guard theta > 0, R > r else { return Path() }
++        let half = gap / 2
++        let s = sin(min(theta / 2, .pi / 2))
++        // Edges are lines parallel to the radial boundaries, offset inwards by `half`.
++        // Where the two edges meet (apex) — sectors thinner than the gap disappear.
++        let apexRadius = s > 0 ? half / s : .infinity
++        if apexRadius >= R - 0.05 { return Path() }
++
++        let u1 = (x: sin(a1), y: -cos(a1)), n1 = (x: cos(a1), y: sin(a1))   // radial dir / inward normal (edge 1)
++        let u2 = (x: sin(a2), y: -cos(a2)), n2 = (x: -cos(a2), y: -sin(a2)) // edge 2 normal points back inside
++
++        func foot(_ p: CGPoint, _ u: (x: Double, y: Double), _ n: (x: Double, y: Double)) -> CGPoint {
++            let px = Double(p.x - c.x), py = Double(p.y - c.y)
++            let t = px * u.x + py * u.y
++            return CGPoint(x: c.x + t * u.x + half * n.x, y: c.y + t * u.y + half * n.y)
++        }
++
++        // Clamp the corner radius so fillets fit inside the sector.
++        var cr = min(corner, (R - r) / 2 - 0.01)
++        cr = min(cr, (R * s - half) / (1 + s))
++        let innerVisible = r * s - half > 0
++        if innerVisible, s < 1 {
++            cr = min(cr, (r * s - half) / (1 - s))
++        }
++        cr = max(0, cr)
++
++        var pts: [CGPoint] = []
++
++        // Outer corners.
++        let dO = asin(min(1, (half + cr) / (R - cr)))
++        let co1 = point(c, a1 + dO, R - cr)
++        let co2 = point(c, a2 - dO, R - cr)
++        let to1Line = foot(co1, u1, n1)
++        let to1Arc = point(c, a1 + dO, R)
++        let to2Arc = point(c, a2 - dO, R)
++        let to2Line = foot(co2, u2, n2)
++
++        if innerVisible {
++            let dI = asin(min(1, (half + cr) / (r + cr)))
++            let ci1 = point(c, a1 + dI, r + cr)
++            let ci2 = point(c, a2 - dI, r + cr)
++            let ti1Line = foot(ci1, u1, n1)
++            let ti1Arc = point(c, a1 + dI, r)
++            let ti2Line = foot(ci2, u2, n2)
++            let ti2Arc = point(c, a2 - dI, r)
++
++            pts.append(ti1Line)
++            pts.append(to1Line)
++            appendFillet(&pts, fc: co1, r: cr, from: to1Line, to: to1Arc)
++            appendArc(&pts, center: c, radius: R, from: a1 + dO, to: a2 - dO, maxStep: .pi / 180)
++            appendFillet(&pts, fc: co2, r: cr, from: to2Arc, to: to2Line)
++            pts.append(ti2Line)
++            appendFillet(&pts, fc: ci2, r: cr, from: ti2Line, to: ti2Arc)
++            appendArc(&pts, center: c, radius: r, from: a2 - dI, to: a1 + dI, maxStep: .pi / 180)
++            appendFillet(&pts, fc: ci1, r: cr, from: ti1Arc, to: ti1Line)
++        } else {
++            // Thin wedge: the two edges meet before reaching the inner radius.
++            let mid = (a1 + a2) / 2
++            pts.append(point(c, mid, apexRadius))
++            pts.append(to1Line)
++            appendFillet(&pts, fc: co1, r: cr, from: to1Line, to: to1Arc)
++            appendArc(&pts, center: c, radius: R, from: a1 + dO, to: a2 - dO, maxStep: .pi / 180)
++            appendFillet(&pts, fc: co2, r: cr, from: to2Arc, to: to2Line)
++        }
++
++        var path = Path()
++        path.addLines(pts)
++        path.closeSubpath()
++        return path
++    }
++}
++
++/// "By category" donut: tap a slice to focus it, tap it again (or the hole) to clear.
++struct DonutChart: View {
++    let categories: [CategoryStat]
++    @Binding var selection: String?
++    /// 0 → collapsed, 1 → full ring.
++    let reveal: Double
++
++    /// Ratio of the resting outer radius to the plot radius (selected slices use the full radius).
++    private let restingRatio: CGFloat = 0.9
++
++    private var fractions: [(start: Double, end: Double)] {
++        let total = Double(max(1, categories.reduce(0) { $0 + $1.count }))
++        var acc = 0.0
++        return categories.map { cat in
++            let start = acc / total
++            acc += Double(cat.count)
++            return (start, acc / total)
++        }
++    }
++
++    var body: some View {
++        GeometryReader { geo in
++            let plotRadius = min(geo.size.width, geo.size.height) / 2
++            let frac = fractions
++            ZStack {
++                ForEach(Array(categories.enumerated()), id: \.element.id) { index, cat in
++                    let isSelected = selection == cat.name
++                    DonutSectorShape(
++                        startFraction: frac[index].start,
++                        endFraction: frac[index].end,
++                        outerRadius: isSelected ? plotRadius : plotRadius * restingRatio,
++                        reveal: reveal
++                    )
++                    .fill(Theme.color(at: index))
++                    .opacity(selection == nil || isSelected ? 1 : 0.3)
++                }
++            }
++            .contentShape(Rectangle())
++            .onTapGesture(coordinateSpace: .local) { location in
++                handleTap(at: location, size: geo.size, plotRadius: plotRadius)
++            }
++        }
++    }
++
++    private func handleTap(at location: CGPoint, size: CGSize, plotRadius: CGFloat) {
++        let dx = Double(location.x - size.width / 2)
++        let dy = Double(location.y - size.height / 2)
++        let distance = hypot(dx, dy)
++        var angle = atan2(dx, -dy) / (2 * .pi)
++        if angle < 0 { angle += 1 }
++
++        let resting = Double(plotRadius * restingRatio)
++        let innerLimit = resting * 0.6 * 0.8
++        var target: String?
++        if distance >= innerLimit && distance <= Double(plotRadius) * 1.12 {
++            for (index, f) in fractions.enumerated() where angle >= f.start && angle < f.end {
++                target = categories[index].name
++            }
++        }
++        withAnimation(Theme.selectionAnimation) {
++            if let target, target != selection {
++                selection = target
++            } else {
++                selection = nil
++            }
++        }
++    }
++}
++
++/// Two-column legend, filled column by column (9 rows per column).
++struct ChartLegend: View {
++    let names: [String]
++    private let rowsPerColumn = 9
++
++    var body: some View {
++        let columns = stride(from: 0, to: names.count, by: rowsPerColumn).map { start in
++            Array(names.indices[start..<min(start + rowsPerColumn, names.count)])
++        }
++        HStack(alignment: .top, spacing: 8) {
++            ForEach(columns.indices, id: \.self) { col in
++                VStack(alignment: .leading, spacing: 8) {
++                    ForEach(columns[col], id: \.self) { index in
++                        HStack(spacing: 4.8) {
++                            Circle()
++                                .fill(Theme.color(at: index))
++                                .frame(width: 8, height: 8)
++                            Text(names[index])
++                                .font(.system(size: 11))
++                                .foregroundStyle(Theme.inkLegend)
++                                .lineLimit(1)
++                                .fixedSize()
++                        }
++                    }
++                }
++            }
++        }
++    }
++}
+diff --git a/Replica/Models.swift b/Replica/Models.swift
+new file mode 100644
+index 0000000..fc291b1
+--- /dev/null
++++ b/Replica/Models.swift
+@@ -0,0 +1,262 @@
++import Foundation
++
++/// One slice of the "By category" donut.
++struct CategoryStat: Identifiable, Hashable {
++    let name: String
++    let count: Int
++    let value: Int
++    /// Rooms (on the home report) or containers (on a room report) that hold this category.
++    let groups: Int
++    var id: String { name }
++}
++
++/// One bar of the "Value by room / location" chart.
++struct BarEntry: Identifiable, Hashable {
++    let label: String
++    let value: Int
++    var id: String { label }
++}
++
++struct ListRow: Identifiable, Hashable {
++    let id: String
++    /// Asset catalog image name.
++    var image: String?
++    /// SF Symbol used when there is no photo.
++    var symbol: String?
++    /// Room photos are cropped into a rounded square; item cut-outs are fitted.
++    var isPhoto: Bool = false
++    let title: String
++    let subtitle: String
++    let value: Int
++    /// Room id to push when the row is tapped.
++    var destination: String?
++}
++
++struct ListSection: Identifiable, Hashable {
++    let title: String
++    var trailing: String?
++    let rows: [ListRow]
++    var id: String { title }
++}
++
++/// Everything one report page needs.
++struct Report: Identifiable, Hashable {
++    let id: String
++    let title: String
++    let itemCount: Int
++    let groupCount: Int
++    let groupLabel: String
++    let totalValue: Int
++    let categories: [CategoryStat]
++    let barTitle: String
++    let bars: [BarEntry]
++    let sections: [ListSection]
++}
++
++// MARK: - Sample data (hard-coded, offline)
++
++enum SampleData {
++    /// Stable order used to break ties when sorting categories by count.
++    static let categoryOrder = [
++        "Electronics", "Clothing", "Home", "Sports", "Accessories", "Outdoor", "Grocery",
++        "Books", "Tools", "Care", "Container", "Kitchen", "Other", "Documents",
++    ]
++
++    struct RoomSpec {
++        let id: String
++        let name: String
++        let image: String
++        /// (category, count, value, containers holding it)
++        let categories: [(String, Int, Int, Int)]
++        let containers: [(name: String, value: Int)]
++        let inRoomValue: Int
++        let items: [ListRow]
++        var containerRows: [ListRow] = []
++
++        var itemCount: Int { categories.reduce(0) { $0 + $1.1 } }
++        var totalValue: Int { categories.reduce(0) { $0 + $1.2 } }
++    }
++
++    static let rooms: [RoomSpec] = [
++        RoomSpec(
++            id: "bedroom", name: "Bedroom", image: "room-bedroom",
++            categories: [
++                ("Clothing", 31, 4210, 1), ("Electronics", 23, 8560, 0), ("Home", 20, 842, 0),
++                ("Accessories", 12, 1860, 0), ("Sports", 9, 520, 0), ("Books", 7, 168, 0),
++                ("Outdoor", 6, 214, 0), ("Tools", 6, 95, 0), ("Care", 4, 88, 0),
++                ("Documents", 4, 150, 1), ("Other", 3, 62, 0), ("Container", 1, 6, 0),
++            ],
++            containers: [("Seasonal Box", 201)],
++            inRoomValue: 16574,
++            items: [
++                ListRow(id: "label-marker", image: "pen", title: "Label Marker", subtitle: "Sharpie", value: 4),
++                ListRow(id: "cable-box", image: "charger", title: "Cable Box", subtitle: "Anker", value: 45),
++                ListRow(id: "blue-light-glasses", image: "sunglasses", title: "Blue-light Glasses", subtitle: "Felix Gray", value: 95),
++                ListRow(id: "reading-light", image: "hiking-headlamp", title: "Reading Light", subtitle: "Glocusent", value: 25),
++                ListRow(id: "old-watch", image: "watch", title: "Old Watch", subtitle: "Casio · SN 407246", value: 22),
++            ],
++            containerRows: [
++                ListRow(id: "seasonal-box", image: "box-storage", title: "Seasonal Box", subtitle: "5 items", value: 201),
++            ]
++        ),
++        RoomSpec(
++            id: "desktop", name: "Desktop", image: "room-study",
++            categories: [
++                ("Electronics", 8, 3573, 0), ("Books", 2, 64, 0), ("Clothing", 1, 70, 0), ("Other", 1, 53, 0),
++            ],
++            containers: [],
++            inRoomValue: 3760,
++            items: [
++                ListRow(id: "monitor", symbol: "display", title: "Studio Display", subtitle: "Apple", value: 1599),
++                ListRow(id: "laptop", symbol: "laptopcomputer", title: "Laptop", subtitle: "Apple · SN 7Q2M41", value: 1299),
++                ListRow(id: "keyboard", symbol: "keyboard", title: "Mechanical Keyboard", subtitle: "Keychron", value: 129),
++                ListRow(id: "headphones", symbol: "headphones", title: "Headphones", subtitle: "Sony", value: 348),
++            ]
++        ),
++        RoomSpec(
++            id: "living-room", name: "Living Room", image: "room-living",
++            categories: [
++                ("Electronics", 9, 4820, 1), ("Home", 8, 455, 0), ("Books", 4, 96, 0),
++                ("Accessories", 3, 385, 0), ("Clothing", 2, 160, 0), ("Sports", 2, 210, 0),
++                ("Outdoor", 2, 140, 0), ("Care", 2, 36, 0), ("Grocery", 1, 81, 0),
++                ("Container", 1, 24, 0), ("Other", 1, 40, 0),
++            ],
++            containers: [("Media Cabinet", 127)],
++            inRoomValue: 6320,
++            items: [
++                ListRow(id: "tv", symbol: "tv", title: "Television", subtitle: "LG · 55\"", value: 1290),
++                ListRow(id: "speaker", symbol: "hifispeaker", title: "Bookshelf Speakers", subtitle: "Edifier", value: 239),
++                ListRow(id: "lamp", symbol: "lamp.floor", title: "Floor Lamp", subtitle: "IKEA", value: 89),
++                ListRow(id: "plant", symbol: "leaf", title: "Monstera", subtitle: "Planter included", value: 45),
++            ],
++            containerRows: [
++                ListRow(id: "media-cabinet", symbol: "archivebox", title: "Media Cabinet", subtitle: "4 items", value: 127),
++            ]
++        ),
++        RoomSpec(
++            id: "kitchen", name: "Kitchen", image: "room-kitchen",
++            categories: [
++                ("Grocery", 14, 112, 1), ("Kitchen", 6, 389, 0), ("Home", 4, 120, 0),
++                ("Electronics", 2, 134, 0), ("Clothing", 1, 28, 0), ("Tools", 1, 30, 0),
++                ("Care", 1, 18, 0), ("Container", 1, 15, 0),
++            ],
++            containers: [("Pantry Bin", 115)],
++            inRoomValue: 731,
++            items: [
++                ListRow(id: "kettle", symbol: "cup.and.saucer", title: "Electric Kettle", subtitle: "Fellow", value: 99),
++                ListRow(id: "pan", symbol: "frying.pan", title: "Cast Iron Pan", subtitle: "Lodge", value: 45),
++                ListRow(id: "knife", symbol: "fork.knife", title: "Chef Knife", subtitle: "Victorinox", value: 52),
++            ],
++            containerRows: [
++                ListRow(id: "pantry-bin", symbol: "archivebox", title: "Pantry Bin", subtitle: "14 items", value: 115),
++            ]
++        ),
++        RoomSpec(
++            id: "garage", name: "Garage", image: "room-garage",
++            categories: [
++                ("Sports", 8, 1240, 1), ("Outdoor", 8, 612, 1), ("Tools", 6, 310, 1),
++                ("Clothing", 3, 660, 0), ("Container", 3, 40, 0), ("Electronics", 2, 54, 0),
++                ("Home", 2, 45, 0), ("Accessories", 1, 25, 0),
++            ],
++            containers: [("Camping Tote", 412), ("Tool Chest", 198), ("Holiday Bin", 60)],
++            inRoomValue: 2316,
++            items: [
++                ListRow(id: "bike", symbol: "bicycle", title: "Road Bike", subtitle: "Trek", value: 980),
++                ListRow(id: "drill", symbol: "wrench.and.screwdriver", title: "Cordless Drill", subtitle: "DeWalt", value: 159),
++                ListRow(id: "tent", symbol: "tent", title: "Tent", subtitle: "REI · 2 person", value: 229),
++            ],
++            containerRows: [
++                ListRow(id: "camping-tote", symbol: "archivebox", title: "Camping Tote", subtitle: "9 items", value: 412),
++                ListRow(id: "tool-chest", symbol: "archivebox", title: "Tool Chest", subtitle: "6 items", value: 198),
++                ListRow(id: "holiday-bin", symbol: "archivebox", title: "Holiday Bin", subtitle: "3 items", value: 60),
++            ]
++        ),
++    ]
++
++    private static func sortedCategories(_ stats: [CategoryStat]) -> [CategoryStat] {
++        stats.sorted { a, b in
++            if a.count != b.count { return a.count > b.count }
++            let ia = categoryOrder.firstIndex(of: a.name) ?? .max
++            let ib = categoryOrder.firstIndex(of: b.name) ?? .max
++            return ia < ib
++        }
++    }
++
++    private static func containerSummary(_ count: Int) -> String {
++        switch count {
++        case 0: return ""
++        case 1: return " · 1 container"
++        default: return " · \(count) containers"
++        }
++    }
++
++    /// Whole-home report (the launch screen).
++    static let home: Report = {
++        var totals: [String: (count: Int, value: Int, rooms: Int)] = [:]
++        for room in rooms {
++            for (name, count, value, _) in room.categories where count > 0 {
++                var t = totals[name] ?? (0, 0, 0)
++                t.count += count
++                t.value += value
++                t.rooms += 1
++                totals[name] = t
++            }
++        }
++        let categories = sortedCategories(totals.map {
++            CategoryStat(name: $0.key, count: $0.value.count, value: $0.value.value, groups: $0.value.rooms)
++        })
++        let bars = rooms
++            .map { BarEntry(label: $0.name, value: $0.totalValue) }
++            .sorted { $0.value > $1.value }
++        let rows = rooms.map { room in
++            ListRow(
++                id: room.id,
++                image: room.image,
++                isPhoto: true,
++                title: room.name,
++                subtitle: "\(room.itemCount) items" + containerSummary(room.containers.count),
++                value: room.totalValue,
++                destination: room.id
++            )
++        }
++        return Report(
++            id: "home",
++            title: "Home",
++            itemCount: rooms.reduce(0) { $0 + $1.itemCount },
++            groupCount: rooms.count,
++            groupLabel: "Rooms",
++            totalValue: rooms.reduce(0) { $0 + $1.totalValue },
++            categories: categories,
++            barTitle: "Value by room",
++            bars: bars,
++            sections: [ListSection(title: "By room", rows: rows)]
++        )
++    }()
++
++    static func room(_ id: String) -> Report? {
++        guard let room = rooms.first(where: { $0.id == id }) else { return nil }
++        let categories = sortedCategories(room.categories.map {
++            CategoryStat(name: $0.0, count: $0.1, value: $0.2, groups: $0.3)
++        })
++        let bars = ([BarEntry(label: "In room", value: room.inRoomValue)]
++            + room.containers.map { BarEntry(label: $0.name, value: $0.value) })
++            .sorted { $0.value > $1.value }
++        var sections = [ListSection(title: "In room", trailing: Format.money(room.inRoomValue), rows: room.items)]
++        if !room.containerRows.isEmpty {
++            let containersValue = room.containers.reduce(0) { $0 + $1.value }
++            sections.append(ListSection(title: "Containers", trailing: Format.money(containersValue), rows: room.containerRows))
++        }
++        return Report(
++            id: room.id,
++            title: room.name,
++            itemCount: room.itemCount,
++            groupCount: room.containers.count,
++            groupLabel: "Containers",
++            totalValue: room.totalValue,
++            categories: categories,
++            barTitle: "Value by location",
++            bars: bars,
++            sections: sections
++        )
++    }
++}
+diff --git a/Replica/ReplicaApp.swift b/Replica/ReplicaApp.swift
+index ac951da..dfd664f 100644
+--- a/Replica/ReplicaApp.swift
++++ b/Replica/ReplicaApp.swift
+@@ -4,7 +4,24 @@ import SwiftUI
+ struct ReplicaApp: App {
+     var body: some Scene {
+         WindowGroup {
+-            Text("Replace me with the report page")
++            RootView()
+         }
+     }
+ }
++
++/// Launches straight into the home report; rooms are pushed on top of it.
++struct RootView: View {
++    @State private var path: [String] = []
++
++    var body: some View {
++        NavigationStack(path: $path) {
++            ReportView(report: SampleData.home, isRoot: true)
++                .navigationDestination(for: String.self) { roomID in
++                    if let report = SampleData.room(roomID) {
++                        ReportView(report: report, isRoot: false)
++                    }
++                }
++        }
++        .preferredColorScheme(.light)
++    }
++}
+diff --git a/Replica/ReportView.swift b/Replica/ReportView.swift
+new file mode 100644
+index 0000000..4941541
+--- /dev/null
++++ b/Replica/ReportView.swift
+@@ -0,0 +1,281 @@
++import SwiftUI
++
++/// The "统计报表" page. Used for the whole home (root) and for a single room (pushed).
++struct ReportView: View {
++    let report: Report
++    let isRoot: Bool
++
++    @State private var selection: String?
++    /// Pushed reports start empty and fill in on first appearance.
++    @State private var revealed: Bool
++
++    init(report: Report, isRoot: Bool) {
++        self.report = report
++        self.isRoot = isRoot
++        _revealed = State(initialValue: isRoot)
++    }
++
++    private var selectedStat: CategoryStat? {
++        report.categories.first { $0.name == selection }
++    }
++
++    private var reveal: Double { revealed ? 1 : 0 }
++
++    var body: some View {
++        ScrollView {
++            VStack(spacing: Theme.cardSpacing) {
++                summaryCard
++                categoryCard
++                valueCard
++                ForEach(report.sections) { section in
++                    ListCard(section: section)
++                }
++            }
++            .padding(.horizontal, Theme.pagePadding)
++            .padding(.top, Layout.topPadding)
++            .padding(.bottom, Layout.bottomPadding)
++        }
++        .background { DottedBackground() }
++        .navigationTitle(report.title)
++        .navigationBarTitleDisplayMode(.inline)
++        .toolbar {
++            if isRoot {
++                ToolbarItem(placement: .topBarLeading) {
++                    Button {
++                        // The home report is the app's entry point; nothing to go back to.
++                    } label: {
++                        Image(systemName: "chevron.left")
++                    }
++                    .accessibilityLabel("Back")
++                }
++            }
++            ToolbarItem(placement: .topBarTrailing) {
++                ShareLink(item: shareText) {
++                    Image(systemName: "square.and.arrow.up")
++                        .foregroundStyle(Theme.brown)
++                }
++                .accessibilityLabel("Share")
++            }
++        }
++        .onAppear {
++            guard !revealed else { return }
++            withAnimation(Theme.revealAnimation) {
++                revealed = true
++            }
++        }
++    }
++
++    // MARK: Cards
++
++    private var summaryCard: some View {
++        let items = (selectedStat?.count ?? report.itemCount) * (revealed ? 1 : 0)
++        let groups = (selectedStat?.groups ?? report.groupCount) * (revealed ? 1 : 0)
++        let value = (selectedStat?.value ?? report.totalValue) * (revealed ? 1 : 0)
++        return HStack(spacing: 0) {
++            SummaryStat(value: items, text: Format.number(items), label: "Items")
++            SummaryStat(value: groups, text: Format.number(groups), label: report.groupLabel)
++            SummaryStat(value: value, text: Format.money(value), label: "Total value")
++        }
++        .padding(.vertical, Layout.summaryVerticalPadding)
++        .card()
++    }
++
++    private var categoryCard: some View {
++        let centerCount = (selectedStat?.count ?? report.itemCount) * (revealed ? 1 : 0)
++        return VStack(alignment: .leading, spacing: Layout.titleSpacing) {
++            CardTitle(text: "By category")
++            HStack(spacing: 12) {
++                ZStack {
++                    DonutChart(
++                        categories: report.categories,
++                        selection: $selection,
++                        reveal: reveal
++                    )
++                    VStack(spacing: 1.8) {
++                        Text(Format.number(centerCount))
++                            .font(.system(size: 22, weight: .bold))
++                            .foregroundStyle(Theme.ink)
++                            .contentTransition(.numericText(value: Double(centerCount)))
++                        Text(selectedStat?.name ?? "All items")
++                            .font(Theme.captionFont)
++                            .foregroundStyle(Theme.inkSecondary)
++                    }
++                    .allowsHitTesting(false)
++                }
++                .frame(maxWidth: .infinity)
++                .frame(height: 190)
++
++                ChartLegend(names: report.categories.map(\.name))
++            }
++        }
++        .padding(.horizontal, Layout.chartCardPadding)
++        .padding(.top, Layout.categoryTopPadding)
++        .padding(.bottom, Layout.categoryBottomPadding)
++        .frame(maxWidth: .infinity, alignment: .leading)
++        .card()
++    }
++
++    private var valueCard: some View {
++        VStack(alignment: .leading, spacing: Layout.barTitleSpacing) {
++            CardTitle(text: report.barTitle)
++            ValueBarChart(bars: report.bars, reveal: reveal)
++        }
++        .padding(.horizontal, Layout.chartCardPadding)
++        .padding(.top, Layout.chartCardPadding)
++        .padding(.bottom, Layout.barCardBottomPadding)
++        .frame(maxWidth: .infinity, alignment: .leading)
++        .card()
++    }
++
++    private var shareText: String {
++        "\(report.title): \(report.itemCount) items · \(Format.money(report.totalValue)) total value"
++    }
++}
++
++/// Fine-tuned spacing (points) matched against the reference recording.
++enum Layout {
++    static let topPadding: CGFloat = 8
++    /// Sets the scroll extent so the page bottoms out exactly where the reference does.
++    static let bottomPadding: CGFloat = 39
++    static let summaryVerticalPadding: CGFloat = 13.7
++    static let chartCardPadding: CGFloat = 14
++    static let titleSpacing: CGFloat = 10
++    static let categoryTopPadding: CGFloat = 14
++    static let categoryBottomPadding: CGFloat = 13.9
++    static let barTitleSpacing: CGFloat = 2.3
++    static let barCardBottomPadding: CGFloat = 18
++}
++
++struct CardTitle: View {
++    let text: String
++
++    var body: some View {
++        Text(text)
++            .font(.system(size: 13, weight: .semibold))
++            .foregroundStyle(Theme.inkHeader)
++    }
++}
++
++struct SummaryStat: View {
++    let value: Int
++    let text: String
++    let label: String
++
++    var body: some View {
++        VStack(spacing: 2.9) {
++            Text(text)
++                .font(.system(size: 19, weight: .semibold))
++                .foregroundStyle(Theme.ink)
++                .contentTransition(.numericText(value: Double(value)))
++            Text(label)
++                .font(Theme.captionFont)
++                .foregroundStyle(Theme.inkSecondary)
++        }
++        .frame(maxWidth: .infinity)
++    }
++}
++
++/// "By room" / "In room" list card.
++struct ListCard: View {
++    let section: ListSection
++
++    var body: some View {
++        VStack(alignment: .leading, spacing: 0) {
++            HStack(alignment: .firstTextBaseline) {
++                CardTitle(text: section.title)
++                Spacer(minLength: 8)
++                if let trailing = section.trailing {
++                    Text(trailing)
++                        .font(.system(size: 12.2, weight: .semibold))
++                        .foregroundStyle(Theme.inkSecondary)
++                }
++            }
++            .padding(.horizontal, 12)
++            .padding(.top, 10)
++            .padding(.bottom, 10)
++
++            ForEach(Array(section.rows.enumerated()), id: \.element.id) { index, row in
++                if index > 0 {
++                    Rectangle()
++                        .fill(Color.black.opacity(0.14))
++                        .frame(height: 1 / 3)
++                        .padding(.leading, 68)
++                }
++                if let destination = row.destination {
++                    NavigationLink(value: destination) {
++                        ListRowView(row: row)
++                    }
++                    .buttonStyle(FlatButtonStyle())
++                } else {
++                    ListRowView(row: row)
++                }
++            }
++        }
++        .padding(.bottom, 6)
++        .frame(maxWidth: .infinity, alignment: .leading)
++        .card()
++    }
++}
++
++struct ListRowView: View {
++    let row: ListRow
++
++    var body: some View {
++        HStack(spacing: 12) {
++            thumbnail
++                .frame(width: 44, height: 44)
++
++            VStack(alignment: .leading, spacing: 2) {
++                Text(row.title)
++                    .font(.system(size: 15, weight: .medium))
++                    .foregroundStyle(Theme.ink)
++                    .lineLimit(1)
++                Text(row.subtitle)
++                    .font(.system(size: 11))
++                    .foregroundStyle(Theme.inkSecondary)
++                    .lineLimit(1)
++            }
++
++            Spacer(minLength: 8)
++
++            Text(Format.money(row.value))
++                .font(.system(size: 13.5, weight: .medium))
++                .foregroundStyle(Theme.inkHeader)
++
++            Image(systemName: "chevron.right")
++                .font(.system(size: 11, weight: .semibold))
++                .foregroundStyle(Theme.inkTertiary)
++        }
++        .padding(.horizontal, 12)
++        .padding(.vertical, 9)
++        .contentShape(Rectangle())
++    }
++
++    @ViewBuilder
++    private var thumbnail: some View {
++        if let image = row.image {
++            if row.isPhoto {
++                Image(image)
++                    .resizable()
++                    .scaledToFill()
++                    .frame(width: 44, height: 44)
++                    .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
++            } else {
++                Image(image)
++                    .resizable()
++                    .scaledToFit()
++            }
++        } else if let symbol = row.symbol {
++            Image(systemName: symbol)
++                .font(.system(size: 22))
++                .foregroundStyle(Theme.inkHeader)
++        }
++    }
++}
++
++/// Plain tappable row with no pressed highlight (matches the reference).
++struct FlatButtonStyle: ButtonStyle {
++    func makeBody(configuration: Configuration) -> some View {
++        configuration.label
++    }
++}
+diff --git a/Replica/Theme.swift b/Replica/Theme.swift
+new file mode 100644
+index 0000000..6caa096
+--- /dev/null
++++ b/Replica/Theme.swift
+@@ -0,0 +1,147 @@
++import SwiftUI
++
++/// Visual constants measured from the reference recording (iPhone 18 Pro Max, @3x).
++enum Theme {
++    // MARK: Colors
++
++    /// Page background (#F5F0E7).
++    static let background = Color(red: 245 / 255, green: 240 / 255, blue: 231 / 255)
++    /// Card fill.
++    static let cardFill = Color(red: 252 / 255, green: 249 / 255, blue: 248 / 255)
++    static let backgroundDotOpacity = 0.074
++    static let cardDotOpacity = 0.036
++    static let cardStroke = Color(red: 231 / 255, green: 228 / 255, blue: 223 / 255)
++    /// Brand brown used for bars and tinted icons (#553829).
++    static let brown = Color(red: 85 / 255, green: 56 / 255, blue: 41 / 255)
++
++    /// Primary text (#2E2A25).
++    static let ink = Color(red: 46 / 255, green: 42 / 255, blue: 37 / 255)
++    /// Section headers, list values.
++    static let inkHeader = Color(red: 111 / 255, green: 110 / 255, blue: 106 / 255)
++    /// Secondary labels.
++    static let inkSecondary = Color(red: 132 / 255, green: 132 / 255, blue: 129 / 255)
++    /// Legend labels.
++    static let inkLegend = Color(red: 135 / 255, green: 136 / 255, blue: 133 / 255)
++    /// Chevrons.
++    static let inkTertiary = Color(red: 199 / 255, green: 199 / 255, blue: 196 / 255)
++
++    /// Categorical palette (iOS 26 system colors, in chart order).
++    static let palette: [Color] = [
++        Color(red: 0 / 255, green: 136 / 255, blue: 255 / 255),   // blue
++        Color(red: 52 / 255, green: 199 / 255, blue: 89 / 255),   // green
++        Color(red: 255 / 255, green: 141 / 255, blue: 40 / 255),  // orange
++        Color(red: 203 / 255, green: 48 / 255, blue: 224 / 255),  // purple
++        Color(red: 255 / 255, green: 56 / 255, blue: 60 / 255),   // red
++        Color(red: 0 / 255, green: 195 / 255, blue: 208 / 255),   // teal
++        Color(red: 255 / 255, green: 204 / 255, blue: 0 / 255),   // yellow
++    ]
++
++    static func color(at index: Int) -> Color {
++        palette[index % palette.count]
++    }
++
++    // MARK: Fonts
++
++    /// Small gray captions under numbers ("Items", "All items"): between regular and medium.
++    static let captionFont = Font(UIFont.systemFont(ofSize: 11.25, weight: UIFont.Weight(rawValue: 0.13)))
++
++    // MARK: Layout
++
++    static let pagePadding: CGFloat = 16
++    static let cardSpacing: CGFloat = 14
++    static let cardRadius: CGFloat = 16
++
++    // MARK: Animations
++
++    /// Tap-to-select on the donut (fitted to the recording: ~0.5 s spring with a small overshoot).
++    static let selectionAnimation = Animation.spring(response: 0.53, dampingFraction: 0.68)
++    /// First-appearance reveal of a pushed report (fitted: ease-out, 1 s).
++    static let revealAnimation = Animation.easeOut(duration: 1.0)
++}
++
++enum Format {
++    private static let formatter: NumberFormatter = {
++        let f = NumberFormatter()
++        f.locale = Locale(identifier: "en_US")
++        f.numberStyle = .decimal
++        f.usesGroupingSeparator = true
++        f.maximumFractionDigits = 0
++        return f
++    }()
++
++    static func number(_ value: Int) -> String {
++        formatter.string(from: NSNumber(value: value)) ?? "\(value)"
++    }
++
++    static func money(_ value: Int) -> String {
++        "$" + number(value)
++    }
++}
++
++/// Rounded card used by every section on the report pages.
++/// The page's dot grid faintly shows through the card (aligned to the screen grid).
++struct CardBackground: ViewModifier {
++    func body(content: Content) -> some View {
++        content
++            .background {
++                let shape = RoundedRectangle(cornerRadius: Theme.cardRadius, style: .continuous)
++                shape
++                    .fill(Theme.cardFill)
++                    .overlay {
++                        DotGrid(opacity: Theme.cardDotOpacity)
++                            .clipShape(shape)
++                    }
++            }
++            .overlay {
++                RoundedRectangle(cornerRadius: Theme.cardRadius, style: .continuous)
++                    .strokeBorder(Theme.cardStroke, lineWidth: 1)
++                    .shadow(color: .black.opacity(0.03), radius: 1.5)
++            }
++    }
++}
++
++extension View {
++    func card() -> some View { modifier(CardBackground()) }
++}
++
++/// Dot grid aligned to screen coordinates (24 pt pitch), so it stays put while content scrolls.
++struct DotGrid: View {
++    let opacity: Double
++
++    var body: some View {
++        GeometryReader { proxy in
++            let origin = proxy.frame(in: .global).origin
++            Canvas { context, size in
++                let spacing: CGFloat = 24
++                let diameter: CGFloat = 1.75
++                let color = Color.black.opacity(opacity)
++                func firstPosition(_ phase: CGFloat, _ offset: CGFloat) -> CGFloat {
++                    // Smallest local coordinate >= -spacing whose screen position matches the grid phase.
++                    let local = phase - offset
++                    return local - (local / spacing).rounded(.down) * spacing - spacing
++                }
++                var y = firstPosition(22.17, origin.y)
++                while y < size.height + spacing {
++                    var x = firstPosition(16, origin.x)
++                    while x < size.width + spacing {
++                        let rect = CGRect(x: x - diameter / 2, y: y - diameter / 2, width: diameter, height: diameter)
++                        context.fill(Path(ellipseIn: rect), with: .color(color))
++                        x += spacing
++                    }
++                    y += spacing
++                }
++            }
++        }
++        .allowsHitTesting(false)
++    }
++}
++
++/// Warm paper background with a faint dot grid that stays fixed to the screen.
++struct DottedBackground: View {
++    var body: some View {
++        DotGrid(opacity: Theme.backgroundDotOpacity)
++            .background(Theme.background)
++            .ignoresSafeArea()
++            .allowsHitTesting(false)
++    }
++}
+diff --git a/Replica/ValueBarChart.swift b/Replica/ValueBarChart.swift
+new file mode 100644
+index 0000000..e776685
+--- /dev/null
++++ b/Replica/ValueBarChart.swift
+@@ -0,0 +1,103 @@
++import SwiftUI
++
++/// Horizontal bar chart ("Value by room" / "Value by location").
++///
++/// Geometry mirrors the reference: each category label sits above its bar and
++/// the bar band overlaps the next label slightly; values trail the bar end.
++struct ValueBarChart: View {
++    let bars: [BarEntry]
++    /// 0 → empty bars, 1 → full length (entrance animation).
++    let reveal: Double
++
++    /// Space kept on the trailing side for the value label of the longest bar.
++    private let trailingReserve: CGFloat = 49.67
++    private let labelInset: CGFloat = 4
++    /// Labels sit slightly lower than the band top.
++    private let labelDrop: CGFloat = 1.2
++    /// Distance from a label's frame top to its bar's top.
++    private let labelToBar: CGFloat = 29.2
++
++    private var band: CGFloat {
++        let n = CGFloat(max(1, bars.count))
++        return 39.93 + 16.13 / n
++    }
++
++    private var barHeight: CGFloat {
++        let n = CGFloat(max(1, bars.count))
++        return 15.78 + 11.1 / n
++    }
++
++    /// Fewer bars get slightly more breathing room above and below (as in the reference).
++    private var bandInset: CGFloat {
++        max(0, (band - 43.156) * 0.14)
++    }
++
++    /// Total height from the first label's top to just below the last bar.
++    var contentHeight: CGFloat {
++        let n = CGFloat(max(1, bars.count))
++        return bandInset * 2 + labelToBar + (n - 1) * band + barHeight
++    }
++
++    var body: some View {
++        GeometryReader { geo in
++            let maxValue = CGFloat(bars.map(\.value).max() ?? 1)
++            let maxWidth = max(0, geo.size.width - trailingReserve)
++            let progress = CGFloat(max(0, min(1, reveal)))
++            ZStack(alignment: .topLeading) {
++                ForEach(Array(bars.enumerated()), id: \.element.id) { index, bar in
++                    let top = CGFloat(index) * band
++                    let fullWidth = maxValue > 0 ? maxWidth * CGFloat(bar.value) / maxValue : 0
++                    let width = fullWidth * progress
++
++                    Text(bar.label)
++                        .font(.system(size: 11, weight: .medium))
++                        .foregroundStyle(Theme.inkHeader)
++                        .lineLimit(1)
++                        .fixedSize()
++                        .offset(x: labelInset, y: top + labelDrop)
++
++                    BarShape(width: width)
++                        .fill(Theme.brown)
++                        .frame(width: maxWidth, height: barHeight, alignment: .leading)
++                        .offset(y: top + bandInset + labelToBar)
++
++                    Text(Format.money(bar.value))
++                        .font(.system(size: 10.1, weight: .semibold))
++                        .foregroundStyle(Theme.inkSecondary)
++                        .lineLimit(1)
++                        .fixedSize()
++                        .frame(height: barHeight)
++                        .offset(x: width + 6.5, y: top + bandInset + labelToBar)
++                        .opacity(Double(progress))
++                }
++            }
++            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
++        }
++        .frame(height: contentHeight)
++    }
++}
++
++/// Bar with a square leading edge and rounded trailing corners; animatable width.
++struct BarShape: Shape {
++    var width: CGFloat
++    var cornerRadius: CGFloat = 4
++
++    var animatableData: CGFloat {
++        get { width }
++        set { width = newValue }
++    }
++
++    func path(in rect: CGRect) -> Path {
++        let w = max(0, width)
++        guard w > 0.01 else { return Path() }
++        let r = min(cornerRadius, w, rect.height / 2)
++        let bar = CGRect(x: rect.minX, y: rect.minY, width: w, height: rect.height)
++        return UnevenRoundedRectangle(
++            topLeadingRadius: 0,
++            bottomLeadingRadius: 0,
++            bottomTrailingRadius: r,
++            topTrailingRadius: r,
++            style: .circular
++        ).path(in: bar)
++    }
++}
+diff --git a/ReplicaInfo.plist b/ReplicaInfo.plist
+new file mode 100644
+index 0000000..4016e81
+--- /dev/null
++++ b/ReplicaInfo.plist
+@@ -0,0 +1,11 @@
++<?xml version="1.0" encoding="UTF-8"?>
++<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
++<plist version="1.0">
++<dict>
++	<key>UILaunchScreen</key>
++	<dict>
++		<key>UIColorName</key>
++		<string>LaunchBackground</string>
++	</dict>
++</dict>
++</plist>

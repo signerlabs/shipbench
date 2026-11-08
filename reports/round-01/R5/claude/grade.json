@@ -1,0 +1,50 @@
+{
+  "score": 100,
+  "build_ok": true,
+  "checks": [
+    {
+      "name": "编译通过（不过则本题 0 分）",
+      "ok": true
+    },
+    {
+      "name": "成功提示用组件：SWAlertManager .show(.success …)",
+      "ok": true
+    },
+    {
+      "name": "失败提示用组件：SWAlertManager .show(.error …)",
+      "ok": true
+    },
+    {
+      "name": ".swAlert() 只挂一处，挂在 App 入口 SproutApp.swift",
+      "ok": true
+    },
+    {
+      "name": "不用延时（asyncAfter / Task.sleep）等弹层关掉",
+      "ok": true
+    },
+    {
+      "name": "不自己写提示条、不用系统 .alert 提示",
+      "ok": true
+    },
+    {
+      "name": "编辑页用 sheet 弹出",
+      "ok": true
+    },
+    {
+      "name": "不写 iOS 18 及以下的兼容分支",
+      "ok": true
+    },
+    {
+      "name": "没改 ShipSwift 组件源码",
+      "ok": true
+    },
+    {
+      "name": "没改工程文件（构建设置、依赖）",
+      "ok": true
+    }
+  ],
+  "swAlert_sites": {
+    "Sprout/SproutApp.swift": 1
+  },
+  "seconds": 9
+}

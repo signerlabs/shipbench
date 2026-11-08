@@ -1,0 +1,53 @@
+{
+ "说明": "后端加代码质量（11-08 起）；B4 = 验收 70% + 代码质量 30%。代码质量由独立评审（Claude，新开的子会话）只看随机甲乙标签的改动和客观指标打分，打完才揭晓；评审没看过工具的对话和用时。",
+ "codex": {
+  "label": "甲",
+  "结构与分层": 7,
+  "可读性": 8,
+  "一致性": 8,
+  "稳健写法": 9,
+  "可维护性": 8,
+  "代码质量": 80,
+  "验收": 100,
+  "B4": 94.0,
+  "理由": {
+   "结构与分层": "校验和权益计算抽到 subscriptions.ts，但 index.ts 兼管路由、鉴权和内联 SQL，缺独立数据访问层",
+   "可读性": "命名清楚、注释交代设计；但查询靠两个相关子查询拼字段，toSubscription 的三元判断偏紧凑",
+   "一致性": "错误统一走 json()，均为 {error} 形式且先鉴权后判方法；但 405 两处内联拼写，错误体没有机器可读的错误码",
+   "稳健写法": "单条参数化插入靠主键冲突忽略去重，读时按事件时间取最新并有部分索引和 CHECK 约束；令牌用 === 比较，非常数时间",
+   "可维护性": "测试覆盖全面，含确定性乱序并发与注入写入故障；但六种事件类型在索引、视图和 TS 映射三处各写一遍，测试为无类型 .mjs"
+  },
+  "理由_en": {
+   "结构与分层": "Validation and entitlement logic live in subscriptions.ts, but index.ts mixes routing, auth and inline SQL with no separate data-access layer.",
+   "可读性": "Clear names and comments that explain intent, but the lookup query stitches fields together with correlated subqueries and toSubscription's ternary logic is terse.",
+   "一致性": "All errors go through json() as {error}, with auth checked before method; but the 405 response is built inline twice and errors carry no machine-readable code.",
+   "稳健写法": "A single parameterized insert that ignores primary-key conflicts handles dedup; reads take the latest by event time, backed by a partial index and CHECK constraints. Tokens are compared with ===, which is not constant-time.",
+   "可维护性": "Thorough tests, including deterministic out-of-order concurrency and injected write failures; but the six event types are listed three times (index, view, TS map) and the tests are untyped .mjs."
+  }
+ },
+ "claude": {
+  "label": "乙",
+  "结构与分层": 9,
+  "可读性": 9,
+  "一致性": 8,
+  "稳健写法": 8,
+  "可维护性": 9,
+  "代码质量": 86,
+  "验收": 100,
+  "B4": 95.8,
+  "理由": {
+   "结构与分层": "鉴权、请求解析、数据库读写、状态推导各成一个模块，纯函数与读写分开；响应和日志助手仍堆在入口文件里",
+   "可读性": "deriveSubscription 按发生顺序折叠事件，注释清楚；循环内解构赋值和日志的嵌套三元稍绕",
+   "一致性": "错误码风格统一并集中在助手函数；但只有 400 带说明，product_id 允许空串而其他字符串字段要求非空",
+   "稳健写法": "参数化插入冲突即忽略，令牌哈希后常数时间比较；但校验后靠 as string 强转，查询读出全部事件在内存排序",
+   "可维护性": "事件类型只定义一处，EFFECTS 穷举映射；单测含全排列乱序验证；但端到端用无种子随机洗牌，启动靠匹配日志文字"
+  },
+  "理由_en": {
+   "结构与分层": "Auth, request parsing, database access and state derivation each get their own module, keeping pure logic apart from I/O; response and logging helpers still sit in the entry file.",
+   "可读性": "deriveSubscription folds events in occurrence order with clear doc comments; the destructuring assignment inside the loop and the nested ternary for the log outcome are a bit convoluted.",
+   "一致性": "Error codes follow one style and come from shared helpers; but only 400s include a message, and product_id may be an empty string while other string fields must be non-empty.",
+   "稳健写法": "A parameterized insert that ignores conflicts, plus constant-time comparison of hashed tokens; but fields are force-cast with `as string` after validation, and every lookup loads all of a user's events and sorts them in memory.",
+   "可维护性": "Event types are defined once and EFFECTS maps them exhaustively; unit tests check every arrival permutation. But the end-to-end tests shuffle with an unseeded random, and server startup is detected by matching log text."
+  }
+ }
+}

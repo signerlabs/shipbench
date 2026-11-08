@@ -1,0 +1,53 @@
+{
+ "说明": "修 bug、加功能和守规矩加代码质量（11-08 起）；R9 = 判对错 70% + 代码质量 30%。代码质量由独立评审（Claude，新开的子会话）只看随机甲乙标签的改动打分，打完才揭晓；评审没看过工具的对话和用时。",
+ "claude": {
+  "label": "甲",
+  "结构与分层": 9,
+  "可读性": 8,
+  "一致性": 8,
+  "稳健写法": 8,
+  "可维护性": 8,
+  "代码质量": 82,
+  "判对错": 100,
+  "R9": 94.6,
+  "理由": {
+   "结构与分层": "拆成 ExpenseDay、LocalMoney、ExpenseStore 与视图，日期、金额、数据、界面各管一块。",
+   "可读性": "注释讲清本地正午、系统解析过宽等原因；parse 与 recentAdds 的 generation 逻辑偏密。",
+   "一致性": "KPI 卡、状态徽章、添加面板、页面加载都用 SW 组件，按文档在枚举末尾加 expenses。",
+   "稳健写法": "整串严格解析金额、本地正午解析日期，处理取消与日期变更；每次解析都新建 NumberFormatter。",
+   "可维护性": "Large 阈值提成 largeAmountThreshold，三个地区各有 Preview；手写解析器偏长，未补测试。"
+  },
+  "理由_en": {
+   "结构与分层": "Split into ExpenseDay, LocalMoney, ExpenseStore and the views: dates, money, data and UI each in their own place.",
+   "可读性": "Comments explain parsing at local noon and why the system parser is too lenient; the generation logic in parse and recentAdds is dense.",
+   "一致性": "KPI cards, status badges, the add sheet and page loading all use SW components, and expenses is added at the end of the enum as the docs instruct.",
+   "稳健写法": "Strict whole-string amount parsing and local-noon date parsing, handles cancellation and date changes; creates a new NumberFormatter on every parse.",
+   "可维护性": "The Large threshold is a named largeAmountThreshold, with a Preview for each of three regions; the hand-written parser is long and no tests were added."
+  }
+ },
+ "codex": {
+  "label": "乙",
+  "结构与分层": 7,
+  "可读性": 7,
+  "一致性": 6,
+  "稳健写法": 8,
+  "可维护性": 7,
+  "代码质量": 70,
+  "判对错": 100,
+  "R9": 91.0,
+  "理由": {
+   "结构与分层": "ExpenseFormatting 包揽解析、日期、标签与月合计，store.log 还接收原始文本解析，层次略混。",
+   "可读性": "正则校验金额与日期清楚，行布局易懂；isLoading、isSaving 守卫在 store 和视图各写一遍。",
+   "一致性": "SW 组件用法到位，但另起用 swiftc 单独编译运行的测试程序和 Tests/README.md，游离于工程之外。",
+   "稳健写法": "显式 MainActor、防重复提交、日期回转校验到位；币种回退 XXX，每行新建 DateFormatter。",
+   "可维护性": "fetch、add 可注入便于测试且检查覆盖面广，但阈值 50 写死在视图里，测试要手动敲命令才能跑。"
+  },
+  "理由_en": {
+   "结构与分层": "ExpenseFormatting handles parsing, dates, labels and monthly totals at once, and store.log also takes raw text to parse; the layers are somewhat mixed.",
+   "可读性": "Regex validation of amounts and dates is clear and the row layout is easy to follow; the isLoading and isSaving guards are written twice, in the store and in the view.",
+   "一致性": "SW components are used correctly, but the tests are a separate program compiled with swiftc plus a Tests/README.md, outside the project.",
+   "稳健写法": "Explicit MainActor, double-submit guard and round-trip date validation; falls back to currency XXX and creates a DateFormatter for every row.",
+   "可维护性": "fetch and add are injectable and the checks cover a lot, but the threshold 50 is hard-coded in the view and the tests must be run by hand."
+  }
+ }
+}

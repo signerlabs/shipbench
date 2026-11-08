@@ -1,0 +1,53 @@
+{
+ "说明": "修 bug、加功能和守规矩加代码质量（11-08 起）；S1 = 判对错 70% + 代码质量 30%。代码质量由独立评审（Claude，新开的子会话）只看随机甲乙标签的改动打分，打完才揭晓；评审没看过工具的对话和用时。",
+ "claude": {
+  "label": "甲",
+  "结构与分层": 9,
+  "可读性": 9,
+  "一致性": 9,
+  "稳健写法": 8,
+  "可维护性": 8,
+  "代码质量": 86,
+  "判对错": 100,
+  "S1": 95.8,
+  "理由": {
+   "结构与分层": "只在 CloudMerge 两个比较函数里改按整秒比，加私有 wholeSecond，测试放对文件，改动面小。",
+   "可读性": "wholeSecond 命名直白，注释讲清为何向下取整及残余风险，测试用 macs 数组模拟两台 Mac，好读。",
+   "一致性": "沿用原有元组比较与中文注释风格，测试复用 insertRemotePinned 等已有辅助方法。",
+   "稳健写法": "按参考日期向下取整，lastUsedAt 一并按整秒比；未覆盖整秒边界和负时间戳等情形。",
+   "可维护性": "两个测试分别覆盖 Pinned 与 Pinboard 两条去重路径，直接复现两台 Mac 各选各的，无夹带改动。"
+  },
+  "理由_en": {
+   "结构与分层": "Only the two comparison functions in CloudMerge change to whole-second comparison, via a private wholeSecond helper; tests go in the right file and the change is small.",
+   "可读性": "wholeSecond is plainly named and its comment explains why it rounds down and what risk remains; the tests model two Macs with a macs array and read well.",
+   "一致性": "Keeps the existing tuple comparison and comment style; the tests reuse existing helpers such as insertRemotePinned.",
+   "稳健写法": "Rounds down from the reference date and compares lastUsedAt at whole seconds too; does not cover the second boundary or negative timestamps.",
+   "可维护性": "Two tests cover the Pinned and Pinboard deduplication paths and reproduce the two Macs choosing differently; no unrelated changes."
+  }
+ },
+ "codex": {
+  "label": "乙",
+  "结构与分层": 9,
+  "可读性": 7,
+  "一致性": 8,
+  "稳健写法": 9,
+  "可维护性": 8,
+  "代码质量": 82,
+  "判对错": 100,
+  "S1": 94.6,
+  "理由": {
+   "结构与分层": "修复同样集中在 CloudMerge 比较函数与私有 wholeSecond，测试放对文件，无越界改动。",
+   "可读性": "wholeSecond 无注释，测试里 localID == a ? b : a 等三元较绕，单个测试反复改模型字段。",
+   "一致性": "沿用元组比较并把原注释的『待真机核实』改成实际做法；新测试直接构造模型测内部函数，与原集成测试风格不同。",
+   "稳健写法": "参数化测试覆盖 0.9999/1.0 与负时间戳的整秒边界、全字段相同不删的规则，并核对库里实际副本数。",
+   "可维护性": "测试覆盖面广，但两个参数化函数同时测 Pinboard 与 Pinned、手工改字段多，字段顺序一改就要跟着改。"
+  },
+  "理由_en": {
+   "结构与分层": "The fix is likewise limited to the CloudMerge comparison functions and a private wholeSecond helper; tests are in the right file, nothing out of scope.",
+   "可读性": "wholeSecond has no comment; the tests use convoluted ternaries such as localID == a ? b : a, and one test keeps mutating model fields.",
+   "一致性": "Keeps the tuple comparison and replaces the old \"verify on device\" comment with what it actually does; the new tests build models and test internals directly, unlike the existing integration-style tests.",
+   "稳健写法": "Parameterized tests cover the 0.9999/1.0 second boundary, negative timestamps and the rule that fully identical items are kept, and check the actual copy count in the store.",
+   "可维护性": "Broad coverage, but two parameterized functions test Pinboard and Pinned at once with many hand-edited fields, so a change in field order breaks them."
+  }
+ }
+}

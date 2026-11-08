@@ -1,0 +1,8 @@
+{
+  "name": "records-import-service",
+  "private": true,
+  "type": "module",
+  "devDependencies": {
+    "wrangler": "4.158.0"
+  }
+}

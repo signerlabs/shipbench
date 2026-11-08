@@ -1,0 +1,862 @@
+{
+  "sourceLanguage" : "en",
+  "strings" : {
+    "" : {
+
+    },
+    "· %@" : {
+
+    },
+    "· Google" : {
+
+    },
+    "*" : {
+
+    },
+    "#%@" : {
+
+    },
+    "%@" : {
+
+    },
+    "%@ · %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@ · %2$@"
+          }
+        }
+      }
+    },
+    "%@ is all set!" : {
+
+    },
+    "%@ S(%@)" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@ S(%2$@)"
+          }
+        }
+      }
+    },
+    "%lld" : {
+
+    },
+    "%lld record%@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$lld record%2$@"
+          }
+        }
+      }
+    },
+    "%lld/%lld" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$lld/%2$lld"
+          }
+        }
+      }
+    },
+    "🐾" : {
+
+    },
+    "15 digits" : {
+
+    },
+    "24h" : {
+
+    },
+    "24h Emergency" : {
+
+    },
+    "2026" : {
+
+    },
+    "A one-time course for you as the owner — required before licensing any cat or dog" : {
+
+    },
+    "A one-time online course AVS requires from every first-time cat or dog owner. Finish it once and you're set for every pet you licence." : {
+
+    },
+    "About" : {
+
+    },
+    "ABOUT THE COURSE" : {
+
+    },
+    "Add" : {
+
+    },
+    "Add %@'s microchip number in their profile." : {
+
+    },
+    "Add a pet" : {
+
+    },
+    "Add a pet first to book an appointment." : {
+
+    },
+    "Add another pet" : {
+
+    },
+    "Add deworming" : {
+
+    },
+    "Add licence" : {
+
+    },
+    "Add vaccine" : {
+
+    },
+    "Add weight" : {
+
+    },
+    "Add your first pet to track vaccines, licences and HDB compliance in one place." : {
+
+    },
+    "ADORE" : {
+
+    },
+    "All" : {
+
+    },
+    "Allowed in Singapore, but requires insurance, muzzling & leashing — and is not permitted in HDB flats." : {
+
+    },
+    "Allowed with extra requirements" : {
+
+    },
+    "ALREADY DONE?" : {
+
+    },
+    "Any vet" : {
+
+    },
+    "APPOINTMENTS" : {
+
+    },
+    "Approved for your home" : {
+
+    },
+    "As shown on your AVS licence" : {
+
+    },
+    "AVS licence number" : {
+
+    },
+    "AVS Licensed" : {
+
+    },
+    "Background" : {
+
+    },
+    "Banned" : {
+
+    },
+    "Banned in Singapore" : {
+
+    },
+    "BEFORE YOU APPLY" : {
+
+    },
+    "Boarding" : {
+
+    },
+    "Book appointment" : {
+
+    },
+    "Brand" : {
+
+    },
+    "Breed" : {
+
+    },
+    "Built with ShipSwift" : {
+
+    },
+    "Call" : {
+
+    },
+    "Cancel" : {
+
+    },
+    "Cancel request" : {
+
+    },
+    "Cat" : {
+
+    },
+    "Category" : {
+
+    },
+    "Celebrate!" : {
+
+    },
+    "Cells" : {
+
+    },
+    "Change photo" : {
+
+    },
+    "Check" : {
+
+    },
+    "Checking HDB eligibility" : {
+
+    },
+    "Choose photo" : {
+
+    },
+    "Choose your pet" : {
+
+    },
+    "Closed" : {
+
+    },
+    "Color %lld" : {
+
+    },
+    "Colors" : {
+
+    },
+    "Complete your selection" : {
+
+    },
+    "Completed" : {
+
+    },
+    "Condo" : {
+
+    },
+    "Confetti Burst" : {
+
+    },
+    "Contact %@" : {
+
+    },
+    "Continue" : {
+
+    },
+    "Date" : {
+
+    },
+    "Date given" : {
+
+    },
+    "Date of birth" : {
+
+    },
+    "Delete" : {
+
+    },
+    "Delete %@" : {
+
+    },
+    "Delete %@?" : {
+
+    },
+    "Delete account" : {
+
+    },
+    "Delete account?" : {
+
+    },
+    "Delete record" : {
+
+    },
+    "Different home? Tap to change" : {
+
+    },
+    "Directions" : {
+
+    },
+    "Dog" : {
+
+    },
+    "Don't know" : {
+
+    },
+    "Done" : {
+
+    },
+    "Dot Color" : {
+
+    },
+    "Dots Controls" : {
+
+    },
+    "e.g. 4.2" : {
+
+    },
+    "e.g. 9000000123456" : {
+
+    },
+    "e.g. Annual checkup, limping, vaccination…" : {
+
+    },
+    "E.g. Drontal" : {
+
+    },
+    "E.g. Nobivac" : {
+
+    },
+    "Edit" : {
+
+    },
+    "Edit deworming" : {
+
+    },
+    "Edit profile" : {
+
+    },
+    "Edit vaccine" : {
+
+    },
+    "Eligible via Project ADORE" : {
+
+    },
+    "Enable" : {
+
+    },
+    "Enable location to sort by distance." : {
+
+    },
+    "Enable reminders" : {
+
+    },
+    "Enter %@'s microchip number." : {
+
+    },
+    "Enter your AVS licence number to update your record." : {
+
+    },
+    "Everything about your pet, in one place." : {
+
+    },
+    "External" : {
+
+    },
+    "Female" : {
+
+    },
+    "Field" : {
+
+    },
+    "Filter" : {
+
+    },
+    "Find a clinic on the Map to book a visit for your pet." : {
+
+    },
+    "First visit to this clinic?" : {
+
+    },
+    "For %@" : {
+
+    },
+    "For the HDB compliance check" : {
+
+    },
+    "Free · Online · The same course covers both cats and dogs" : {
+
+    },
+    "Gap" : {
+
+    },
+    "Glow" : {
+
+    },
+    "Grooming" : {
+
+    },
+    "HAPPY NEW YEAR" : {
+
+    },
+    "HDB" : {
+
+    },
+    "HDB Check" : {
+
+    },
+    "HDB COMPLIANCE" : {
+
+    },
+    "HDB OK" : {
+
+    },
+    "HDB-approved breed" : {
+
+    },
+    "Heartworm" : {
+
+    },
+    "Helps the clinic prepare a new patient file" : {
+
+    },
+    "Home type" : {
+
+    },
+    "HOW IT WORKS" : {
+
+    },
+    "I've got my licence — add details" : {
+
+    },
+    "Internal" : {
+
+    },
+    "kg" : {
+
+    },
+    "Landed" : {
+
+    },
+    "Learn about Project ADORE" : {
+
+    },
+    "Learn about Project ADORE's K-9 scheme" : {
+
+    },
+    "Licence %@" : {
+
+    },
+    "Licence expiry" : {
+
+    },
+    "Licence number" : {
+
+    },
+    "Link your Apple ID so you never lose your pet's records." : {
+
+    },
+    "List" : {
+
+    },
+    "Local mixed breeds can be kept in HDB flats through Project ADORE — adopt from an AWG partner, shoulder height ≤55cm, one per household." : {
+
+    },
+    "Local mixed breeds can be kept in HDB flats via Project ADORE (adopt from an AWG partner, shoulder height ≤55cm, one per household)." : {
+
+    },
+    "Male" : {
+
+    },
+    "Map" : {
+
+    },
+    "Marina Bay Sands, Singapore" : {
+
+    },
+    "Mark as completed" : {
+
+    },
+    "Maybe later" : {
+
+    },
+    "Meet your dashboard" : {
+
+    },
+    "Metaballs" : {
+
+    },
+    "Metaballs Controls" : {
+
+    },
+    "Microchip ID" : {
+
+    },
+    "Microchip number" : {
+
+    },
+    "Microchipped" : {
+
+    },
+    "Motion" : {
+
+    },
+    "My details" : {
+
+    },
+    "Name" : {
+
+    },
+    "Name, e.g. Mochi" : {
+
+    },
+    "Never miss a vaccine or licence deadline" : {
+
+    },
+    "Next due date" : {
+
+    },
+    "NEXT STEPS" : {
+
+    },
+    "Next:" : {
+
+    },
+    "No" : {
+
+    },
+    "No clinics" : {
+
+    },
+    "No clinics match this filter." : {
+
+    },
+    "No matches" : {
+
+    },
+    "No past appointments yet" : {
+
+    },
+    "No pets yet" : {
+
+    },
+    "No preference" : {
+
+    },
+    "No upcoming appointments" : {
+
+    },
+    "Non-HDB" : {
+
+    },
+    "Not allowed in HDB flats" : {
+
+    },
+    "Not available on this day — try another date." : {
+
+    },
+    "Not permitted in HDB flats" : {
+
+    },
+    "Notes" : {
+
+    },
+    "Notifications" : {
+
+    },
+    "Notifications are off" : {
+
+    },
+    "now" : {
+
+    },
+    "Open PALS" : {
+
+    },
+    "Opens the official PALS website to submit your application." : {
+
+    },
+    "Optional" : {
+
+    },
+    "Other Apps from ShipSwift" : {
+
+    },
+    "Palette" : {
+
+    },
+    "PALS Assistant" : {
+
+    },
+    "PetBook" : {
+
+    },
+    "PetBook doesn't submit applications. We help you get ready — licensing is done on the official PALS website." : {
+
+    },
+    "PetBook doesn't verify your certificate — just mark it done once you've completed the course." : {
+
+    },
+    "Permanently closed" : {
+
+    },
+    "Pet Ownership Course" : {
+
+    },
+    "Pet Ownership Course completed" : {
+
+    },
+    "Pet Ownership Course completed. This is a one-time requirement — you're all set for every cat or dog you licence." : {
+
+    },
+    "Pet shop" : {
+
+    },
+    "Photo" : {
+
+    },
+    "Photo added" : {
+
+    },
+    "Photography" : {
+
+    },
+    "Pick your home type — we'll remember it" : {
+
+    },
+    "Pick your home type above to get a tailored result." : {
+
+    },
+    "Product" : {
+
+    },
+    "Reference" : {
+
+    },
+    "Reminders enabled" : {
+
+    },
+    "Request appointment" : {
+
+    },
+    "Restricted" : {
+
+    },
+    "Save" : {
+
+    },
+    "Save deworming" : {
+
+    },
+    "Save for %@" : {
+
+    },
+    "Save vaccine" : {
+
+    },
+    "Save weight" : {
+
+    },
+    "Search" : {
+
+    },
+    "Search any breed to check HDB eligibility" : {
+
+    },
+    "Search breeds" : {
+
+    },
+    "Select a breed above to see whether it can be kept in your home." : {
+
+    },
+    "Select breed" : {
+
+    },
+    "Select Cat Breed" : {
+
+    },
+    "Select date" : {
+
+    },
+    "Select Dog Breed" : {
+
+    },
+    "Set next due date" : {
+
+    },
+    "Set up %@'s profile" : {
+
+    },
+    "Sex" : {
+
+    },
+    "Share PetBook" : {
+
+    },
+    "Show all (%lld)" : {
+
+    },
+    "Show less" : {
+
+    },
+    "Sign in to PetBook" : {
+
+    },
+    "Singapore Specials make wonderful companions and can be kept in your %@ home." : {
+
+    },
+    "Skip" : {
+
+    },
+    "Sliders" : {
+
+    },
+    "Specified (restricted) dog" : {
+
+    },
+    "Start course" : {
+
+    },
+    "Sterilization decides the licence type — sterilised pets get a lifetime AVS licence; others need periodic renewal." : {
+
+    },
+    "Sterilized?" : {
+
+    },
+    "Style" : {
+
+    },
+    "Support PetBook" : {
+
+    },
+    "Swipe to choose" : {
+
+    },
+    "Tap to celebrate" : {
+
+    },
+    "Tap to enable reminders for vaccines, licences and follow-ups." : {
+
+    },
+    "Tell us about %@" : {
+
+    },
+    "Tell us about your %@" : {
+
+    },
+    "Temporarily closed" : {
+
+    },
+    "The End" : {
+
+    },
+    "This breed cannot be kept in Singapore." : {
+
+    },
+    "This breed is loved in Singapore — welcome in condos and landed homes, just not in HDB flats. Set on an HDB? Ask us about Project ADORE's K-9 scheme." : {
+
+    },
+    "This breed is loved in Singapore and can be kept in condos and landed homes — your %@ home is a great fit." : {
+
+    },
+    "This breed is on HDB's approved list — it can be kept in an HDB flat." : {
+
+    },
+    "This breed is on HDB's approved list — it can be kept in your HDB flat." : {
+
+    },
+    "This breed is prohibited in Singapore and cannot be kept in any home." : {
+
+    },
+    "This breed isn't on HDB's approved list, so it can't be kept in an HDB flat. Local mixed breeds may qualify through Project ADORE." : {
+
+    },
+    "This HDB-approved breed can be kept in your %@ home. You're good to go." : {
+
+    },
+    "This is a Specified (restricted) dog. It cannot be kept in HDB flats under any circumstances." : {
+
+    },
+    "This removes %@'s profile and all health records. This can't be undone." : {
+
+    },
+    "This Specified (restricted) dog can be kept in your %@ home, but requires insurance, muzzling and leashing in public." : {
+
+    },
+    "This will permanently remove your account and all pet records. This can't be undone." : {
+
+    },
+    "Track their vaccines, licence and reminders too." : {
+
+    },
+    "Turn on in Settings to get reminders." : {
+
+    },
+    "Type" : {
+
+    },
+    "Unknown" : {
+
+    },
+    "Update deworming" : {
+
+    },
+    "Update expiry" : {
+
+    },
+    "Update vaccine" : {
+
+    },
+    "Used for HDB compliance check" : {
+
+    },
+    "Vaccine added" : {
+
+    },
+    "Vaccine type" : {
+
+    },
+    "Vaccines, licence and health records — %@'s passport lives here now." : {
+
+    },
+    "Value" : {
+
+    },
+    "Vet" : {
+
+    },
+    "View" : {
+
+    },
+    "View on AVS registry" : {
+
+    },
+    "Voronoi" : {
+
+    },
+    "Voronoi Controls" : {
+
+    },
+    "We can't verify this breed" : {
+
+    },
+    "We couldn't match this to a known breed. Check AVS rules for your dog before applying." : {
+
+    },
+    "We couldn't match this to a known breed. Check HDB & AVS rules for your dog before applying." : {
+
+    },
+    "Weight (kg)" : {
+
+    },
+    "Welcome in condos & landed homes" : {
+
+    },
+    "Welcome in your %@ home" : {
+
+    },
+    "Welcome to PetBook" : {
+
+    },
+    "WhatsApp" : {
+
+    },
+    "When the next dose is recommended" : {
+
+    },
+    "Yes" : {
+
+    },
+    "You can add more details later." : {
+
+    },
+    "You're all caught up." : {
+
+    },
+    "Your home type" : {
+
+    }
+  },
+  "version" : "1.2"
+}

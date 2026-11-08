@@ -1,0 +1,53 @@
+{
+ "说明": "修 bug、加功能和守规矩加代码质量（11-08 起）；R5 = 判对错 70% + 代码质量 30%。代码质量由独立评审（Claude，新开的子会话）只看随机甲乙标签的改动打分，打完才揭晓；评审没看过工具的对话和用时。",
+ "claude": {
+  "label": "甲",
+  "结构与分层": 8,
+  "可读性": 7,
+  "一致性": 8,
+  "稳健写法": 8,
+  "可维护性": 7,
+  "代码质量": 76,
+  "判对错": 100,
+  "R5": 92.8,
+  "理由": {
+   "结构与分层": "新建 HabitEditView，列表用 sheet(item:) 弹出，swAlert 挂在 App 入口，分层清楚。",
+   "可读性": "draft 计算属性把可选的改动叠在 store 实时数据上，再配自定义 Binding，不够直观。",
+   "一致性": "按钮用 SW 按钮样式，成败都走 SWAlertManager，不等 sheet 关闭，符合组件约定。",
+   "稳健写法": "保存中禁用按钮和下滑关闭，色块带无障碍标签与选中态；Preview 直接取 habits[0]。",
+   "可维护性": "手搭表单与色块，32、44、16 等尺寸散落在代码里，代码量约为系统 Form 写法的两倍。"
+  },
+  "理由_en": {
+   "结构与分层": "New HabitEditView, presented from the list with sheet(item:), with swAlert attached at the app entry; clear layering.",
+   "可读性": "A computed draft property layers optional edits over the store's live data, combined with custom Bindings; not intuitive.",
+   "一致性": "Buttons use the SW button styles, success and failure both go through SWAlertManager without waiting for the sheet to close, as the component docs require.",
+   "稳健写法": "Disables the button and swipe-to-dismiss while saving, and the color swatches have accessibility labels and selected state; the Preview simply takes habits[0].",
+   "可维护性": "Hand-built form and swatches with sizes such as 32, 44 and 16 scattered through the code, about twice the code of a system Form."
+  }
+ },
+ "codex": {
+  "label": "乙",
+  "结构与分层": 9,
+  "可读性": 9,
+  "一致性": 8,
+  "稳健写法": 8,
+  "可维护性": 8,
+  "代码质量": 84,
+  "判对错": 100,
+  "R5": 95.2,
+  "理由": {
+   "结构与分层": "新建 HabitEditView，列表用 sheet(item:) 弹出，swAlert 挂在 App 入口，改动集中。",
+   "可读性": "@State draft 由 init 注入，Form 里输入框与 Picker 直接绑定 $draft，一眼看懂。",
+   "一致性": "按钮用 swPrimary、swSecondary，提示走 SWAlertManager，颜色选择用系统 Picker。",
+   "稳健写法": "save 先 guard !isSaving 防重复点击，defer 复位状态，保存期间禁用表单与下滑关闭。",
+   "可维护性": "依赖系统 Form 与 Picker，几乎没有魔法数，无夹带改动；没有加 Preview。"
+  },
+  "理由_en": {
+   "结构与分层": "New HabitEditView, presented from the list with sheet(item:), with swAlert attached at the app entry; the change is focused.",
+   "可读性": "A @State draft injected through init, with the text fields and Picker in a Form bound directly to $draft; clear at a glance.",
+   "一致性": "Buttons use swPrimary and swSecondary, alerts go through SWAlertManager, and the color choice uses the system Picker.",
+   "稳健写法": "save starts with guard !isSaving against double taps and resets state with defer; the form and swipe-to-dismiss are disabled while saving.",
+   "可维护性": "Relies on the system Form and Picker with almost no magic numbers and no unrelated changes; no Preview added."
+  }
+ }
+}

@@ -1,0 +1,1297 @@
+ .dev.vars.example                       |   2 +
+ .gitignore                              |   7 +
+ README.md                               |  98 ++++++++
+ migrations/0001_subscription_events.sql |  28 +++
+ package-lock.json                       | 389 ++++++++++++++++++++++++++++++++
+ package.json                            |  16 +-
+ src/index.ts                            | 109 +++++++++
+ src/subscriptions.ts                    |  99 ++++++++
+ test/api.test.mjs                       | 361 +++++++++++++++++++++++++++++
+ test/subscriptions.test.mjs             |  34 +++
+ tsconfig.json                           |  15 ++
+ wrangler.jsonc                          |  15 ++
+ 12 files changed, 1172 insertions(+), 1 deletion(-)
+diff --git a/.dev.vars.example b/.dev.vars.example
+new file mode 100644
+index 0000000..c0de85c
+--- /dev/null
++++ b/.dev.vars.example
+@@ -0,0 +1,2 @@
++WEBHOOK_SECRET=replace-with-your-local-webhook-secret
++API_TOKEN=replace-with-your-local-api-token
+diff --git a/.gitignore b/.gitignore
+index db3dd13..f6fd76c 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -6,3 +6,10 @@ build/
+ *.xcuserstate
+ xcuserdata/
+ .swiftpm/
++.dev.vars
++.dev.vars.*
++!.dev.vars.example
++.env
++.env.*
++!.env.example
++coverage/
+diff --git a/README.md b/README.md
+new file mode 100644
+index 0000000..34453d5
+--- /dev/null
++++ b/README.md
+@@ -0,0 +1,98 @@
++# 会员订阅服务
++
++Cloudflare Workers（TypeScript）+ D1，无运行时第三方依赖。需要 Node.js 22.18+（本项目在 Node.js 24 下验证）。
++
++## 本地运行
++
++```sh
++npm ci
++cp .dev.vars.example .dev.vars
++```
++
++在 `.dev.vars` 中设置两个不同的本地密钥；如果文件已经存在，直接编辑，不必覆盖：
++
++```dotenv
++WEBHOOK_SECRET=your-webhook-secret
++API_TOKEN=your-internal-api-token
++```
++
++```sh
++npx wrangler d1 migrations apply DB --local
++npx wrangler dev --local
++```
++
++默认地址为 `http://localhost:8787`。D1 绑定名为 `DB`，本地数据库保存在 `.wrangler/state/`。配置中的数据库 ID 是本地占位值，这套流程无需 Cloudflare 账号。`.dev.vars` 和本地数据库均被 Git 忽略。
++
++也可使用 `npm run db:migrate`、`npm run dev`。本项目没有部署脚本。
++
++## 接口
++
++### 接收事件
++
++`POST /v1/webhooks/subscription`，请求头 `Authorization: Bearer <WEBHOOK_SECRET>`。
++
++```json
++{
++  "event": {
++    "id": "evt_123",
++    "type": "INITIAL_PURCHASE",
++    "app_user_id": "user_1",
++    "product_id": "pro_monthly",
++    "event_timestamp_ms": 1730000000000,
++    "expiration_at_ms": 1732592000000
++  }
++}
++```
++
++成功、重复事件、未知类型均返回 `200 {"ok":true}`。必填字段为 `id`、`type`、`app_user_id`、`event_timestamp_ms`；前三项必须是非空字符串，时间必须是非负安全整数（毫秒）。非法 JSON、缺少必填字段或字段类型错误返回 400。`product_id`、`expiration_at_ms` 可省略或为 `null`。
++
++### 查询订阅
++
++`GET /v1/users/{app_user_id}/subscription`，请求头 `Authorization: Bearer <API_TOKEN>`。路径中的用户 ID 需经 URL 编码。
++
++```json
++{
++  "app_user_id": "user_1",
++  "status": "active",
++  "active": true,
++  "product_id": "pro_monthly",
++  "expires_at_ms": 1732592000000,
++  "will_renew": true
++}
++```
++
++响应按查询时刻计算；示例时间在实际查询时若已过去，会返回 `expired`、`active:false`、`will_renew:false`。从未收到已知订阅事件的用户返回 `none`，两个布尔字段为 `false`，产品和到期时间为 `null`。
++
++两个接口缺少或使用错误令牌均返回 401；未配置密钥时同样拒绝访问。所有响应为 JSON，并设置 `Cache-Control: no-store`。数据库失败返回 500，使订阅平台可以重试。
++
++| 最新已知事件 | 到期前的状态 | 享有权益 | 自动续订 |
++| --- | --- | --- | --- |
++| `INITIAL_PURCHASE` / `RENEWAL` / `UNCANCELLATION` | `active` | 是 | 是 |
++| `CANCELLATION` | `cancelled` | 是 | 否 |
++| `EXPIRATION` | `expired` | 否 | 否 |
++| `REFUND` | `refunded` | 否 | 否 |
++
++`active` / `cancelled` 在 `now >= expires_at_ms` 时返回 `expired`，两个布尔字段均为 `false`，不依赖过期通知或定时任务。退款、显式过期立即失去权益，即使事件里的到期时间尚未到来。更新的开通或续订事件可以重新激活会员。
++
++## 去重、乱序和并发
++
++- `subscription_events` 是不可变事件日志，事件 ID 为全局主键。写入使用参数化 `INSERT ... ON CONFLICT(id) DO NOTHING`。同一 ID 的首个成功写入保留，后续载荷即使改变用户或时间也不会生效。
++- 每次请求只需一次原子写入。查询通过索引按 `event_timestamp_ms DESC, id DESC` 取得用户最新的已知事件，不存在“先查后改”竞争，也不存在事件已记录而状态更新失败的半完成状态。
++- 查询中的状态和附加字段来自同一条 SQL 的一致快照。未知类型仍记录并去重，但不会影响状态、到期时间或已知事件的排序。
++- 未指定同毫秒事件的优先级，因此以 SQLite 二进制排序下较大的事件 ID 胜出；结果不依赖到达顺序。
++- 可选的产品和到期时间按事件时间继承最近一次提供的非空值。因此取消事件可省略这些字段，取消先到、购买后到也能正确补齐；状态类型仍由最新事件决定。
++- 如果全部已知事件都未提供到期时间，接口接受事件并保留 `expires_at_ms:null`，查询保守返回 `expired`、`active:false`，不授予无限期权益。
++
++事件日志当前不自动清理，以保持去重和可选字段继承语义。
++
++## 测试
++
++```sh
++npm run check
++```
++
++`typecheck` 执行 TypeScript 严格检查，`test` 使用 Node 内置测试运行器和 Wrangler 的 [本地测试工具](https://developers.cloudflare.com/workers/testing/test-harness/get-started/)，运行实际 Workers 代码和 D1 迁移。测试密钥单独注入，测试数据库与 `.wrangler/state/` 中的开发数据隔离，无需先创建 `.dev.vars`。
++
++覆盖鉴权、非法请求、六类事件完整生命周期、自然到期及毫秒边界、未知类型、重复载荷、跨用户重复 ID、乱序、相同时间戳、URL 编码，以及每批 60 个并发请求（含重复事件）。通过注入数据库写入故障验证失败返回 500、没有半完成状态、重试可成功。
++
++主要文件：`src/index.ts`（HTTP 与 SQL）、`src/subscriptions.ts`（校验和权益计算）、`migrations/0001_subscription_events.sql`（表、索引和视图）、`test/`（集成与边界测试）。
+diff --git a/migrations/0001_subscription_events.sql b/migrations/0001_subscription_events.sql
+new file mode 100644
+index 0000000..3959256
+--- /dev/null
++++ b/migrations/0001_subscription_events.sql
+@@ -0,0 +1,28 @@
++-- An immutable event log is the source of truth. A single INSERT commits both
++-- deduplication and the data needed to derive the user's subscription.
++CREATE TABLE subscription_events (
++  id TEXT PRIMARY KEY NOT NULL,
++  type TEXT NOT NULL,
++  app_user_id TEXT NOT NULL,
++  event_timestamp_ms INTEGER NOT NULL CHECK (event_timestamp_ms >= 0),
++  product_id TEXT,
++  expiration_at_ms INTEGER CHECK (expiration_at_ms >= 0),
++  received_at_ms INTEGER NOT NULL
++) STRICT;
++
++-- Unknown events are recorded for deduplication but never change entitlements.
++-- The partial index also serves the view below, including the latest-event query.
++CREATE INDEX subscription_events_user_time
++ON subscription_events (app_user_id, event_timestamp_ms DESC, id DESC)
++WHERE type IN (
++  'INITIAL_PURCHASE', 'RENEWAL', 'CANCELLATION',
++  'UNCANCELLATION', 'EXPIRATION', 'REFUND'
++);
++
++CREATE VIEW known_subscription_events AS
++SELECT id, type, app_user_id, event_timestamp_ms, product_id, expiration_at_ms
++FROM subscription_events
++WHERE type IN (
++  'INITIAL_PURCHASE', 'RENEWAL', 'CANCELLATION',
++  'UNCANCELLATION', 'EXPIRATION', 'REFUND'
++);
+diff --git a/package-lock.json b/package-lock.json
+index b898c45..c119303 100644
+--- a/package-lock.json
++++ b/package-lock.json
+@@ -6,7 +6,12 @@
+     "": {
+       "name": "subscription-service",
+       "devDependencies": {
++        "@cloudflare/workers-types": "^5.20261108.1",
++        "typescript": "^7.0.2",
+         "wrangler": "4.158.0"
++      },
++      "engines": {
++        "node": ">=22.18.0"
+       }
+     },
+     "node_modules/@cloudflare/kv-asset-handler": {
+@@ -120,6 +125,14 @@
+         "node": ">=16"
+       }
+     },
++    "node_modules/@cloudflare/workers-types": {
++      "version": "5.20261108.1",
++      "resolved": "https://registry.npmjs.org/@cloudflare/workers-types/-/workers-types-5.20261108.1.tgz",
++      "integrity": "sha512-lCGPhVOCy4sepGLuuy6KGxlxt8pVD8kbAt+mkdPcdr29fi5YLtihOLGKeNtInnmgdkSGiKhPCkRv/iq5tXC1/w==",
++      "dev": true,
++      "license": "MIT OR Apache-2.0",
++      "peer": true
++    },
+     "node_modules/@cspotcode/source-map-support": {
+       "version": "0.8.1",
+       "resolved": "https://registry.npmjs.org/@cspotcode/source-map-support/-/source-map-support-0.8.1.tgz",
+@@ -1190,6 +1203,346 @@
+       "dev": true,
+       "license": "CC0-1.0"
+     },
++    "node_modules/@typescript/typescript-aix-ppc64": {
++      "version": "7.0.2",
++      "resolved": "https://registry.npmjs.org/@typescript/typescript-aix-ppc64/-/typescript-aix-ppc64-7.0.2.tgz",
++      "integrity": "sha512-MTKKkWB7p/0E9xi1d1tHtZ5PiLkGEMIq88pK2CubZjOsLtYTLqhgIgi6zepFa+9GHZ6h05NMCkQxGKiPXMxXtQ==",
++      "cpu": [
++        "ppc64"
++      ],
++      "dev": true,
++      "license": "Apache-2.0",
++      "optional": true,
++      "os": [
++        "aix"
++      ],
++      "engines": {
++        "node": ">=16.20.0"
++      }
++    },
++    "node_modules/@typescript/typescript-darwin-arm64": {
++      "version": "7.0.2",
++      "resolved": "https://registry.npmjs.org/@typescript/typescript-darwin-arm64/-/typescript-darwin-arm64-7.0.2.tgz",
++      "integrity": "sha512-gowzar9MwS/aRWp6f3a4KUqzRjAZjOsmGNCM6LcTgXum+dBfgsBVMN+AgvOCCbguXyick6LJhpBszxMebJ8syA==",
++      "cpu": [
++        "arm64"
++      ],
++      "dev": true,
++      "license": "Apache-2.0",
++      "optional": true,
++      "os": [
++        "darwin"
++      ],
++      "engines": {
++        "node": ">=16.20.0"
++      }
++    },
++    "node_modules/@typescript/typescript-darwin-x64": {
++      "version": "7.0.2",
++      "resolved": "https://registry.npmjs.org/@typescript/typescript-darwin-x64/-/typescript-darwin-x64-7.0.2.tgz",
++      "integrity": "sha512-SZ9xZInqApNlNGc9s0W1VSsktYSOe9cFqNOIqmN1Gs8SmkjKZYFt017G4VwPxASInODuAdbTW7sXiFUf893RgA==",
++      "cpu": [
++        "x64"
++      ],
++      "dev": true,
++      "license": "Apache-2.0",
++      "optional": true,
++      "os": [
++        "darwin"
++      ],
++      "engines": {
++        "node": ">=16.20.0"
++      }
++    },
++    "node_modules/@typescript/typescript-freebsd-arm64": {
++      "version": "7.0.2",
++      "resolved": "https://registry.npmjs.org/@typescript/typescript-freebsd-arm64/-/typescript-freebsd-arm64-7.0.2.tgz",
++      "integrity": "sha512-W5NH4y/J0plIIS5b2xvTEkU7JFxyqdMAOgf+Ilhl0vHQXKO5dZoxd+C/jEtq56c4F3wk71RB4BMRQ2XdI+bwYQ==",
++      "cpu": [
++        "arm64"
++      ],
++      "dev": true,
++      "license": "Apache-2.0",
++      "optional": true,
++      "os": [
++        "freebsd"
++      ],
++      "engines": {
++        "node": ">=16.20.0"
++      }
++    },
++    "node_modules/@typescript/typescript-freebsd-x64": {
++      "version": "7.0.2",
++      "resolved": "https://registry.npmjs.org/@typescript/typescript-freebsd-x64/-/typescript-freebsd-x64-7.0.2.tgz",
++      "integrity": "sha512-UMGDx5sTpzNw3WiPebH7l90IWfJggEd+egHt/q6p7/Cm3zqoV7VxkGXt+3DxPIw8CcmvAB0j3sVVfbhX+M4Tpw==",
++      "cpu": [
++        "x64"
++      ],
++      "dev": true,
++      "license": "Apache-2.0",
++      "optional": true,
++      "os": [
++        "freebsd"
++      ],
++      "engines": {
++        "node": ">=16.20.0"
++      }
++    },
++    "node_modules/@typescript/typescript-linux-arm": {
++      "version": "7.0.2",
++      "resolved": "https://registry.npmjs.org/@typescript/typescript-linux-arm/-/typescript-linux-arm-7.0.2.tgz",
++      "integrity": "sha512-gffT3xPz9sR7j/YJExkyPntrI0P2EP9XbOyWzth2/Gs0RstK+90RBcO0ncXoXy/beYll1SXw846Nf2zdnEz0QQ==",
++      "cpu": [
++        "arm"
++      ],
++      "dev": true,
++      "license": "Apache-2.0",
++      "optional": true,
++      "os": [
++        "linux"
++      ],
++      "engines": {
++        "node": ">=16.20.0"
++      }
++    },
++    "node_modules/@typescript/typescript-linux-arm64": {
++      "version": "7.0.2",
++      "resolved": "https://registry.npmjs.org/@typescript/typescript-linux-arm64/-/typescript-linux-arm64-7.0.2.tgz",
++      "integrity": "sha512-Qh4eU4/y3yDjnfjjyPYihMj5/ODIlmt+Bzu17OI+fiSRDW57QmU5SiN63exPRNJPKUzcc1INa1NXdrJ+MqHjUQ==",
++      "cpu": [
++        "arm64"
++      ],
++      "dev": true,
++      "license": "Apache-2.0",
++      "optional": true,
++      "os": [
++        "linux"
++      ],
++      "engines": {
++        "node": ">=16.20.0"
++      }
++    },
++    "node_modules/@typescript/typescript-linux-loong64": {
++      "version": "7.0.2",
++      "resolved": "https://registry.npmjs.org/@typescript/typescript-linux-loong64/-/typescript-linux-loong64-7.0.2.tgz",
++      "integrity": "sha512-uEHck9i8hoAzXPiYRib1O7miOnz23SxIeVl6F4LXox+qov1K35jHcEW6VHKvZI+pyvl7fZEP4MCU5LYvIq1GuQ==",
++      "cpu": [
++        "loong64"
++      ],
++      "dev": true,
++      "license": "Apache-2.0",
++      "optional": true,
++      "os": [
++        "linux"
++      ],
++      "engines": {
++        "node": ">=16.20.0"
++      }
++    },
++    "node_modules/@typescript/typescript-linux-mips64el": {
++      "version": "7.0.2",
++      "resolved": "https://registry.npmjs.org/@typescript/typescript-linux-mips64el/-/typescript-linux-mips64el-7.0.2.tgz",
++      "integrity": "sha512-R4KvAMnE43W5Qeqb0Ly56O3mWMWIAgsMyz36DCaycd5nbg/9kzm0liw3JocfRqyJY0KPmzFjbswozXyW0DnIYA==",
++      "cpu": [
++        "mips64el"
++      ],
++      "dev": true,
++      "license": "Apache-2.0",
++      "optional": true,
++      "os": [
++        "linux"
++      ],
++      "engines": {
++        "node": ">=16.20.0"
++      }
++    },
++    "node_modules/@typescript/typescript-linux-ppc64": {
++      "version": "7.0.2",
++      "resolved": "https://registry.npmjs.org/@typescript/typescript-linux-ppc64/-/typescript-linux-ppc64-7.0.2.tgz",
++      "integrity": "sha512-DORx5b3sd/4S7eayxm4FQv+A7CrkUIGRaHiwI8oiHTAI1fAPWhF4J0vAlkC8biAlHSVVwxMQ3tjZ2/DVbnQiiA==",
++      "cpu": [
++        "ppc64"
++      ],
++      "dev": true,
++      "license": "Apache-2.0",
++      "optional": true,
++      "os": [
++        "linux"
++      ],
++      "engines": {
++        "node": ">=16.20.0"
++      }
++    },
++    "node_modules/@typescript/typescript-linux-riscv64": {
++      "version": "7.0.2",
++      "resolved": "https://registry.npmjs.org/@typescript/typescript-linux-riscv64/-/typescript-linux-riscv64-7.0.2.tgz",
++      "integrity": "sha512-wf0jqEDOjrPRnKwYRyyJDRo11KMbvMFrU+q4zqKyChODBzvlkbhNQfKvLxQCcwTpdDaXSHZTVuh0JoCrKCUMHQ==",
++      "cpu": [
++        "riscv64"
++      ],
++      "dev": true,
++      "license": "Apache-2.0",
++      "optional": true,
++      "os": [
++        "linux"
++      ],
++      "engines": {
++        "node": ">=16.20.0"
++      }
++    },
++    "node_modules/@typescript/typescript-linux-s390x": {
++      "version": "7.0.2",
++      "resolved": "https://registry.npmjs.org/@typescript/typescript-linux-s390x/-/typescript-linux-s390x-7.0.2.tgz",
++      "integrity": "sha512-IkwJc3L7yhytWd/ewjyxNDfOmswCm9GWMJT/ue/dU4aZNbwZeYAetq42VyLmsmSjvoX7z74X6ZaYCtzAr0EuGw==",
++      "cpu": [
++        "s390x"
++      ],
++      "dev": true,
++      "license": "Apache-2.0",
++      "optional": true,
++      "os": [
++        "linux"
++      ],
++      "engines": {
++        "node": ">=16.20.0"
++      }
++    },
++    "node_modules/@typescript/typescript-linux-x64": {
++      "version": "7.0.2",
++      "resolved": "https://registry.npmjs.org/@typescript/typescript-linux-x64/-/typescript-linux-x64-7.0.2.tgz",
++      "integrity": "sha512-EYdf2cNg7rgCWJnxCdJ+F3V39O8ihb37eHAu1LK8oAFizgTQbPOK7zHHXbPt8rX24COqODXeI3sIf0fCXG7H/A==",
++      "cpu": [
++        "x64"
++      ],
++      "dev": true,
++      "license": "Apache-2.0",
++      "optional": true,
++      "os": [
++        "linux"
++      ],
++      "engines": {
++        "node": ">=16.20.0"
++      }
++    },
++    "node_modules/@typescript/typescript-netbsd-arm64": {
++      "version": "7.0.2",
++      "resolved": "https://registry.npmjs.org/@typescript/typescript-netbsd-arm64/-/typescript-netbsd-arm64-7.0.2.tgz",
++      "integrity": "sha512-+polYF4MF04aPpO5FTkHran9yUQDSXqy5GiSDKpsll5jy3l3+g9QLhpf39T+ePtefhXLOGrLl0QIjkQP6VnelA==",
++      "cpu": [
++        "arm64"
++      ],
++      "dev": true,
++      "license": "Apache-2.0",
++      "optional": true,
++      "os": [
++        "netbsd"
++      ],
++      "engines": {
++        "node": ">=16.20.0"
++      }
++    },
++    "node_modules/@typescript/typescript-netbsd-x64": {
++      "version": "7.0.2",
++      "resolved": "https://registry.npmjs.org/@typescript/typescript-netbsd-x64/-/typescript-netbsd-x64-7.0.2.tgz",
++      "integrity": "sha512-8YIT0EHM/3dq10ZOVF/A7pc/YSMtbcecct4rWtexrnSCHOPcpC2KTLXfTCR6vDpnSiY12heNb1GiN/wu+T/FyA==",
++      "cpu": [
++        "x64"
++      ],
++      "dev": true,
++      "license": "Apache-2.0",
++      "optional": true,
++      "os": [
++        "netbsd"
++      ],
++      "engines": {
++        "node": ">=16.20.0"
++      }
++    },
++    "node_modules/@typescript/typescript-openbsd-arm64": {
++      "version": "7.0.2",
++      "resolved": "https://registry.npmjs.org/@typescript/typescript-openbsd-arm64/-/typescript-openbsd-arm64-7.0.2.tgz",
++      "integrity": "sha512-APT8+ClYnuYm1u9+kgGXoMj2VzWzcymwh2gNSQVySHfkRDGOTVkoWLjCmOQSaO+PoqQ57B0flRp9SA+7GnnkzQ==",
++      "cpu": [
++        "arm64"
++      ],
++      "dev": true,
++      "license": "Apache-2.0",
++      "optional": true,
++      "os": [
++        "openbsd"
++      ],
++      "engines": {
++        "node": ">=16.20.0"
++      }
++    },
++    "node_modules/@typescript/typescript-openbsd-x64": {
++      "version": "7.0.2",
++      "resolved": "https://registry.npmjs.org/@typescript/typescript-openbsd-x64/-/typescript-openbsd-x64-7.0.2.tgz",
++      "integrity": "sha512-yX7s+Q0Dln0Dt9tEzZsAjXXR/+ytBM7AlglaqyeMPxQszJ1JhlJdZ6jLA+IzldHtflX81em7lDao1xXu+aRRkg==",
++      "cpu": [
++        "x64"
++      ],
++      "dev": true,
++      "license": "Apache-2.0",
++      "optional": true,
++      "os": [
++        "openbsd"
++      ],
++      "engines": {
++        "node": ">=16.20.0"
++      }
++    },
++    "node_modules/@typescript/typescript-sunos-x64": {
++      "version": "7.0.2",
++      "resolved": "https://registry.npmjs.org/@typescript/typescript-sunos-x64/-/typescript-sunos-x64-7.0.2.tgz",
++      "integrity": "sha512-dLJDGaLZ1D4HPQn62u1n8mBDkJREwMsAkCdkwd4Ieqw+x3TUyTsqY0YiBCtE6H6OzzgGk3iuZ3vFWRS+E8/d1g==",
++      "cpu": [
++        "x64"
++      ],
++      "dev": true,
++      "license": "Apache-2.0",
++      "optional": true,
++      "os": [
++        "sunos"
++      ],
++      "engines": {
++        "node": ">=16.20.0"
++      }
++    },
++    "node_modules/@typescript/typescript-win32-arm64": {
++      "version": "7.0.2",
++      "resolved": "https://registry.npmjs.org/@typescript/typescript-win32-arm64/-/typescript-win32-arm64-7.0.2.tgz",
++      "integrity": "sha512-Gyl1Vy6OsWesLzmq+EP0Fb7b4Nid5232AvcA2SFcdYreldpNtYFFofPjnt62y9hQy7VTaZp65ICJjuAQRaVcIQ==",
++      "cpu": [
++        "arm64"
++      ],
++      "dev": true,
++      "license": "Apache-2.0",
++      "optional": true,
++      "os": [
++        "win32"
++      ],
++      "engines": {
++        "node": ">=16.20.0"
++      }
++    },
++    "node_modules/@typescript/typescript-win32-x64": {
++      "version": "7.0.2",
++      "resolved": "https://registry.npmjs.org/@typescript/typescript-win32-x64/-/typescript-win32-x64-7.0.2.tgz",
++      "integrity": "sha512-0BQ3HkAHHlKLSp1qRvf3SUhGpGsDuhB/jgFw75guyqbxJqEaS0Cw/VFO8i2nHglJUzQCRtMMR/IBAKE3ETMC4g==",
++      "cpu": [
++        "x64"
++      ],
++      "dev": true,
++      "license": "Apache-2.0",
++      "optional": true,
++      "os": [
++        "win32"
++      ],
++      "engines": {
++        "node": ">=16.20.0"
++      }
++    },
+     "node_modules/blake3-wasm": {
+       "version": "2.1.5",
+       "resolved": "https://registry.npmjs.org/blake3-wasm/-/blake3-wasm-2.1.5.tgz",
+@@ -1414,6 +1767,41 @@
+       "license": "0BSD",
+       "optional": true
+     },
++    "node_modules/typescript": {
++      "version": "7.0.2",
++      "resolved": "https://registry.npmjs.org/typescript/-/typescript-7.0.2.tgz",
++      "integrity": "sha512-8FYau96o3NKOhbjKi/qNvG/W5jhzxkbdm5sj9AbZ/5T5sWqn3hJgLfGx27sRKZWTvyzCP8dLRBTf5tBTSRVUNA==",
++      "dev": true,
++      "license": "Apache-2.0",
++      "bin": {
++        "tsc": "bin/tsc"
++      },
++      "engines": {
++        "node": ">=16.20.0"
++      },
++      "optionalDependencies": {
++        "@typescript/typescript-aix-ppc64": "7.0.2",
++        "@typescript/typescript-darwin-arm64": "7.0.2",
++        "@typescript/typescript-darwin-x64": "7.0.2",
++        "@typescript/typescript-freebsd-arm64": "7.0.2",
++        "@typescript/typescript-freebsd-x64": "7.0.2",
++        "@typescript/typescript-linux-arm": "7.0.2",
++        "@typescript/typescript-linux-arm64": "7.0.2",
++        "@typescript/typescript-linux-loong64": "7.0.2",
++        "@typescript/typescript-linux-mips64el": "7.0.2",
++        "@typescript/typescript-linux-ppc64": "7.0.2",
++        "@typescript/typescript-linux-riscv64": "7.0.2",
++        "@typescript/typescript-linux-s390x": "7.0.2",
++        "@typescript/typescript-linux-x64": "7.0.2",
++        "@typescript/typescript-netbsd-arm64": "7.0.2",
++        "@typescript/typescript-netbsd-x64": "7.0.2",
++        "@typescript/typescript-openbsd-arm64": "7.0.2",
++        "@typescript/typescript-openbsd-x64": "7.0.2",
++        "@typescript/typescript-sunos-x64": "7.0.2",
++        "@typescript/typescript-win32-arm64": "7.0.2",
++        "@typescript/typescript-win32-x64": "7.0.2"
++      }
++    },
+     "node_modules/undici": {
+       "version": "7.30.1",
+       "resolved": "https://registry.npmjs.org/undici/-/undici-7.30.1.tgz",
+@@ -1442,6 +1830,7 @@
+       "dev": true,
+       "hasInstallScript": true,
+       "license": "Apache-2.0",
++      "peer": true,
+       "bin": {
+         "workerd": "bin/workerd"
+       },
+diff --git a/package.json b/package.json
+index 7f27e91..a41ea5d 100644
+--- a/package.json
++++ b/package.json
+@@ -2,5 +2,19 @@
+   "name": "subscription-service",
+   "private": true,
+   "type": "module",
+-  "devDependencies": { "wrangler": "4.158.0" }
++  "devDependencies": {
++    "@cloudflare/workers-types": "^5.20261108.1",
++    "typescript": "^7.0.2",
++    "wrangler": "4.158.0"
++  },
++  "scripts": {
++    "dev": "wrangler dev --local",
++    "db:migrate": "wrangler d1 migrations apply DB --local",
++    "typecheck": "tsc --noEmit",
++    "test": "WRANGLER_SEND_METRICS=false node --test --test-concurrency=1 test/*.test.mjs",
++    "check": "npm run typecheck && npm test"
++  },
++  "engines": {
++    "node": ">=22.18.0"
++  }
+ }
+diff --git a/src/index.ts b/src/index.ts
+new file mode 100644
+index 0000000..033edcf
+--- /dev/null
++++ b/src/index.ts
+@@ -0,0 +1,109 @@
++import { parseEvent, toSubscription, type SubscriptionRow } from "./subscriptions";
++
++export interface Env {
++  DB: D1Database;
++  WEBHOOK_SECRET: string;
++  API_TOKEN: string;
++}
++
++function json(body: unknown, status = 200, headers: Record<string, string> = {}): Response {
++  return Response.json(body, {
++    status,
++    headers: { "Cache-Control": "no-store", ...headers },
++  });
++}
++
++function authorized(request: Request, secret: string | undefined): boolean {
++  return typeof secret === "string" && secret.length > 0 &&
++    request.headers.get("Authorization") === `Bearer ${secret}`;
++}
++
++function unauthorized(): Response {
++  return json({ error: "Unauthorized" }, 401, { "WWW-Authenticate": "Bearer" });
++}
++
++async function webhook(request: Request, env: Env): Promise<Response> {
++  if (!authorized(request, env.WEBHOOK_SECRET)) return unauthorized();
++  if (request.method !== "POST") {
++    return json({ error: "Method not allowed" }, 405, { Allow: "POST" });
++  }
++
++  let body: unknown;
++  try {
++    body = await request.json();
++  } catch {
++    return json({ error: "Invalid JSON" }, 400);
++  }
++
++  const event = parseEvent(body);
++  if (!event) return json({ error: "Invalid subscription event" }, 400);
++
++  // One atomic write: no read-before-write race and no separate processed flag.
++  // A duplicate ID cannot replace the original payload, even for another user.
++  await env.DB.prepare(`
++    INSERT INTO subscription_events
++      (id, type, app_user_id, event_timestamp_ms, product_id, expiration_at_ms, received_at_ms)
++    VALUES (?, ?, ?, ?, ?, ?, ?)
++    ON CONFLICT (id) DO NOTHING
++  `).bind(
++    event.id,
++    event.type,
++    event.app_user_id,
++    event.event_timestamp_ms,
++    event.product_id,
++    event.expiration_at_ms,
++    Date.now(),
++  ).run();
++
++  return json({ ok: true });
++}
++
++async function subscription(request: Request, env: Env, encodedUserId: string): Promise<Response> {
++  if (!authorized(request, env.API_TOKEN)) return unauthorized();
++  if (request.method !== "GET") {
++    return json({ error: "Method not allowed" }, 405, { Allow: "GET" });
++  }
++
++  let appUserId: string;
++  try {
++    appUserId = decodeURIComponent(encodedUserId);
++  } catch {
++    return json({ error: "Invalid user ID encoding" }, 400);
++  }
++
++  // All fields come from one database snapshot. Optional fields inherit the
++  // latest supplied value in event-time order, even when older events arrive late.
++  // Equal timestamps use the lexicographically greatest ID as a stable tie-break.
++  const row = await env.DB.prepare(`
++    SELECT type,
++      (SELECT product_id FROM known_subscription_events
++       WHERE app_user_id = ?1 AND product_id IS NOT NULL
++       ORDER BY event_timestamp_ms DESC, id DESC LIMIT 1) AS product_id,
++      (SELECT expiration_at_ms FROM known_subscription_events
++       WHERE app_user_id = ?1 AND expiration_at_ms IS NOT NULL
++       ORDER BY event_timestamp_ms DESC, id DESC LIMIT 1) AS expires_at_ms
++    FROM known_subscription_events
++    WHERE app_user_id = ?1
++    ORDER BY event_timestamp_ms DESC, id DESC LIMIT 1
++  `).bind(appUserId).first<SubscriptionRow>();
++
++  return json(toSubscription(appUserId, row, Date.now()));
++}
++
++export default {
++  async fetch(request: Request, env: Env): Promise<Response> {
++    const pathname = new URL(request.url).pathname;
++    try {
++      if (pathname === "/v1/webhooks/subscription") return await webhook(request, env);
++
++      const match = /^\/v1\/users\/([^/]+)\/subscription$/.exec(pathname);
++      if (match?.[1]) return await subscription(request, env, match[1]);
++
++      return json({ error: "Not found" }, 404);
++    } catch (error) {
++      // Return a non-2xx response so the sender retries a failed database write.
++      console.error("Subscription request failed", error);
++      return json({ error: "Internal server error" }, 500);
++    }
++  },
++} satisfies ExportedHandler<Env>;
+diff --git a/src/subscriptions.ts b/src/subscriptions.ts
+new file mode 100644
+index 0000000..0da099e
+--- /dev/null
++++ b/src/subscriptions.ts
+@@ -0,0 +1,99 @@
++export interface SubscriptionEvent {
++  id: string;
++  type: string;
++  app_user_id: string;
++  event_timestamp_ms: number;
++  product_id: string | null;
++  expiration_at_ms: number | null;
++}
++
++const EVENT_STATUS = {
++  INITIAL_PURCHASE: "active",
++  RENEWAL: "active",
++  CANCELLATION: "cancelled",
++  UNCANCELLATION: "active",
++  EXPIRATION: "expired",
++  REFUND: "refunded",
++} as const;
++
++export interface SubscriptionRow {
++  type: keyof typeof EVENT_STATUS;
++  product_id: string | null;
++  expires_at_ms: number | null;
++}
++
++export interface Subscription {
++  app_user_id: string;
++  status: "none" | "active" | "cancelled" | "expired" | "refunded";
++  active: boolean;
++  product_id: string | null;
++  expires_at_ms: number | null;
++  will_renew: boolean;
++}
++
++function isRecord(value: unknown): value is Record<string, unknown> {
++  return typeof value === "object" && value !== null && !Array.isArray(value);
++}
++
++function isNonEmptyString(value: unknown): value is string {
++  return typeof value === "string" && value.trim().length > 0;
++}
++
++function isTimestamp(value: unknown): value is number {
++  return typeof value === "number" && Number.isSafeInteger(value) && value >= 0;
++}
++
++export function parseEvent(body: unknown): SubscriptionEvent | null {
++  if (!isRecord(body) || !isRecord(body.event)) return null;
++  const event = body.event;
++  if (
++    !isNonEmptyString(event.id) ||
++    !isNonEmptyString(event.type) ||
++    !isNonEmptyString(event.app_user_id) ||
++    !isTimestamp(event.event_timestamp_ms)
++  ) {
++    return null;
++  }
++  if (event.product_id != null && !isNonEmptyString(event.product_id)) return null;
++  if (event.expiration_at_ms != null && !isTimestamp(event.expiration_at_ms)) return null;
++
++  return {
++    id: event.id,
++    type: event.type,
++    app_user_id: event.app_user_id,
++    event_timestamp_ms: event.event_timestamp_ms,
++    product_id: event.product_id ?? null,
++    expiration_at_ms: event.expiration_at_ms ?? null,
++  };
++}
++
++export function toSubscription(
++  appUserId: string,
++  row: SubscriptionRow | null,
++  now: number,
++): Subscription {
++  if (!row) {
++    return {
++      app_user_id: appUserId,
++      status: "none",
++      active: false,
++      product_id: null,
++      expires_at_ms: null,
++      will_renew: false,
++    };
++  }
++
++  const eventStatus = EVENT_STATUS[row.type];
++  const canHaveAccess = eventStatus === "active" || eventStatus === "cancelled";
++  // Never grant indefinite access when no event has supplied an expiry.
++  const active = canHaveAccess && row.expires_at_ms !== null && row.expires_at_ms > now;
++
++  return {
++    app_user_id: appUserId,
++    status: canHaveAccess && !active ? "expired" : eventStatus,
++    active,
++    product_id: row.product_id,
++    expires_at_ms: row.expires_at_ms,
++    will_renew: active && eventStatus === "active",
++  };
++}
+diff --git a/test/api.test.mjs b/test/api.test.mjs
+new file mode 100644
+index 0000000..4c7ad93
+--- /dev/null
++++ b/test/api.test.mjs
+@@ -0,0 +1,361 @@
++import assert from "node:assert/strict";
++import { after, before, beforeEach, test } from "node:test";
++import { createTestHarness } from "wrangler";
++
++// Test-only credentials override .dev.vars. The harness uses isolated local D1
++// storage and builds/runs the actual Worker with the project's Wrangler config.
++const secrets = { WEBHOOK_SECRET: "test-webhook-secret", API_TOKEN: "test-api-token" };
++const server = createTestHarness({
++  workers: [{ configPath: "./wrangler.jsonc", secrets }],
++});
++const worker = server.getWorker();
++let db;
++const now = Date.now();
++const day = 86_400_000;
++const future = now + day;
++
++before(async () => {
++  await server.listen();
++  await worker.applyD1Migrations("DB");
++  db = (await worker.getEnv()).DB;
++}, { timeout: 60_000 });
++
++after(async () => {
++  await server.close();
++});
++
++beforeEach(async () => {
++  await db.prepare("DELETE FROM subscription_events").run();
++});
++
++function event(overrides = {}) {
++  return {
++    id: "evt_1",
++    type: "INITIAL_PURCHASE",
++    app_user_id: "user_1",
++    product_id: "pro_monthly",
++    event_timestamp_ms: now - 10_000,
++    expiration_at_ms: future,
++    ...overrides,
++  };
++}
++
++function post(value, authorization = `Bearer ${secrets.WEBHOOK_SECRET}`) {
++  return server.fetch("/v1/webhooks/subscription", {
++    method: "POST",
++    headers: {
++      "Content-Type": "application/json",
++      ...(authorization === null ? {} : { Authorization: authorization }),
++    },
++    body: typeof value === "string" ? value : JSON.stringify(value),
++  });
++}
++
++async function send(value) {
++  const response = await post({ event: value });
++  assert.equal(response.status, 200);
++  assert.deepEqual(await response.json(), { ok: true });
++}
++
++function get(user = "user_1", authorization = `Bearer ${secrets.API_TOKEN}`) {
++  return server.fetch(`/v1/users/${encodeURIComponent(user)}/subscription`, {
++    headers: authorization === null ? {} : { Authorization: authorization },
++  });
++}
++
++async function state(user = "user_1") {
++  const response = await get(user);
++  assert.equal(response.status, 200);
++  assert.match(response.headers.get("Content-Type"), /application\/json/);
++  assert.equal(response.headers.get("Cache-Control"), "no-store");
++  return response.json();
++}
++
++async function countEvents() {
++  return db.prepare("SELECT COUNT(*) AS count FROM subscription_events").first("count");
++}
++
++function expected(overrides = {}) {
++  return {
++    app_user_id: "user_1",
++    status: "active",
++    active: true,
++    product_id: "pro_monthly",
++    expires_at_ms: future,
++    will_renew: true,
++    ...overrides,
++  };
++}
++
++test("both endpoints require their own bearer secret before processing data", async () => {
++  for (const authorization of [null, "", "Basic abc", "Bearer wrong", `Bearer ${secrets.API_TOKEN}`]) {
++    const response = await post({ event: event() }, authorization);
++    assert.equal(response.status, 401);
++    assert.equal(response.headers.get("WWW-Authenticate"), "Bearer");
++    await response.json();
++  }
++  for (const authorization of [null, "", "Bearer wrong", `Bearer ${secrets.WEBHOOK_SECRET}`]) {
++    const response = await get("user_1", authorization);
++    assert.equal(response.status, 401);
++    await response.json();
++  }
++  const invalidJson = await post("{", null);
++  assert.equal(invalidJson.status, 401);
++  await invalidJson.json();
++  assert.equal(await countEvents(), 0);
++});
++
++for (const [label, body] of [
++  ["empty body", ""], ["malformed JSON", "{"], ["null", "null"],
++  ["array", "[]"], ["missing event", "{}"], ["null event", '{"event":null}'],
++  ["array event", '{"event":[]}'],
++]) {
++  test(`returns 400 for ${label}`, async () => {
++    const response = await post(body);
++    assert.equal(response.status, 400);
++    await response.json();
++    assert.equal(await countEvents(), 0);
++  });
++}
++
++for (const field of ["id", "type", "app_user_id", "event_timestamp_ms"]) {
++  test(`returns 400 for missing ${field}`, async () => {
++    const value = event();
++    delete value[field];
++    const response = await post({ event: value });
++    assert.equal(response.status, 400);
++    await response.json();
++    assert.equal(await countEvents(), 0);
++  });
++}
++
++test("validates field types and finite nonnegative integer timestamps", async () => {
++  for (const override of [
++    { id: null }, { id: "" }, { id: 123 }, { type: [] }, { type: " " },
++    { app_user_id: false }, { app_user_id: "" }, { event_timestamp_ms: null },
++    { event_timestamp_ms: "1730000000000" }, { event_timestamp_ms: -1 },
++    { event_timestamp_ms: 1.5 }, { event_timestamp_ms: Number.MAX_SAFE_INTEGER + 1 },
++    { expiration_at_ms: "tomorrow" }, { expiration_at_ms: -1 }, { product_id: {} },
++  ]) {
++    const response = await post({ event: event(override) });
++    assert.equal(response.status, 400, JSON.stringify(override));
++    await response.json();
++  }
++  const overflow = await post('{"event":{"id":"x","type":"RENEWAL","app_user_id":"u","event_timestamp_ms":1e400}}');
++  assert.equal(overflow.status, 400);
++  await overflow.json();
++  assert.equal(await countEvents(), 0);
++});
++
++test("a user with no known subscription returns the complete none response", async () => {
++  assert.deepEqual(await state(), expected({
++    status: "none", active: false, product_id: null, expires_at_ms: null, will_renew: false,
++  }));
++});
++
++test("purchase, cancellation, uncancellation, renewal, expiration and refund lifecycle", async () => {
++  await send(event());
++  assert.deepEqual(await state(), expected());
++
++  await send(event({ id: "cancel", type: "CANCELLATION", event_timestamp_ms: now - 9000,
++    product_id: undefined, expiration_at_ms: undefined }));
++  assert.deepEqual(await state(), expected({ status: "cancelled", will_renew: false }));
++
++  await send(event({ id: "uncancel", type: "UNCANCELLATION", event_timestamp_ms: now - 8000 }));
++  assert.deepEqual(await state(), expected());
++
++  await send(event({ id: "renew", type: "RENEWAL", event_timestamp_ms: now - 7000,
++    product_id: "pro_yearly", expiration_at_ms: future + day }));
++  assert.deepEqual(await state(), expected({ product_id: "pro_yearly", expires_at_ms: future + day }));
++
++  await send(event({ id: "expire", type: "EXPIRATION", event_timestamp_ms: now - 6000,
++    product_id: null, expiration_at_ms: null }));
++  assert.deepEqual(await state(), expected({ status: "expired", active: false, will_renew: false,
++    product_id: "pro_yearly", expires_at_ms: future + day }));
++
++  await send(event({ id: "repurchase", event_timestamp_ms: now - 5000 }));
++  assert.deepEqual(await state(), expected());
++
++  await send(event({ id: "refund", type: "REFUND", event_timestamp_ms: now - 4000 }));
++  assert.deepEqual(await state(), expected({ status: "refunded", active: false, will_renew: false }));
++
++  await send(event({ id: "renew-after-refund", type: "RENEWAL", event_timestamp_ms: now - 3000 }));
++  assert.deepEqual(await state(), expected());
++});
++
++for (const type of ["INITIAL_PURCHASE", "RENEWAL", "UNCANCELLATION", "CANCELLATION"]) {
++  test(`${type} automatically expires without an EXPIRATION webhook`, async () => {
++    await send(event({ type, expiration_at_ms: now - 1 }));
++    assert.deepEqual(await state(), expected({
++      status: "expired", active: false, will_renew: false, expires_at_ms: now - 1,
++    }));
++  });
++}
++
++test("only the four required fields are needed; zero timestamps and null optional fields are accepted", async () => {
++  await send({ id: "minimal", type: "INITIAL_PURCHASE", app_user_id: "user_1", event_timestamp_ms: 0 });
++  assert.deepEqual(await state(), expected({ status: "expired", active: false, will_renew: false,
++    product_id: null, expires_at_ms: null }));
++  await send(event({ id: "zero-expiry", event_timestamp_ms: 1, expiration_at_ms: 0, product_id: null }));
++  assert.deepEqual(await state(), expected({ status: "expired", active: false, will_renew: false,
++    product_id: null, expires_at_ms: 0 }));
++});
++
++test("duplicate IDs cannot replace the payload or affect another user", async () => {
++  const original = event();
++  await send(original);
++  await send(original);
++  await send(event({ type: "REFUND", event_timestamp_ms: now }));
++  await send(event({ app_user_id: "user_2", event_timestamp_ms: now }));
++  assert.equal(await countEvents(), 1);
++  assert.deepEqual(await state(), expected());
++  assert.equal((await state("user_2")).status, "none");
++});
++
++test("late and replayed old events never replace newer state or metadata", async () => {
++  await send(event({ id: "latest", type: "REFUND", event_timestamp_ms: now }));
++  const old = event({ id: "old", type: "RENEWAL", product_id: "old_product", expiration_at_ms: future + day });
++  await send(old);
++  await send(old);
++  await send({ ...old, event_timestamp_ms: now + 1000 });
++  assert.equal(await countEvents(), 2);
++  assert.deepEqual(await state(), expected({ status: "refunded", active: false, will_renew: false }));
++});
++
++test("an older refund or expiration cannot revoke a newer renewal", async () => {
++  await send(event({ id: "latest", type: "RENEWAL", event_timestamp_ms: now }));
++  await send(event({ id: "old-refund", type: "REFUND", event_timestamp_ms: now - 2 }));
++  await send(event({ id: "old-expiry", type: "EXPIRATION", event_timestamp_ms: now - 1 }));
++  assert.deepEqual(await state(), expected());
++});
++
++test("a cancellation received before its purchase inherits expiry without losing cancellation", async () => {
++  await send(event({ id: "cancel", type: "CANCELLATION", event_timestamp_ms: now,
++    expiration_at_ms: undefined, product_id: undefined }));
++  assert.equal((await state()).active, false);
++  await send(event());
++  assert.deepEqual(await state(), expected({ status: "cancelled", will_renew: false }));
++});
++
++test("unknown event types are acknowledged and deduplicated without changing state", async () => {
++  const unknown = event({ id: "unknown", type: "NEW_PLATFORM_EVENT", event_timestamp_ms: now + day,
++    expiration_at_ms: future + day, product_id: "unrecognized_product" });
++  await send(unknown);
++  await send(unknown);
++  assert.equal((await state()).status, "none");
++  await send(event());
++  assert.deepEqual(await state(), expected());
++  await send({ ...unknown, id: "unknown2" });
++  assert.deepEqual(await state(), expected());
++  await send({ ...unknown, type: "REFUND" });
++  assert.deepEqual(await state(), expected());
++  assert.equal(await countEvents(), 3);
++});
++
++test("equal timestamps use a stable event-ID ordering regardless of arrival order", async () => {
++  for (const [user, reverse] of [["forward", false], ["reverse", true]]) {
++    const events = [
++      event({ id: `${user}-a`, app_user_id: user }),
++      event({ id: `${user}-z`, app_user_id: user, type: "REFUND" }),
++    ];
++    for (const value of reverse ? events.reverse() : events) await send(value);
++    assert.equal((await state(user)).status, "refunded");
++  }
++});
++
++for (const latestType of ["RENEWAL", "REFUND", "CANCELLATION"]) {
++  test(`concurrent, unordered, repeated deliveries converge to the latest ${latestType}`, async () => {
++    const events = Array.from({ length: 40 }, (_, i) => event({
++      id: `concurrent-${i}`, type: i === 39 ? latestType : ["REFUND", "RENEWAL", "EXPIRATION"][i % 3],
++      event_timestamp_ms: now - 1000 + i, product_id: `product-${i}`, expiration_at_ms: future + i,
++    }));
++    // Deterministic permutation, with the newest event interleaved and duplicates
++    // running in the same burst. No serialized read-before-write can be assumed.
++    const unordered = Array.from({ length: 40 }, (_, i) => events[(i * 17) % 40]);
++    const responses = await Promise.all([...unordered, ...unordered.slice(0, 20)]
++      .map(value => post({ event: value })));
++    for (const response of responses) {
++      assert.equal(response.status, 200);
++      assert.deepEqual(await response.json(), { ok: true });
++    }
++    assert.equal(await countEvents(), 40);
++    assert.deepEqual(await state(), expected({
++      status: latestType === "REFUND" ? "refunded" : latestType === "CANCELLATION" ? "cancelled" : "active",
++      active: latestType !== "REFUND", will_renew: latestType === "RENEWAL",
++      product_id: "product-39", expires_at_ms: future + 39,
++    }));
++  });
++}
++
++test("concurrent deliveries of one ID commit exactly one immutable event", async () => {
++  const responses = await Promise.all(Array.from({ length: 30 }, () => post({ event: event() })));
++  for (const response of responses) {
++    assert.equal(response.status, 200);
++    assert.deepEqual(await response.json(), { ok: true });
++  }
++  assert.equal(await countEvents(), 1);
++  assert.deepEqual(await state(), expected());
++});
++
++test("encoded user IDs and SQL-looking input are handled as literal values", async () => {
++  const user = "用户 /a+b?x=#' OR 1=1 --";
++  await send(event({ app_user_id: user }));
++  assert.deepEqual(await state(user), expected({ app_user_id: user }));
++  assert.equal((await state()).status, "none");
++  const response = await server.fetch("/v1/users/%E0%A4%A/subscription", {
++    headers: { Authorization: `Bearer ${secrets.API_TOKEN}` },
++  });
++  assert.equal(response.status, 400);
++  await response.json();
++});
++
++test("a failed write returns 500, leaves no processed marker, and can be retried", async () => {
++  await db.prepare(`CREATE TRIGGER reject_test_event BEFORE INSERT ON subscription_events
++    WHEN NEW.id = 'retry-me' BEGIN SELECT RAISE(ABORT, 'simulated storage failure'); END`).run();
++  try {
++    const response = await post({ event: event({ id: "retry-me" }) });
++    assert.equal(response.status, 500);
++    assert.deepEqual(await response.json(), { error: "Internal server error" });
++    assert.equal(await countEvents(), 0);
++    assert.equal((await state()).status, "none");
++  } finally {
++    await db.prepare("DROP TRIGGER reject_test_event").run();
++  }
++  await send(event({ id: "retry-me" }));
++  assert.equal(await countEvents(), 1);
++  assert.deepEqual(await state(), expected());
++});
++
++test("unsupported paths and methods return JSON errors", async () => {
++  const missing = await server.fetch("/unknown");
++  assert.equal(missing.status, 404);
++  await missing.json();
++  const wrongMethod = await server.fetch("/v1/webhooks/subscription", {
++    headers: { Authorization: `Bearer ${secrets.WEBHOOK_SECRET}` },
++  });
++  assert.equal(wrongMethod.status, 405);
++  assert.equal(wrongMethod.headers.get("Allow"), "POST");
++  await wrongMethod.json();
++});
++
++test("empty or missing configured secrets fail closed", async () => {
++  const unconfigured = createTestHarness({ workers: [{ config: {
++    name: "unconfigured-subscription-service",
++    main: "./src/index.ts",
++    compatibility_date: "2026-11-08",
++    vars: { WEBHOOK_SECRET: "" },
++  } }] });
++  try {
++    await unconfigured.listen();
++    for (const [path, authorization] of [
++      ["/v1/webhooks/subscription", "Bearer "],
++      ["/v1/users/user_1/subscription", "Bearer undefined"],
++    ]) {
++      const response = await unconfigured.fetch(path, { headers: { Authorization: authorization } });
++      assert.equal(response.status, 401);
++      await response.json();
++    }
++  } finally {
++    await unconfigured.close();
++  }
++});
+diff --git a/test/subscriptions.test.mjs b/test/subscriptions.test.mjs
+new file mode 100644
+index 0000000..ed01150
+--- /dev/null
++++ b/test/subscriptions.test.mjs
+@@ -0,0 +1,34 @@
++import assert from "node:assert/strict";
++import { test } from "node:test";
++import { toSubscription } from "../src/subscriptions.ts";
++
++const expiry = 1_730_000_000_000;
++
++for (const type of ["INITIAL_PURCHASE", "RENEWAL", "UNCANCELLATION", "CANCELLATION"]) {
++  test(`${type}: entitlement ends exactly at the expiration millisecond`, () => {
++    const row = { type, product_id: "pro_monthly", expires_at_ms: expiry };
++    assert.deepEqual(toSubscription("user_1", row, expiry - 1), {
++      app_user_id: "user_1",
++      status: type === "CANCELLATION" ? "cancelled" : "active",
++      active: true,
++      product_id: "pro_monthly",
++      expires_at_ms: expiry,
++      will_renew: type !== "CANCELLATION",
++    });
++    for (const now of [expiry, expiry + 1]) {
++      const result = toSubscription("user_1", row, now);
++      assert.equal(result.status, "expired");
++      assert.equal(result.active, false);
++      assert.equal(result.will_renew, false);
++    }
++  });
++}
++
++for (const [type, status] of [["REFUND", "refunded"], ["EXPIRATION", "expired"]]) {
++  test(`${type}: future expiration does not grant access`, () => {
++    const result = toSubscription("user_1", { type, product_id: null, expires_at_ms: expiry }, expiry - 1);
++    assert.equal(result.status, status);
++    assert.equal(result.active, false);
++    assert.equal(result.will_renew, false);
++  });
++}
+diff --git a/tsconfig.json b/tsconfig.json
+new file mode 100644
+index 0000000..f4c4aa5
+--- /dev/null
++++ b/tsconfig.json
+@@ -0,0 +1,15 @@
++{
++  "compilerOptions": {
++    "target": "ES2022",
++    "module": "ESNext",
++    "moduleResolution": "Bundler",
++    "lib": ["ES2022"],
++    "types": ["@cloudflare/workers-types"],
++    "strict": true,
++    "noUncheckedIndexedAccess": true,
++    "exactOptionalPropertyTypes": true,
++    "noEmit": true,
++    "skipLibCheck": true
++  },
++  "include": ["src/**/*.ts"]
++}
+diff --git a/wrangler.jsonc b/wrangler.jsonc
+new file mode 100644
+index 0000000..0d3d866
+--- /dev/null
++++ b/wrangler.jsonc
+@@ -0,0 +1,15 @@
++{
++  "$schema": "node_modules/wrangler/config-schema.json",
++  "name": "subscription-service",
++  "main": "src/index.ts",
++  "compatibility_date": "2026-11-08",
++  "d1_databases": [
++    {
++      "binding": "DB",
++      "database_name": "subscription-service",
++      // Placeholder for local development; no Cloudflare account is needed.
++      "database_id": "00000000-0000-0000-0000-000000000001",
++      "migrations_dir": "migrations"
++    }
++  ]
++}

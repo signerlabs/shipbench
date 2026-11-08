@@ -1,0 +1,78 @@
+{
+  "score": 100,
+  "checks": [
+    {
+      "name": "事件接口缺少密钥返回 401",
+      "ok": true
+    },
+    {
+      "name": "事件接口密钥不对返回 401",
+      "ok": true
+    },
+    {
+      "name": "请求体不是合法 JSON 返回 400",
+      "ok": true
+    },
+    {
+      "name": "缺少必填字段返回 400",
+      "ok": true
+    },
+    {
+      "name": "查询接口缺少令牌返回 401",
+      "ok": true
+    },
+    {
+      "name": "从没订阅过的用户：status none、active false",
+      "ok": true
+    },
+    {
+      "name": "开通后：active、会续订、到期时间和商品对",
+      "ok": true
+    },
+    {
+      "name": "取消续订：status cancelled，到期前仍 active，不再续订",
+      "ok": true
+    },
+    {
+      "name": "恢复续订：回到 active、会续订",
+      "ok": true
+    },
+    {
+      "name": "过期：status expired、active false",
+      "ok": true
+    },
+    {
+      "name": "退款：即使没到期也立刻失去权益",
+      "ok": true
+    },
+    {
+      "name": "同一事件重复推送只处理一次（旧的开通事件重推不能把过期改回去）",
+      "ok": true
+    },
+    {
+      "name": "乱序：旧的过期事件晚到，不能覆盖新的续订",
+      "ok": true
+    },
+    {
+      "name": "不认识的事件类型：返回 200，状态不变",
+      "ok": true
+    },
+    {
+      "name": "同时到达 10 条续订：最后以发生时间最新的那条为准",
+      "ok": true
+    },
+    {
+      "name": "到期时间已过的开通事件：status 照记，但 active false",
+      "ok": true
+    },
+    {
+      "name": "返回字段齐全（app_user_id、status、active、product_id、expires_at_ms、will_renew）",
+      "ok": true
+    }
+  ],
+  "setup": {
+    "migrateOk": true,
+    "serverUp": true
+  },
+  "seconds": 5
+}

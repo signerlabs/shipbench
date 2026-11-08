@@ -1,0 +1,940 @@
+{
+ "round": "round-01",
+ "title": {
+  "zh": "第一轮：Opus 5.5 对 GPT-6 Astra（精简题库）",
+  "en": "Round 1: Opus 5.5 vs GPT-6 Astra (lite set)"
+ },
+ "dates": "2026-11-08",
+ "note": "从 31 道题库里每个维度挑两道（都是样题，每维一易一难），每题每家只跑一次，思考档位都是各家第二高的 xhigh。",
+ "tools": {
+  "claude": {
+   "name": "Claude Code",
+   "model": "claude-opus-5-5",
+   "model_name": "Opus 5.5",
+   "effort": "--effort xhigh"
+  },
+  "codex": {
+   "name": "Codex CLI",
+   "model": "gpt-6-astra",
+   "model_name": "GPT-6 Astra",
+   "effort": "-c model_reasoning_effort=\"xhigh\""
+  }
+ },
+ "dimensions": [
+  {
+   "key": "fix",
+   "weight": 0.3,
+   "tasks": [
+    "S1",
+    "S2"
+   ]
+  },
+  {
+   "key": "frontend",
+   "weight": 0.25,
+   "tasks": [
+    "F2",
+    "F1"
+   ]
+  },
+  {
+   "key": "backend",
+   "weight": 0.25,
+   "tasks": [
+    "B4",
+    "B2"
+   ]
+  },
+  {
+   "key": "rules",
+   "weight": 0.2,
+   "tasks": [
+    "R5",
+    "R9"
+   ]
+  }
+ ],
+ "prices_per_mtok": {
+  "codex": {
+   "input": 10,
+   "cached_input": 1,
+   "output": 50
+  }
+ },
+ "tasks": {
+  "S1": {
+   "dimension": "fix",
+   "batch": "2026-11-08-formal",
+   "level": "easy",
+   "zh": "剪贴板 App 数据层：两台 Mac 同步来的同一条置顶，去重时留下的不一样",
+   "en": "Clipboard app data layer: duplicate pins synced from two Macs are deduplicated differently",
+   "lang": "Swift",
+   "rule": {
+    "zh": "判对错：用隐藏测试替换对应的测试文件，`swift test` 全过记 100，有挂或编不过记 0。",
+    "en": "Correctness: the hidden test replaces the matching test file; `swift test` passing completely scores 100, any failure or a build error scores 0."
+   },
+   "tools": {
+    "claude": {
+     "status": "done",
+     "seconds": 229,
+     "cost_usd": 1.03,
+     "tool_calls": 15,
+     "hit_cap": false,
+     "safety_violations": [],
+     "version": "2.1.319 (Claude Code)",
+     "effort": "xhigh",
+     "correctness": 100,
+     "quality": 95.8,
+     "code_quality": 86,
+     "code_scores": {
+      "结构与分层": 9,
+      "可读性": 9,
+      "一致性": 9,
+      "稳健写法": 8,
+      "可维护性": 8
+     },
+     "rationale": {
+      "结构与分层": "只在 CloudMerge 两个比较函数里改按整秒比，加私有 wholeSecond，测试放对文件，改动面小。",
+      "可读性": "wholeSecond 命名直白，注释讲清为何向下取整及残余风险，测试用 macs 数组模拟两台 Mac，好读。",
+      "一致性": "沿用原有元组比较与中文注释风格，测试复用 insertRemotePinned 等已有辅助方法。",
+      "稳健写法": "按参考日期向下取整，lastUsedAt 一并按整秒比；未覆盖整秒边界和负时间戳等情形。",
+      "可维护性": "两个测试分别覆盖 Pinned 与 Pinboard 两条去重路径，直接复现两台 Mac 各选各的，无夹带改动。"
+     },
+     "rationale_en": {
+      "结构与分层": "Only the two comparison functions in CloudMerge change to whole-second comparison, via a private wholeSecond helper; tests go in the right file and the change is small.",
+      "可读性": "wholeSecond is plainly named and its comment explains why it rounds down and what risk remains; the tests model two Macs with a macs array and read well.",
+      "一致性": "Keeps the existing tuple comparison and comment style; the tests reuse existing helpers such as insertRemotePinned.",
+      "稳健写法": "Rounds down from the reference date and compares lastUsedAt at whole seconds too; does not cover the second boundary or negative timestamps.",
+      "可维护性": "Two tests cover the Pinned and Pinboard deduplication paths and reproduce the two Macs choosing differently; no unrelated changes."
+     },
+     "speed": 46.2,
+     "cost": 51.0
+    },
+    "codex": {
+     "status": "done",
+     "seconds": 186,
+     "cost_usd": 1.09,
+     "tool_calls": 14,
+     "hit_cap": false,
+     "safety_violations": [],
+     "version": "codex-cli 0.167.0",
+     "effort": "xhigh",
+     "correctness": 100,
+     "quality": 94.6,
+     "code_quality": 82,
+     "code_scores": {
+      "结构与分层": 9,
+      "可读性": 7,
+      "一致性": 8,
+      "稳健写法": 9,
+      "可维护性": 8
+     },
+     "rationale": {
+      "结构与分层": "修复同样集中在 CloudMerge 比较函数与私有 wholeSecond，测试放对文件，无越界改动。",
+      "可读性": "wholeSecond 无注释，测试里 localID == a ? b : a 等三元较绕，单个测试反复改模型字段。",
+      "一致性": "沿用元组比较并把原注释的『待真机核实』改成实际做法；新测试直接构造模型测内部函数，与原集成测试风格不同。",
+      "稳健写法": "参数化测试覆盖 0.9999/1.0 与负时间戳的整秒边界、全字段相同不删的规则，并核对库里实际副本数。",
+      "可维护性": "测试覆盖面广，但两个参数化函数同时测 Pinboard 与 Pinned、手工改字段多，字段顺序一改就要跟着改。"
+     },
+     "rationale_en": {
+      "结构与分层": "The fix is likewise limited to the CloudMerge comparison functions and a private wholeSecond helper; tests are in the right file, nothing out of scope.",
+      "可读性": "wholeSecond has no comment; the tests use convoluted ternaries such as localID == a ? b : a, and one test keeps mutating model fields.",
+      "一致性": "Keeps the tuple comparison and replaces the old \"verify on device\" comment with what it actually does; the new tests build models and test internals directly, unlike the existing integration-style tests.",
+      "稳健写法": "Parameterized tests cover the 0.9999/1.0 second boundary, negative timestamps and the rule that fully identical items are kept, and check the actual copy count in the store.",
+      "可维护性": "Broad coverage, but two parameterized functions test Pinboard and Pinned at once with many hand-edited fields, so a change in field order breaks them."
+     },
+     "speed": 53.8,
+     "cost": 49.0
+    }
+   },
+   "reference": {
+    "seconds": 206.38,
+    "cost_usd": 1.06,
+    "set_in": "round-01"
+   }
+  },
+  "S2": {
+   "dimension": "fix",
+   "batch": "2026-11-08-xhigh",
+   "level": "hard",
+   "zh": "剪贴板 App 数据层：搜索翻页回到开头、Pinboard 拖不动（只写现象）",
+   "en": "Clipboard app data layer: search paging jumps back to the start, Pinboard items won't move (symptoms only)",
+   "lang": "Swift",
+   "rule": {
+    "zh": "判对错：8 个隐藏回归用例，过几个算几分（每个 12.5）；其他测试有挂、或原有 38 个测试少了，分数减半；编不过 0 分。",
+    "en": "Correctness: 8 hidden regression tests, 12.5 points each; halved if any other test fails or any of the 38 original tests is missing; 0 if it does not build."
+   },
+   "tools": {
+    "claude": {
+     "status": "done",
+     "seconds": 462,
+     "cost_usd": 2.28,
+     "tool_calls": 33,
+     "hit_cap": false,
+     "safety_violations": [],
+     "version": "2.1.319 (Claude Code)",
+     "effort": "xhigh",
+     "correctness": 100,
+     "quality": 95.2,
+     "code_quality": 84,
+     "code_scores": {
+      "结构与分层": 9,
+      "可读性": 8,
+      "一致性": 9,
+      "稳健写法": 8,
+      "可维护性": 8
+     },
+     "rationale": {
+      "结构与分层": "翻页只把游标时间传进 search，保留 rowid 即时间的原设计；排序修在合并排序与挪动两处。",
+      "可读性": "注释讲清中点等于邻居会弹回、游标条目被删或前移的原因；search 里按探测窗口取实际 rowid 的判断稍绕。",
+      "一致性": "魔法数 8 提成 rankProbeLimit 复用，新 rank(of:) 沿用原有写法并区分无行与出错。",
+      "稳健写法": "新键须严格落在两邻居之间，否则整体重排且跳过未变的记录；同毫秒碰撞加游标被删时仍有极端漏重可能。",
+      "可维护性": "测试覆盖 trigram 与短词两路、60 组拖动和 80 次挤缝；moved 辅助函数复刻了夹取逻辑。"
+     },
+     "rationale_en": {
+      "结构与分层": "Paging only passes the cursor time into search, keeping the original \"rowid is time\" design; the ordering fix is in the merge sort and in moving.",
+      "可读性": "Comments explain why a midpoint equal to a neighbor bounces back and what happens when the cursor item is deleted or moved; the probe-window check for the real rowid in search is a bit convoluted.",
+      "一致性": "The magic number 8 becomes a reused rankProbeLimit constant, and the new rank(of:) follows the existing style and tells \"no row\" apart from an error.",
+      "稳健写法": "A new key must fall strictly between its two neighbors or the list is renumbered, skipping unchanged items; a same-millisecond collision combined with a deleted cursor can still, in extreme cases, skip or repeat an item.",
+      "可维护性": "Tests cover both the trigram and short-query paths, 60 drag sequences and 80 squeezes into a gap; the moved test helper duplicates the clamping logic."
+     },
+     "speed": 48.4,
+     "cost": 53.8
+    },
+    "codex": {
+     "status": "done",
+     "seconds": 422,
+     "cost_usd": 2.81,
+     "tool_calls": 34,
+     "hit_cap": false,
+     "safety_violations": [],
+     "version": "codex-cli 0.167.0",
+     "effort": "xhigh",
+     "correctness": 100,
+     "quality": 89.8,
+     "code_quality": 66,
+     "code_scores": {
+      "结构与分层": 6,
+      "可读性": 6,
+      "一致性": 6,
+      "稳健写法": 8,
+      "可维护性": 7
+     },
+     "rationale": {
+      "结构与分层": "为修翻页把索引升到 schema 2，加新列、两个索引、JOIN 查询和原地升级，超出修 bug 所需。",
+      "可读性": "search 拼接多段 SQL 字符串，绑定序号靠 cursor == nil ? 2 : 4 推算，不易一眼看清。",
+      "一致性": "弃用 rowid 即时间的原设计、删掉实测性能注释，Entry 改字段牵动旧测试，索引层依赖 ClipCursor。",
+      "稳健写法": "按（时间, uuid）翻页，同毫秒也不漏不重；isFinite 与升级置待修补周到，但升级后列可空与新建不一致。",
+      "可维护性": "补了迁移测试和同毫秒翻页测试，覆盖较全，但引入 schema 迁移与查询计划提示，后续维护负担明显加重。"
+     },
+     "rationale_en": {
+      "结构与分层": "Upgrades the index to schema 2 to fix paging, adding a column, two indexes, a JOIN query and an in-place migration, far beyond what the bug needs.",
+      "可读性": "search concatenates several SQL strings, and bind positions have to be worked out from cursor == nil ? 2 : 4; hard to read at a glance.",
+      "一致性": "Drops the original \"rowid is time\" design and removes a measured performance comment; changing Entry fields forces old tests to change, and the index layer now depends on ClipCursor.",
+      "稳健写法": "Pages by (time, uuid), so nothing is skipped or repeated even within the same millisecond; the isFinite checks and repair-on-upgrade are careful, but after the upgrade the column is nullable, unlike in new databases.",
+      "可维护性": "Adds migration and same-millisecond paging tests with good coverage, but the schema migration and query-plan hints add a clear ongoing maintenance burden."
+     },
+     "speed": 51.6,
+     "cost": 46.2
+    }
+   },
+   "reference": {
+    "seconds": 441.55,
+    "cost_usd": 2.531,
+    "set_in": "round-01"
+   }
+  },
+  "F2": {
+   "dimension": "frontend",
+   "batch": "2026-11-08-formal",
+   "level": "easy",
+   "zh": "照录屏复刻 Trovy 的统计报表页和房间详情页",
+   "en": "Rebuild Trovy's stats report and room detail screens from a recording",
+   "lang": "SwiftUI",
+   "rule": {
+    "zh": "同 F1：编译安装是门槛；自动比对 7 个状态占 30%；录屏评分三项占 70%。",
+    "en": "Same as F1: building and installing is the gate; automatic comparison of 7 states, 30%; video review on three axes, 70%."
+   },
+   "tools": {
+    "claude": {
+     "status": "done",
+     "seconds": 2662,
+     "cost_usd": 13.43,
+     "tool_calls": 156,
+     "hit_cap": false,
+     "safety_violations": [],
+     "version": "2.1.319 (Claude Code)",
+     "effort": "xhigh",
+     "quality": 90.8,
+     "auto": 92.5,
+     "video": 90.0,
+     "video_scores": {
+      "静态还原": 9,
+      "动效还原": 9,
+      "交互手感": 9
+     },
+     "rationale": {
+      "静态还原": "两页布局、配色、字号、文字和数字与原录屏几乎一致，上滑停稳位置也对。扣1分：卡片底色偏灰，不如原录屏暖白。",
+      "动效还原": "数字逐位滚动、扇区淡入淡出、扫环、横条生长和数字从0滚上都与原录屏同步。扣1分：7.3秒页面推入慢约0.1秒；1.6秒中心小字晚一帧才换成Clothing。",
+      "交互手感": "六次操作全部生效，左边缘右滑正常返回并保留滚动位置，无闪烁。扣1分：9.4秒右滑返回的页面位移比原录屏落后约0.1秒。"
+     },
+     "rationale_en": {
+      "静态还原": "Layout, colors, type sizes, text and numbers on both pages match the original closely, and the scroll settles at the same spot. −1: card fill is greyer than the original's warm white.",
+      "动效还原": "Digit rolling, segment fade in/out, ring sweep, bar growth and count-up from 0 stay in sync with the original. −1: the push at 7.3 s is ~0.1 s slower; at 1.6 s the center caption switches to Clothing one frame late.",
+      "交互手感": "All six operations work; the left-edge swipe returns to the report page and keeps its scroll position, with no flicker. −1: the swipe-back page movement at 9.4 s trails the original by ~0.1 s."
+     },
+     "auto_states": [
+      {
+       "state": "首屏",
+       "state_en": "First screen",
+       "score": 93.4
+      },
+      {
+       "state": "选中 Clothing",
+       "state_en": "Clothing selected",
+       "score": 93.0
+      },
+      {
+       "state": "选中 Home",
+       "state_en": "Home selected",
+       "score": 92.9
+      },
+      {
+       "state": "取消选中",
+       "state_en": "Deselected",
+       "score": 93.4
+      },
+      {
+       "state": "往下滚",
+       "state_en": "Scrolled down",
+       "score": 89.2
+      },
+      {
+       "state": "Bedroom 详情",
+       "state_en": "Bedroom detail",
+       "score": 92.7
+      },
+      {
+       "state": "返回报表页",
+       "state_en": "Back to the report",
+       "score": 93.0
+      }
+     ],
+     "speed": 35.6,
+     "cost": 34.9
+    },
+    "codex": {
+     "status": "done",
+     "seconds": 1200,
+     "cost_usd": 5.8,
+     "tool_calls": 46,
+     "hit_cap": false,
+     "safety_violations": [],
+     "version": "codex-cli 0.167.0",
+     "effort": "xhigh",
+     "quality": 70.5,
+     "auto": 79.5,
+     "video": 66.7,
+     "video_scores": {
+      "静态还原": 9,
+      "动效还原": 6,
+      "交互手感": 5
+     },
+     "rationale": {
+      "静态还原": "两页卡片布局、配色、字号、图例和数字都几乎一致。扣1分：卡片底色偏灰，不如原录屏暖白；上滑停稳后比原录屏多滚了几点。",
+      "动效还原": "滚动、淡化、扫环和横条生长都有。扣4分：三次点选过渡中途淡化扇区闪回全彩（2.1、3.0、5.0秒）；1.6秒起步晚0.2秒；扫环、横条和推入慢约0.3秒。",
+      "交互手感": "点选、取消、上滑和点Bedroom进详情都生效，没有跳错页。扣5分：9.33秒左边缘右滑完全没有返回，最后一直停在Bedroom详情页。"
+     },
+     "rationale_en": {
+      "静态还原": "Card layout, colors, type sizes, legends and numbers on both pages match closely. −1: card fill is greyer than the original's warm white; the scroll settles a few points further down.",
+      "动效还原": "Digit rolling, segment dimming, ring sweep and bar growth are all present. −4: dimmed segments flash back to full color mid-transition on all three taps (2.1, 3.0, 5.0 s); the 1.6 s change starts ~0.2 s late; ring sweep, bars and push run ~0.3 s behind.",
+      "交互手感": "Segment taps, deselect, scroll and the Bedroom tap all work with no wrong navigation. −5: the left-edge swipe at 9.33 s does not go back at all; the replay stays on the Bedroom detail page."
+     },
+     "auto_states": [
+      {
+       "state": "首屏",
+       "state_en": "First screen",
+       "score": 94.8
+      },
+      {
+       "state": "选中 Clothing",
+       "state_en": "Clothing selected",
+       "score": 94.4
+      },
+      {
+       "state": "选中 Home",
+       "state_en": "Home selected",
+       "score": 94.3
+      },
+      {
+       "state": "取消选中",
+       "state_en": "Deselected",
+       "score": 94.7
+      },
+      {
+       "state": "往下滚",
+       "state_en": "Scrolled down",
+       "score": 83.7
+      },
+      {
+       "state": "Bedroom 详情",
+       "state_en": "Bedroom detail",
+       "score": 94.3
+      },
+      {
+       "state": "返回报表页",
+       "state_en": "Back to the report",
+       "score": 0.0
+      }
+     ],
+     "speed": 64.4,
+     "cost": 65.1
+    }
+   },
+   "reference": {
+    "seconds": 1787.29,
+    "cost_usd": 8.826,
+    "set_in": "round-01"
+   }
+  },
+  "F1": {
+   "dimension": "frontend",
+   "batch": "2026-11-08-xhigh",
+   "level": "hard",
+   "zh": "照录屏复刻美食地图 App 的三步引导页，含插画动画",
+   "en": "Rebuild a food-map app's three-step onboarding from a recording, illustrations animated",
+   "lang": "SwiftUI",
+   "rule": {
+    "zh": "先要编译通过、装得上（不然 0 分）。自动比对占 30%：回放后三步演完的停稳画面和原录屏比相似度（空白工程 0、原录屏 100）。录屏评分占 70%：静态还原、动效还原、交互手感各 1–10 分，平均 × 10，每少 1 分，本题少约 2.3 分。",
+    "en": "It must build and install, or it scores 0. Automatic comparison, 30%: the three settled screens after replay are compared with the original (an empty project scores 0, the original 100). Video review, 70%: static fidelity, motion and interaction feel, 1–10 each, averaged × 10; each point lost costs about 2.3 points on the task."
+   },
+   "tools": {
+    "claude": {
+     "status": "done",
+     "seconds": 4608,
+     "cost_usd": 23.07,
+     "tool_calls": 303,
+     "hit_cap": false,
+     "safety_violations": [],
+     "version": "2.1.319 (Claude Code)",
+     "effort": "xhigh",
+     "quality": 94.2,
+     "auto": 96.4,
+     "video": 93.3,
+     "video_scores": {
+      "静态还原": 10,
+      "动效还原": 9,
+      "交互手感": 9
+     },
+     "rationale": {
+      "静态还原": "三步演完的画面和原录屏几乎重合，布局、配色、字体、插画位置都对上；原录屏里几处用系统字体的文字也照着改了。不扣分。",
+      "动效还原": "入场先后、间隔和缓动对到约一帧，第 3 步纸飞机路线、到店时间、「到了」气泡和小店回弹几乎逐帧一致。扣 1 分：App 出来时先整体淡入，整段比原录屏晚开演约 0.4 秒。",
+      "交互手感": "两次点「下一步」翻页都是两页一起推，标题错开的节奏也一样。扣 1 分：同样因为开头淡入，启动后的第一屏出来得慢半拍。"
+     },
+     "rationale_en": {
+      "静态还原": "The three settled screens nearly overlap the original: layout, colors, fonts and illustration positions all match, including a few texts that use the system font in the original. No deduction.",
+      "动效还原": "Entrance order, spacing and easing match to about a frame; in step 3 the paper plane's route, arrival time, the \"arrived\" bubble and the shop's bounce line up almost frame by frame. −1: the app fades in at launch, so the whole sequence starts about 0.4 s late.",
+      "交互手感": "Both taps on \"Next\" push the two pages together with the same staggered titles as the original. −1: because of the launch fade-in, the first screen appears half a beat late."
+     },
+     "auto_states": [
+      {
+       "state": "第 1 步演完",
+       "state_en": "Step 1 settled",
+       "score": 95.2
+      },
+      {
+       "state": "第 2 步演完",
+       "state_en": "Step 2 settled",
+       "score": 96.9
+      },
+      {
+       "state": "第 3 步演完",
+       "state_en": "Step 3 settled",
+       "score": 97.0
+      }
+     ],
+     "speed": 25.1,
+     "cost": 24.0
+    },
+    "codex": {
+     "status": "done",
+     "seconds": 1160,
+     "cost_usd": 5.46,
+     "tool_calls": 47,
+     "hit_cap": false,
+     "safety_violations": [],
+     "version": "codex-cli 0.167.0",
+     "effort": "xhigh",
+     "quality": 83.9,
+     "auto": 93.1,
+     "video": 80.0,
+     "video_scores": {
+      "静态还原": 9,
+      "动效还原": 7,
+      "交互手感": 8
+     },
+     "rationale": {
+      "静态还原": "整体布局、配色、字体接近，数字「2000」和逐位滚动也对。扣 1 分：第 1 步便签卡和面碗的位置偏了（便签整体偏下，碗偏右下），第 3 步虚线路线的弯法和原录屏不一样。",
+      "动效还原": "第 2、3 步的动画接近原录屏。扣 3 分：第 1 步开头卡了约 0.75 秒（这段录屏没有新帧），之后第三个头像和便签出来得晚，打字效果几乎一闪而过。",
+      "交互手感": "点「下一步」也是两页一起推。扣 2 分：翻页比原录屏快，加上开头的卡顿，第一次点按前的等待感和原录屏不同。"
+     },
+     "rationale_en": {
+      "静态还原": "Layout, colors and fonts are close, and the counter reads \"2000\" and rolls digit by digit like the original. −1: in step 1 the note card sits lower and the noodle bowl further right and down, and in step 3 the dotted route curves differently from the original.",
+      "动效还原": "Steps 2 and 3 animate close to the original. −3: step 1 stalls for about 0.75 s right after launch (no new frames recorded), then the third avatar and the note card arrive late and the typing effect is almost instant.",
+      "交互手感": "Tapping \"Next\" also pushes both pages together. −2: the page transition runs faster than the original, and with the stall at launch the wait before the first tap feels different."
+     },
+     "auto_states": [
+      {
+       "state": "第 1 步演完",
+       "state_en": "Step 1 settled",
+       "score": 91.3
+      },
+      {
+       "state": "第 2 步演完",
+       "state_en": "Step 2 settled",
+       "score": 94.7
+      },
+      {
+       "state": "第 3 步演完",
+       "state_en": "Step 3 settled",
+       "score": 93.4
+      }
+     ],
+     "speed": 74.9,
+     "cost": 76.0
+    }
+   },
+   "reference": {
+    "seconds": 2311.99,
+    "cost_usd": 11.223,
+    "set_in": "round-01"
+   }
+  },
+  "B4": {
+   "dimension": "backend",
+   "batch": "2026-11-08-formal",
+   "level": "easy",
+   "zh": "按需求搭会员订阅回调服务（17 条隐藏验收）",
+   "en": "Build a subscription webhook service from a spec (17 hidden checks)",
+   "lang": "TypeScript · Workers + D1",
+   "rule": {
+    "zh": "判对错：17 条隐藏接口验收（鉴权、校验、状态流转、重复和乱序推送、10 路并发、字段完整），按通过比例给分。代码质量同 B2。",
+    "en": "Correctness: 17 hidden API checks (auth, validation, state transitions, duplicate and out-of-order events, 10 concurrent deliveries, complete fields), scored by the share passed. Code quality as in B2."
+   },
+   "tools": {
+    "claude": {
+     "status": "done",
+     "seconds": 703,
+     "cost_usd": 2.49,
+     "tool_calls": 35,
+     "hit_cap": false,
+     "safety_violations": [],
+     "version": "2.1.319 (Claude Code)",
+     "effort": "xhigh",
+     "correctness": 100,
+     "quality": 95.8,
+     "code_quality": 86,
+     "code_scores": {
+      "结构与分层": 9,
+      "可读性": 9,
+      "一致性": 8,
+      "稳健写法": 8,
+      "可维护性": 9
+     },
+     "rationale": {
+      "结构与分层": "鉴权、请求解析、数据库读写、状态推导各成一个模块，纯函数与读写分开；响应和日志助手仍堆在入口文件里",
+      "可读性": "deriveSubscription 按发生顺序折叠事件，注释清楚；循环内解构赋值和日志的嵌套三元稍绕",
+      "一致性": "错误码风格统一并集中在助手函数；但只有 400 带说明，product_id 允许空串而其他字符串字段要求非空",
+      "稳健写法": "参数化插入冲突即忽略，令牌哈希后常数时间比较；但校验后靠 as string 强转，查询读出全部事件在内存排序",
+      "可维护性": "事件类型只定义一处，EFFECTS 穷举映射；单测含全排列乱序验证；但端到端用无种子随机洗牌，启动靠匹配日志文字"
+     },
+     "rationale_en": {
+      "结构与分层": "Auth, request parsing, database access and state derivation each get their own module, keeping pure logic apart from I/O; response and logging helpers still sit in the entry file.",
+      "可读性": "deriveSubscription folds events in occurrence order with clear doc comments; the destructuring assignment inside the loop and the nested ternary for the log outcome are a bit convoluted.",
+      "一致性": "Error codes follow one style and come from shared helpers; but only 400s include a message, and product_id may be an empty string while other string fields must be non-empty.",
+      "稳健写法": "A parameterized insert that ignores conflicts, plus constant-time comparison of hashed tokens; but fields are force-cast with `as string` after validation, and every lookup loads all of a user's events and sorts them in memory.",
+      "可维护性": "Event types are defined once and EFFECTS maps them exhaustively; unit tests check every arrival permutation. But the end-to-end tests shuffle with an unseeded random, and server startup is detected by matching log text."
+     },
+     "speed": 43.7,
+     "cost": 44.2
+    },
+    "codex": {
+     "status": "done",
+     "seconds": 497,
+     "cost_usd": 1.81,
+     "tool_calls": 17,
+     "hit_cap": false,
+     "safety_violations": [],
+     "version": "codex-cli 0.167.0",
+     "effort": "xhigh",
+     "correctness": 100,
+     "quality": 94.0,
+     "code_quality": 80,
+     "code_scores": {
+      "结构与分层": 7,
+      "可读性": 8,
+      "一致性": 8,
+      "稳健写法": 9,
+      "可维护性": 8
+     },
+     "rationale": {
+      "结构与分层": "校验和权益计算抽到 subscriptions.ts，但 index.ts 兼管路由、鉴权和内联 SQL，缺独立数据访问层",
+      "可读性": "命名清楚、注释交代设计；但查询靠两个相关子查询拼字段，toSubscription 的三元判断偏紧凑",
+      "一致性": "错误统一走 json()，均为 {error} 形式且先鉴权后判方法；但 405 两处内联拼写，错误体没有机器可读的错误码",
+      "稳健写法": "单条参数化插入靠主键冲突忽略去重，读时按事件时间取最新并有部分索引和 CHECK 约束；令牌用 === 比较，非常数时间",
+      "可维护性": "测试覆盖全面，含确定性乱序并发与注入写入故障；但六种事件类型在索引、视图和 TS 映射三处各写一遍，测试为无类型 .mjs"
+     },
+     "rationale_en": {
+      "结构与分层": "Validation and entitlement logic live in subscriptions.ts, but index.ts mixes routing, auth and inline SQL with no separate data-access layer.",
+      "可读性": "Clear names and comments that explain intent, but the lookup query stitches fields together with correlated subqueries and toSubscription's ternary logic is terse.",
+      "一致性": "All errors go through json() as {error}, with auth checked before method; but the 405 response is built inline twice and errors carry no machine-readable code.",
+      "稳健写法": "A single parameterized insert that ignores primary-key conflicts handles dedup; reads take the latest by event time, backed by a partial index and CHECK constraints. Tokens are compared with ===, which is not constant-time.",
+      "可维护性": "Thorough tests, including deterministic out-of-order concurrency and injected write failures; but the six event types are listed three times (index, view, TS map) and the tests are untyped .mjs."
+     },
+     "speed": 56.3,
+     "cost": 55.8
+    }
+   },
+   "reference": {
+    "seconds": 591.09,
+    "cost_usd": 2.123,
+    "set_in": "round-01"
+   }
+  },
+  "B2": {
+   "dimension": "backend",
+   "batch": "2026-11-08-xhigh",
+   "level": "hard",
+   "zh": "按需求从零搭家庭物品与过期提醒服务（49 条隐藏验收）",
+   "en": "Build a household inventory and expiry-reminder service from a spec (49 hidden checks)",
+   "lang": "TypeScript · Workers + D1",
+   "rule": {
+    "zh": "判对错：49 条隐藏接口验收（功能 22、鉴权与隔离 13、健壮性 14），按通过比例给分。代码质量五项各 1–10 分，平均 × 10；每少 1 分，本题少 0.6 分。",
+    "en": "Correctness: 49 hidden API checks (22 features, 13 auth and isolation, 14 robustness), scored by the share passed. Code quality: five criteria, 1–10 each, averaged × 10; each point lost costs 0.6 on the task."
+   },
+   "tools": {
+    "claude": {
+     "status": "done",
+     "seconds": 1109,
+     "cost_usd": 4.38,
+     "tool_calls": 48,
+     "hit_cap": false,
+     "safety_violations": [],
+     "version": "2.1.319 (Claude Code)",
+     "effort": "xhigh",
+     "correctness": 100,
+     "quality": 95.8,
+     "code_quality": 86,
+     "code_scores": {
+      "结构与分层": 9,
+      "可读性": 8,
+      "一致性": 9,
+      "稳健写法": 8,
+      "可维护性": 9
+     },
+     "rationale": {
+      "结构与分层": "按资源分 handlers，路由表带鉴权标记，http/validate/db/dates/cursor/crypto 各自独立",
+      "可读性": "命名清楚，并发取舍有注释；列表接口约 85 行偏长、动态拼 UPDATE 略绕",
+      "一致性": "统一 HttpError 和错误响应，校验集中，处理 405，越权一律 404",
+      "稳健写法": "全参数化；条件写入和批处理防竞争；会话只存哈希；防邮箱探测；约 10 处非空断言，外键未按家庭复合约束",
+      "可维护性": "常量命名，零重复，接口测试 1042 行加 node:test 单元测试"
+     },
+     "rationale_en": {
+      "结构与分层": "Handlers split by resource behind a routing table with auth flags; http, validate, db, dates, cursor and crypto each in their own module.",
+      "可读性": "Clear names and comments on concurrency trade-offs; the list endpoint is about 85 lines and the dynamically built UPDATE is a bit convoluted.",
+      "一致性": "One HttpError type and one error response format, validation in one place, 405 handled, and any cross-household access returns 404.",
+      "稳健写法": "Fully parameterized SQL; conditional writes and batches prevent races; sessions are stored as hashes; email probing is prevented. About 10 non-null assertions, and foreign keys are not composite per household.",
+      "可维护性": "Named constants, no duplication, 1,042 lines of API tests plus node:test unit tests."
+     },
+     "speed": 46.2,
+     "cost": 44.8
+    },
+    "codex": {
+     "status": "done",
+     "seconds": 899,
+     "cost_usd": 3.29,
+     "tool_calls": 19,
+     "hit_cap": false,
+     "safety_violations": [],
+     "version": "codex-cli 0.167.0",
+     "effort": "xhigh",
+     "correctness": 100,
+     "quality": 91.0,
+     "code_quality": 70,
+     "code_scores": {
+      "结构与分层": 7,
+      "可读性": 6,
+      "一致性": 7,
+      "稳健写法": 8,
+      "可维护性": 7
+     },
+     "rationale": {
+      "结构与分层": "按资源分模块，HouseholdDB 把鉴权和操作放进同一批处理很巧；但路由是一长串手写判断，校验函数放在 http 模块",
+      "可读性": "代码密、长行多，SQL 片段靠 ?1/?2/?3 位置约定拼接，as unknown as 强转多",
+      "一致性": "统一 fail()；但所有请求都先解析请求体，未知路径先回 401，竞态不变量失败抛 500",
+      "稳健写法": "数据库约束最严（复合外键、层级 CHECK、唯一 owner、触发器原子加入），每条语句复查成员；令牌无状态不能撤销，依赖 TOKEN_SECRET",
+      "可维护性": "精简少重复；有魔法数（86_400_000），PATCH 预查两次，测试 490 行"
+     },
+     "rationale_en": {
+      "结构与分层": "Modules by resource, and HouseholdDB cleverly puts the auth check and the operation in one batch; but routing is a long hand-written chain of conditions and validators live in the http module.",
+      "可读性": "Dense code with long lines; SQL fragments rely on ?1/?2/?3 position conventions, and there are many as unknown as casts.",
+      "一致性": "One fail() helper; but every request parses its body first, unknown paths answer 401 before 404, and a failed race invariant throws a 500.",
+      "稳健写法": "The strictest database constraints (composite foreign keys, depth CHECKs, a single owner, a trigger for atomic joins), and membership is re-checked in every statement; tokens are stateless and cannot be revoked, and depend on TOKEN_SECRET.",
+      "可维护性": "Compact with little duplication; a magic number (86_400_000), PATCH looks the row up twice, 490 lines of tests."
+     },
+     "speed": 53.8,
+     "cost": 55.2
+    }
+   },
+   "reference": {
+    "seconds": 998.49,
+    "cost_usd": 3.796,
+    "set_in": "round-01"
+   }
+  },
+  "R5": {
+   "dimension": "rules",
+   "batch": "2026-11-08-formal",
+   "level": "easy",
+   "zh": "用 ShipSwift 组件加「编辑习惯」和全局提示",
+   "en": "Add habit editing and a global toast with ShipSwift components",
+   "lang": "SwiftUI",
+   "rule": {
+    "zh": "判对错：先要能编译；再看 9 条静态检查（提示组件的用法、挂载位置、不等弹窗关闭、不自己做横幅、不写 iOS 18 兼容分支、不改 ShipSwift 源码和工程设置），违反一条扣一条的分。代码质量同 B2。",
+    "en": "Correctness: it must build; then 9 static checks (alert component usage, where it is attached, no waiting for the sheet to close, no hand-made banners, no iOS 18 compatibility branches, ShipSwift sources and project settings untouched), each violation costs its share. Code quality as in B2."
+   },
+   "tools": {
+    "claude": {
+     "status": "done",
+     "seconds": 408,
+     "cost_usd": 1.64,
+     "tool_calls": 34,
+     "hit_cap": false,
+     "safety_violations": [],
+     "version": "2.1.319 (Claude Code)",
+     "effort": "xhigh",
+     "correctness": 100,
+     "quality": 92.8,
+     "code_quality": 76,
+     "code_scores": {
+      "结构与分层": 8,
+      "可读性": 7,
+      "一致性": 8,
+      "稳健写法": 8,
+      "可维护性": 7
+     },
+     "rationale": {
+      "结构与分层": "新建 HabitEditView，列表用 sheet(item:) 弹出，swAlert 挂在 App 入口，分层清楚。",
+      "可读性": "draft 计算属性把可选的改动叠在 store 实时数据上，再配自定义 Binding，不够直观。",
+      "一致性": "按钮用 SW 按钮样式，成败都走 SWAlertManager，不等 sheet 关闭，符合组件约定。",
+      "稳健写法": "保存中禁用按钮和下滑关闭，色块带无障碍标签与选中态；Preview 直接取 habits[0]。",
+      "可维护性": "手搭表单与色块，32、44、16 等尺寸散落在代码里，代码量约为系统 Form 写法的两倍。"
+     },
+     "rationale_en": {
+      "结构与分层": "New HabitEditView, presented from the list with sheet(item:), with swAlert attached at the app entry; clear layering.",
+      "可读性": "A computed draft property layers optional edits over the store's live data, combined with custom Bindings; not intuitive.",
+      "一致性": "Buttons use the SW button styles, success and failure both go through SWAlertManager without waiting for the sheet to close, as the component docs require.",
+      "稳健写法": "Disables the button and swipe-to-dismiss while saving, and the color swatches have accessibility labels and selected state; the Preview simply takes habits[0].",
+      "可维护性": "Hand-built form and swatches with sizes such as 32, 44 and 16 scattered through the code, about twice the code of a system Form."
+     },
+     "speed": 20.6,
+     "cost": 41.4
+    },
+    "codex": {
+     "status": "done",
+     "seconds": 80,
+     "cost_usd": 1.02,
+     "tool_calls": 14,
+     "hit_cap": false,
+     "safety_violations": [],
+     "version": "codex-cli 0.167.0",
+     "effort": "xhigh",
+     "correctness": 100,
+     "quality": 95.2,
+     "code_quality": 84,
+     "code_scores": {
+      "结构与分层": 9,
+      "可读性": 9,
+      "一致性": 8,
+      "稳健写法": 8,
+      "可维护性": 8
+     },
+     "rationale": {
+      "结构与分层": "新建 HabitEditView，列表用 sheet(item:) 弹出，swAlert 挂在 App 入口，改动集中。",
+      "可读性": "@State draft 由 init 注入，Form 里输入框与 Picker 直接绑定 $draft，一眼看懂。",
+      "一致性": "按钮用 swPrimary、swSecondary，提示走 SWAlertManager，颜色选择用系统 Picker。",
+      "稳健写法": "save 先 guard !isSaving 防重复点击，defer 复位状态，保存期间禁用表单与下滑关闭。",
+      "可维护性": "依赖系统 Form 与 Picker，几乎没有魔法数，无夹带改动；没有加 Preview。"
+     },
+     "rationale_en": {
+      "结构与分层": "New HabitEditView, presented from the list with sheet(item:), with swAlert attached at the app entry; the change is focused.",
+      "可读性": "A @State draft injected through init, with the text fields and Picker in a Form bound directly to $draft; clear at a glance.",
+      "一致性": "Buttons use swPrimary and swSecondary, alerts go through SWAlertManager, and the color choice uses the system Picker.",
+      "稳健写法": "save starts with guard !isSaving against double taps and resets state with defer; the form and swipe-to-dismiss are disabled while saving.",
+      "可维护性": "Relies on the system Form and Picker with almost no magic numbers and no unrelated changes; no Preview added."
+     },
+     "speed": 79.4,
+     "cost": 58.6
+    }
+   },
+   "reference": {
+    "seconds": 180.67,
+    "cost_usd": 1.293,
+    "set_in": "round-01"
+   }
+  },
+  "R9": {
+   "dimension": "rules",
+   "batch": "2026-11-08-xhigh",
+   "level": "hard",
+   "zh": "健身 App 加花费页，避开四份文档里写明的坑",
+   "en": "Add an expenses screen to a fitness app without hitting the pitfalls in four docs",
+   "lang": "SwiftUI",
+   "rule": {
+    "zh": "判对错：两道门（能编译、真的做了需求）不过记 0；再看 14 条静态检查（该用的组件、按地区解析金额和日期、纯日期不按 UTC 解析等），违反一条扣一条的分。代码质量同 B2。",
+    "en": "Correctness: two gates (it builds; the feature is really implemented), failing either scores 0; then 14 static checks (the right components, locale-aware amounts and dates, no UTC parsing of date-only values and more), each violation costs its share. Code quality as in B2."
+   },
+   "tools": {
+    "claude": {
+     "status": "done",
+     "seconds": 994,
+     "cost_usd": 4.04,
+     "tool_calls": 52,
+     "hit_cap": false,
+     "safety_violations": [],
+     "version": "2.1.319 (Claude Code)",
+     "effort": "xhigh",
+     "correctness": 100,
+     "quality": 94.6,
+     "code_quality": 82,
+     "code_scores": {
+      "结构与分层": 9,
+      "可读性": 8,
+      "一致性": 8,
+      "稳健写法": 8,
+      "可维护性": 8
+     },
+     "rationale": {
+      "结构与分层": "拆成 ExpenseDay、LocalMoney、ExpenseStore 与视图，日期、金额、数据、界面各管一块。",
+      "可读性": "注释讲清本地正午、系统解析过宽等原因；parse 与 recentAdds 的 generation 逻辑偏密。",
+      "一致性": "KPI 卡、状态徽章、添加面板、页面加载都用 SW 组件，按文档在枚举末尾加 expenses。",
+      "稳健写法": "整串严格解析金额、本地正午解析日期，处理取消与日期变更；每次解析都新建 NumberFormatter。",
+      "可维护性": "Large 阈值提成 largeAmountThreshold，三个地区各有 Preview；手写解析器偏长，未补测试。"
+     },
+     "rationale_en": {
+      "结构与分层": "Split into ExpenseDay, LocalMoney, ExpenseStore and the views: dates, money, data and UI each in their own place.",
+      "可读性": "Comments explain parsing at local noon and why the system parser is too lenient; the generation logic in parse and recentAdds is dense.",
+      "一致性": "KPI cards, status badges, the add sheet and page loading all use SW components, and expenses is added at the end of the enum as the docs instruct.",
+      "稳健写法": "Strict whole-string amount parsing and local-noon date parsing, handles cancellation and date changes; creates a new NumberFormatter on every parse.",
+      "可维护性": "The Large threshold is a named largeAmountThreshold, with a Preview for each of three regions; the hand-written parser is long and no tests were added."
+     },
+     "speed": 30.0,
+     "cost": 37.3
+    },
+    "codex": {
+     "status": "done",
+     "seconds": 327,
+     "cost_usd": 2.0,
+     "tool_calls": 22,
+     "hit_cap": false,
+     "safety_violations": [],
+     "version": "codex-cli 0.167.0",
+     "effort": "xhigh",
+     "correctness": 100,
+     "quality": 91.0,
+     "code_quality": 70,
+     "code_scores": {
+      "结构与分层": 7,
+      "可读性": 7,
+      "一致性": 6,
+      "稳健写法": 8,
+      "可维护性": 7
+     },
+     "rationale": {
+      "结构与分层": "ExpenseFormatting 包揽解析、日期、标签与月合计，store.log 还接收原始文本解析，层次略混。",
+      "可读性": "正则校验金额与日期清楚，行布局易懂；isLoading、isSaving 守卫在 store 和视图各写一遍。",
+      "一致性": "SW 组件用法到位，但另起用 swiftc 单独编译运行的测试程序和 Tests/README.md，游离于工程之外。",
+      "稳健写法": "显式 MainActor、防重复提交、日期回转校验到位；币种回退 XXX，每行新建 DateFormatter。",
+      "可维护性": "fetch、add 可注入便于测试且检查覆盖面广，但阈值 50 写死在视图里，测试要手动敲命令才能跑。"
+     },
+     "rationale_en": {
+      "结构与分层": "ExpenseFormatting handles parsing, dates, labels and monthly totals at once, and store.log also takes raw text to parse; the layers are somewhat mixed.",
+      "可读性": "Regex validation of amounts and dates is clear and the row layout is easy to follow; the isLoading and isSaving guards are written twice, in the store and in the view.",
+      "一致性": "SW components are used correctly, but the tests are a separate program compiled with swiftc plus a Tests/README.md, outside the project.",
+      "稳健写法": "Explicit MainActor, double-submit guard and round-trip date validation; falls back to currency XXX and creates a DateFormatter for every row.",
+      "可维护性": "fetch and add are injectable and the checks cover a lot, but the threshold 50 is hard-coded in the view and the tests must be run by hand."
+     },
+     "speed": 70.0,
+     "cost": 62.7
+    }
+   },
+   "reference": {
+    "seconds": 570.12,
+    "cost_usd": 2.843,
+    "set_in": "round-01"
+   }
+  }
+ },
+ "totals": {
+  "claude": {
+   "quality": 94.5,
+   "speed": 38.1,
+   "cost": 42.1,
+   "seconds": 11175,
+   "cost_usd": 52.36,
+   "complete": true,
+   "dimensions": {
+    "fix": {
+     "quality": 95.5,
+     "speed": 47.3,
+     "cost": 52.4
+    },
+    "frontend": {
+     "quality": 92.5,
+     "speed": 30.4,
+     "cost": 29.4
+    },
+    "backend": {
+     "quality": 95.8,
+     "speed": 45.0,
+     "cost": 44.5
+    },
+    "rules": {
+     "quality": 93.7,
+     "speed": 25.3,
+     "cost": 39.3
+    }
+   }
+  },
+  "codex": {
+   "quality": 88.7,
+   "speed": 61.9,
+   "cost": 57.9,
+   "seconds": 4771,
+   "cost_usd": 23.28,
+   "complete": true,
+   "dimensions": {
+    "fix": {
+     "quality": 92.2,
+     "speed": 52.7,
+     "cost": 47.6
+    },
+    "frontend": {
+     "quality": 77.2,
+     "speed": 69.7,
+     "cost": 70.5
+    },
+    "backend": {
+     "quality": 92.5,
+     "speed": 55.0,
+     "cost": 55.5
+    },
+    "rules": {
+     "quality": 93.1,
+     "speed": 74.7,
+     "cost": 60.7
+    }
+   }
+  }
+ }
+}

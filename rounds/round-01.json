@@ -1,0 +1,74 @@
+{
+  "id": "round-01",
+  "title": {
+    "zh": "第一轮：Opus 5.5 对 GPT-6 Astra（精简题库）",
+    "en": "Round 1: Opus 5.5 vs GPT-6 Astra (lite set)"
+  },
+  "dates": "2026-11-08",
+  "note": "从 31 道题库里每个维度挑两道（都是样题，每维一易一难），每题每家只跑一次，思考档位都是各家第二高的 xhigh。",
+  "tools": {
+    "claude": {
+      "name": "Claude Code",
+      "model": "claude-opus-5-5",
+      "model_name": "Opus 5.5",
+      "effort": "--effort xhigh"
+    },
+    "codex": {
+      "name": "Codex CLI",
+      "model": "gpt-6-astra",
+      "model_name": "GPT-6 Astra",
+      "effort": "-c model_reasoning_effort=\"xhigh\""
+    }
+  },
+  "dimensions": [
+    {
+      "key": "fix",
+      "weight": 0.3,
+      "tasks": [
+        "S1",
+        "S2"
+      ]
+    },
+    {
+      "key": "frontend",
+      "weight": 0.25,
+      "tasks": [
+        "F2",
+        "F1"
+      ]
+    },
+    {
+      "key": "backend",
+      "weight": 0.25,
+      "tasks": [
+        "B4",
+        "B2"
+      ]
+    },
+    {
+      "key": "rules",
+      "weight": 0.2,
+      "tasks": [
+        "R5",
+        "R9"
+      ]
+    }
+  ],
+  "runs": {
+    "S1": "2026-11-08-formal",
+    "S2": "2026-11-08-xhigh",
+    "F1": "2026-11-08-xhigh",
+    "F2": "2026-11-08-formal",
+    "B2": "2026-11-08-xhigh",
+    "B4": "2026-11-08-formal",
+    "R5": "2026-11-08-formal",
+    "R9": "2026-11-08-xhigh"
+  },
+  "prices_per_mtok": {
+    "codex": {
+      "input": 10,
+      "cached_input": 1,
+      "output": 50
+    }
+  }
+}

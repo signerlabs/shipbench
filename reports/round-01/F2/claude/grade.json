@@ -1,0 +1,16 @@
+{
+  "build_ok": true,
+  "seconds": 5,
+  "bundle": "com.agenteval.replica",
+  "install_ok": true,
+  "record_log": "Test Suite 'All tests' passed at 2026-11-08 20:36:43.487.\nrec 1794141313.038\nlaunch 1794141378.001402\nshot:k1 1794141386.613003\nshot:k2 1794141388.896548\nshot:k3 1794141390.97407\nshot:k4 1794141392.994041\nshot:k5 1794141396.484848\nshot:k6 1794141400.0525498\nshot:k7 1794141403.118659\nend 1794141403.213108\nstop 1794141404.871\n",
+  "shots": [
+    "k1.png",
+    "k2.png",
+    "k3.png",
+    "k4.png",
+    "k5.png",
+    "k6.png",
+    "k7.png"
+  ]
+}

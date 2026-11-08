@@ -14,8 +14,12 @@ from PIL import Image
 STATES = {
     'F2': {'k1': '首屏', 'k2': '选中 Clothing', 'k3': '选中 Home', 'k4': '取消选中', 'k5': '往下滚', 'k6': 'Bedroom 详情', 'k7': '返回报表页'},
     'F1': {'k1': '第 1 步演完', 'k2': '第 2 步演完', 'k3': '第 3 步演完'},
+    'F3': {'k1': '首屏', 'k2': '主推翻到下一张', 'k3': '滚回顶部再翻一张', 'k4': '再翻一张'},
 }
-STATE = STATES[os.environ.get('FTASK', 'F2')]  # 环境变量 FTASK 选题号，默认 F2
+_FT = os.environ.get('FTASK', 'F2')  # 环境变量 FTASK 选题号，默认 F2
+_SF = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'tasks', _FT, 'states.json')
+# 新题把状态名写在 tasks/<题号>/states.json（{"k1": "首屏", ...}），不用改这里
+STATE = json.load(open(_SF)) if os.path.exists(_SF) else STATES[_FT]
 KEYS = list(STATE)
 
 

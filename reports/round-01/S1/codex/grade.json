@@ -1,0 +1,16 @@
+{
+  "score": 100,
+  "checks": [
+    {
+      "name": "隐藏测试 keeperChoiceIgnoresSubSecondDifferences 通过",
+      "ok": true
+    },
+    {
+      "name": "全部测试通过（没有改坏别的）",
+      "ok": true
+    }
+  ],
+  "tests_total": 40,
+  "failed_tests": [],
+  "seconds": 10
+}
