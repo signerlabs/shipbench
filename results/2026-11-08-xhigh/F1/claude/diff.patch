@@ -1,0 +1,1490 @@
+ Replica/Fonts/BarlowCondensed-Bold.ttf     | Bin 0 -> 109912 bytes
+ Replica/Fonts/BarlowCondensed-OFL.txt      |  93 +++++++
+ Replica/Fonts/LXGWMarkerGothic-OFL.txt     |  93 +++++++
+ Replica/Fonts/LXGWMarkerGothic-Regular.ttf | Bin 0 -> 3190368 bytes
+ Replica/Fonts/SmileySans-OFL.txt           |  93 +++++++
+ Replica/Fonts/SmileySans-Oblique.ttf       | Bin 0 -> 2629764 bytes
+ Replica/Onboarding/FollowScene.swift       | 249 +++++++++++++++++++
+ Replica/Onboarding/MapScene.swift          | 105 ++++++++
+ Replica/Onboarding/Motion.swift            |  80 ++++++
+ Replica/Onboarding/NavigateScene.swift     | 210 ++++++++++++++++
+ Replica/Onboarding/OnboardingView.swift    | 377 +++++++++++++++++++++++++++++
+ Replica/Onboarding/Theme.swift             |  89 +++++++
+ Replica/ReplicaApp.swift                   |   8 +-
+ 13 files changed, 1396 insertions(+), 1 deletion(-)
+diff --git a/Replica/Fonts/BarlowCondensed-Bold.ttf b/Replica/Fonts/BarlowCondensed-Bold.ttf
+new file mode 100644
+index 0000000..9e480f4
+Binary files /dev/null and b/Replica/Fonts/BarlowCondensed-Bold.ttf differ
+diff --git a/Replica/Fonts/BarlowCondensed-OFL.txt b/Replica/Fonts/BarlowCondensed-OFL.txt
+new file mode 100644
+index 0000000..2f22ba6
+--- /dev/null
++++ b/Replica/Fonts/BarlowCondensed-OFL.txt
+@@ -0,0 +1,93 @@
++Copyright 2017 The Barlow Project Authors (https://github.com/jpt/barlow)
++
++This Font Software is licensed under the SIL Open Font License, Version 1.1.
++This license is copied below, and is also available with a FAQ at:
++http://scripts.sil.org/OFL
++
++
++-----------------------------------------------------------
++SIL OPEN FONT LICENSE Version 1.1 - 26 February 2007
++-----------------------------------------------------------
++
++PREAMBLE
++The goals of the Open Font License (OFL) are to stimulate worldwide
++development of collaborative font projects, to support the font creation
++efforts of academic and linguistic communities, and to provide a free and
++open framework in which fonts may be shared and improved in partnership
++with others.
++
++The OFL allows the licensed fonts to be used, studied, modified and
++redistributed freely as long as they are not sold by themselves. The
++fonts, including any derivative works, can be bundled, embedded, 
++redistributed and/or sold with any software provided that any reserved
++names are not used by derivative works. The fonts and derivatives,
++however, cannot be released under any other type of license. The
++requirement for fonts to remain under this license does not apply
++to any document created using the fonts or their derivatives.
++
++DEFINITIONS
++"Font Software" refers to the set of files released by the Copyright
++Holder(s) under this license and clearly marked as such. This may
++include source files, build scripts and documentation.
++
++"Reserved Font Name" refers to any names specified as such after the
++copyright statement(s).
++
++"Original Version" refers to the collection of Font Software components as
++distributed by the Copyright Holder(s).
++
++"Modified Version" refers to any derivative made by adding to, deleting,
++or substituting -- in part or in whole -- any of the components of the
++Original Version, by changing formats or by porting the Font Software to a
++new environment.
++
++"Author" refers to any designer, engineer, programmer, technical
++writer or other person who contributed to the Font Software.
++
++PERMISSION & CONDITIONS
++Permission is hereby granted, free of charge, to any person obtaining
++a copy of the Font Software, to use, study, copy, merge, embed, modify,
++redistribute, and sell modified and unmodified copies of the Font
++Software, subject to the following conditions:
++
++1) Neither the Font Software nor any of its individual components,
++in Original or Modified Versions, may be sold by itself.
++
++2) Original or Modified Versions of the Font Software may be bundled,
++redistributed and/or sold with any software, provided that each copy
++contains the above copyright notice and this license. These can be
++included either as stand-alone text files, human-readable headers or
++in the appropriate machine-readable metadata fields within text or
++binary files as long as those fields can be easily viewed by the user.
++
++3) No Modified Version of the Font Software may use the Reserved Font
++Name(s) unless explicit written permission is granted by the corresponding
++Copyright Holder. This restriction only applies to the primary font name as
++presented to the users.
++
++4) The name(s) of the Copyright Holder(s) or the Author(s) of the Font
++Software shall not be used to promote, endorse or advertise any
++Modified Version, except to acknowledge the contribution(s) of the
++Copyright Holder(s) and the Author(s) or with their explicit written
++permission.
++
++5) The Font Software, modified or unmodified, in part or in whole,
++must be distributed entirely under this license, and must not be
++distributed under any other license. The requirement for fonts to
++remain under this license does not apply to any document created
++using the Font Software.
++
++TERMINATION
++This license becomes null and void if any of the above conditions are
++not met.
++
++DISCLAIMER
++THE FONT SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
++EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO ANY WARRANTIES OF
++MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT
++OF COPYRIGHT, PATENT, TRADEMARK, OR OTHER RIGHT. IN NO EVENT SHALL THE
++COPYRIGHT HOLDER BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
++INCLUDING ANY GENERAL, SPECIAL, INDIRECT, INCIDENTAL, OR CONSEQUENTIAL
++DAMAGES, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
++FROM, OUT OF THE USE OR INABILITY TO USE THE FONT SOFTWARE OR FROM
++OTHER DEALINGS IN THE FONT SOFTWARE.
+diff --git a/Replica/Fonts/LXGWMarkerGothic-OFL.txt b/Replica/Fonts/LXGWMarkerGothic-OFL.txt
+new file mode 100644
+index 0000000..b1be6f2
+--- /dev/null
++++ b/Replica/Fonts/LXGWMarkerGothic-OFL.txt
+@@ -0,0 +1,93 @@
++Copyright 2021-2026 The LXGW Marker Gothic Project Authors (https://github.com/lxgw/LxgwMarkerGothic)
++
++This Font Software is licensed under the SIL Open Font License, Version 1.1.
++This license is copied below, and is also available with a FAQ at:
++https://openfontlicense.org
++
++
++-----------------------------------------------------------
++SIL OPEN FONT LICENSE Version 1.1 - 26 February 2007
++-----------------------------------------------------------
++
++PREAMBLE
++The goals of the Open Font License (OFL) are to stimulate worldwide
++development of collaborative font projects, to support the font creation
++efforts of academic and linguistic communities, and to provide a free and
++open framework in which fonts may be shared and improved in partnership
++with others.
++
++The OFL allows the licensed fonts to be used, studied, modified and
++redistributed freely as long as they are not sold by themselves. The
++fonts, including any derivative works, can be bundled, embedded, 
++redistributed and/or sold with any software provided that any reserved
++names are not used by derivative works. The fonts and derivatives,
++however, cannot be released under any other type of license. The
++requirement for fonts to remain under this license does not apply
++to any document created using the fonts or their derivatives.
++
++DEFINITIONS
++"Font Software" refers to the set of files released by the Copyright
++Holder(s) under this license and clearly marked as such. This may
++include source files, build scripts and documentation.
++
++"Reserved Font Name" refers to any names specified as such after the
++copyright statement(s).
++
++"Original Version" refers to the collection of Font Software components as
++distributed by the Copyright Holder(s).
++
++"Modified Version" refers to any derivative made by adding to, deleting,
++or substituting -- in part or in whole -- any of the components of the
++Original Version, by changing formats or by porting the Font Software to a
++new environment.
++
++"Author" refers to any designer, engineer, programmer, technical
++writer or other person who contributed to the Font Software.
++
++PERMISSION & CONDITIONS
++Permission is hereby granted, free of charge, to any person obtaining
++a copy of the Font Software, to use, study, copy, merge, embed, modify,
++redistribute, and sell modified and unmodified copies of the Font
++Software, subject to the following conditions:
++
++1) Neither the Font Software nor any of its individual components,
++in Original or Modified Versions, may be sold by itself.
++
++2) Original or Modified Versions of the Font Software may be bundled,
++redistributed and/or sold with any software, provided that each copy
++contains the above copyright notice and this license. These can be
++included either as stand-alone text files, human-readable headers or
++in the appropriate machine-readable metadata fields within text or
++binary files as long as those fields can be easily viewed by the user.
++
++3) No Modified Version of the Font Software may use the Reserved Font
++Name(s) unless explicit written permission is granted by the corresponding
++Copyright Holder. This restriction only applies to the primary font name as
++presented to the users.
++
++4) The name(s) of the Copyright Holder(s) or the Author(s) of the Font
++Software shall not be used to promote, endorse or advertise any
++Modified Version, except to acknowledge the contribution(s) of the
++Copyright Holder(s) and the Author(s) or with their explicit written
++permission.
++
++5) The Font Software, modified or unmodified, in part or in whole,
++must be distributed entirely under this license, and must not be
++distributed under any other license. The requirement for fonts to
++remain under this license does not apply to any document created
++using the Font Software.
++
++TERMINATION
++This license becomes null and void if any of the above conditions are
++not met.
++
++DISCLAIMER
++THE FONT SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
++EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO ANY WARRANTIES OF
++MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT
++OF COPYRIGHT, PATENT, TRADEMARK, OR OTHER RIGHT. IN NO EVENT SHALL THE
++COPYRIGHT HOLDER BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
++INCLUDING ANY GENERAL, SPECIAL, INDIRECT, INCIDENTAL, OR CONSEQUENTIAL
++DAMAGES, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
++FROM, OUT OF THE USE OR INABILITY TO USE THE FONT SOFTWARE OR FROM
++OTHER DEALINGS IN THE FONT SOFTWARE.
+diff --git a/Replica/Fonts/LXGWMarkerGothic-Regular.ttf b/Replica/Fonts/LXGWMarkerGothic-Regular.ttf
+new file mode 100644
+index 0000000..c2a7c21
+Binary files /dev/null and b/Replica/Fonts/LXGWMarkerGothic-Regular.ttf differ
+diff --git a/Replica/Fonts/SmileySans-OFL.txt b/Replica/Fonts/SmileySans-OFL.txt
+new file mode 100644
+index 0000000..d451163
+--- /dev/null
++++ b/Replica/Fonts/SmileySans-OFL.txt
+@@ -0,0 +1,93 @@
++Copyright (c) 2022--2024, atelierAnchor <https://atelier-anchor.com>,
++with Reserved Font Name <Smiley> and <得意黑>.
++
++This Font Software is licensed under the SIL Open Font License, Version 1.1.
++This license is copied below, and is also available with a FAQ at:
++http://scripts.sil.org/OFL
++
++-----------------------------------------------------------
++SIL OPEN FONT LICENSE Version 1.1 - 26 February 2007
++-----------------------------------------------------------
++
++PREAMBLE
++The goals of the Open Font License (OFL) are to stimulate worldwide
++development of collaborative font projects, to support the font creation
++efforts of academic and linguistic communities, and to provide a free and
++open framework in which fonts may be shared and improved in partnership
++with others.
++
++The OFL allows the licensed fonts to be used, studied, modified and
++redistributed freely as long as they are not sold by themselves. The
++fonts, including any derivative works, can be bundled, embedded, 
++redistributed and/or sold with any software provided that any reserved
++names are not used by derivative works. The fonts and derivatives,
++however, cannot be released under any other type of license. The
++requirement for fonts to remain under this license does not apply
++to any document created using the fonts or their derivatives.
++
++DEFINITIONS
++"Font Software" refers to the set of files released by the Copyright
++Holder(s) under this license and clearly marked as such. This may
++include source files, build scripts and documentation.
++
++"Reserved Font Name" refers to any names specified as such after the
++copyright statement(s).
++
++"Original Version" refers to the collection of Font Software components as
++distributed by the Copyright Holder(s).
++
++"Modified Version" refers to any derivative made by adding to, deleting,
++or substituting -- in part or in whole -- any of the components of the
++Original Version, by changing formats or by porting the Font Software to a
++new environment.
++
++"Author" refers to any designer, engineer, programmer, technical
++writer or other person who contributed to the Font Software.
++
++PERMISSION & CONDITIONS
++Permission is hereby granted, free of charge, to any person obtaining
++a copy of the Font Software, to use, study, copy, merge, embed, modify,
++redistribute, and sell modified and unmodified copies of the Font
++Software, subject to the following conditions:
++
++1) Neither the Font Software nor any of its individual components,
++in Original or Modified Versions, may be sold by itself.
++
++2) Original or Modified Versions of the Font Software may be bundled,
++redistributed and/or sold with any software, provided that each copy
++contains the above copyright notice and this license. These can be
++included either as stand-alone text files, human-readable headers or
++in the appropriate machine-readable metadata fields within text or
++binary files as long as those fields can be easily viewed by the user.
++
++3) No Modified Version of the Font Software may use the Reserved Font
++Name(s) unless explicit written permission is granted by the corresponding
++Copyright Holder. This restriction only applies to the primary font name as
++presented to the users.
++
++4) The name(s) of the Copyright Holder(s) or the Author(s) of the Font
++Software shall not be used to promote, endorse or advertise any
++Modified Version, except to acknowledge the contribution(s) of the
++Copyright Holder(s) and the Author(s) or with their explicit written
++permission.
++
++5) The Font Software, modified or unmodified, in part or in whole,
++must be distributed entirely under this license, and must not be
++distributed under any other license. The requirement for fonts to
++remain under this license does not apply to any document created
++using the Font Software.
++
++TERMINATION
++This license becomes null and void if any of the above conditions are
++not met.
++
++DISCLAIMER
++THE FONT SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
++EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO ANY WARRANTIES OF
++MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT
++OF COPYRIGHT, PATENT, TRADEMARK, OR OTHER RIGHT. IN NO EVENT SHALL THE
++COPYRIGHT HOLDER BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
++INCLUDING ANY GENERAL, SPECIAL, INDIRECT, INCIDENTAL, OR CONSEQUENTIAL
++DAMAGES, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
++FROM, OUT OF THE USE OR INABILITY TO USE THE FONT SOFTWARE OR FROM
++OTHER DEALINGS IN THE FONT SOFTWARE.
+diff --git a/Replica/Fonts/SmileySans-Oblique.ttf b/Replica/Fonts/SmileySans-Oblique.ttf
+new file mode 100644
+index 0000000..c297dc6
+Binary files /dev/null and b/Replica/Fonts/SmileySans-Oblique.ttf differ
+diff --git a/Replica/Onboarding/FollowScene.swift b/Replica/Onboarding/FollowScene.swift
+new file mode 100644
+index 0000000..994b474
+--- /dev/null
++++ b/Replica/Onboarding/FollowScene.swift
+@@ -0,0 +1,249 @@
++import SwiftUI
++
++/// Step 1 — 跟着推荐者去吃: recommender avatars pop in, a pinned note slides up
++/// and types itself out, three flames pop, then a bowl of noodles lands and floats.
++struct FollowScene: View {
++    /// Seconds since this step started.
++    let t: Double
++
++    private struct Recommender {
++        let image: String
++        let name: String
++        let centerX: CGFloat
++        let centerY: CGFloat
++        let diameter: CGFloat
++        let fill: Color
++        let selected: Bool
++        let labelSize: CGFloat
++        let labelBaseline: CGFloat
++        /// Vertical center of the whole column (avatar + name), used as the pop anchor.
++        let anchorY: CGFloat
++        let delay: Double
++    }
++
++    private let recommenders: [Recommender] = [
++        Recommender(image: "welcome-suipo", name: "特厨隋坡", centerX: 103.3, centerY: 212, diameter: 87,
++                    fill: Palette.avatarYellow, selected: false, labelSize: 15, labelBaseline: 276,
++                    anchorY: 224, delay: -0.04),
++        Recommender(image: "welcome-wulala", name: "特别乌啦啦", centerX: 220, centerY: 195.8, diameter: 114.8,
++                    fill: Palette.avatarMint, selected: true, labelSize: 17.25, labelBaseline: 275.5,
++                    anchorY: 209, delay: 0.02),
++        Recommender(image: "welcome-jason", name: "刘雨鑫JASON", centerX: 336.7, centerY: 212, diameter: 87,
++                    fill: Palette.avatarMint, selected: false, labelSize: 15, labelBaseline: 276,
++                    anchorY: 224, delay: 0.21),
++    ]
++
++    var body: some View {
++        ZStack(alignment: .topLeading) {
++            ForEach(recommenders.indices, id: \.self) { i in
++                avatarColumn(recommenders[i])
++            }
++            NoteCard(t: t)
++            noodles
++        }
++        .canvasLayer()
++    }
++
++    private func avatarColumn(_ r: Recommender) -> some View {
++        let local = t - r.delay
++        let scale = 0.3 + 0.7 * Motion.spring(local, response: 0.5, damping: 0.72)
++        let opacity = Motion.progress(local, duration: 0.2)
++        let font = AppFont.smiley
++        return ZStack(alignment: .topLeading) {
++            ZStack {
++                Circle().fill(r.fill)
++                Image(r.image)
++                    .resizable()
++                    .interpolation(.high)
++                    .frame(width: r.selected ? r.diameter : 88, height: r.selected ? r.diameter : 88)
++                if r.selected {
++                    Circle().strokeBorder(Palette.orange, lineWidth: 3.2)
++                }
++            }
++            .frame(width: r.diameter, height: r.diameter)
++            .clipShape(Circle())
++            .position(x: r.centerX, y: r.centerY)
++
++            Text(r.name)
++                .font(font.font(r.labelSize))
++                .foregroundStyle(Palette.ink)
++                .placed(centerX: r.centerX, y: font.top(baseline: r.labelBaseline, size: r.labelSize), width: 160)
++        }
++        .canvasLayer()
++        .scaleEffect(scale, anchor: .canvas(r.centerX, r.anchorY))
++        .opacity(opacity)
++    }
++
++    private var noodles: some View {
++        let local = t - 2.17
++        let scale = 0.4 + 0.6 * Motion.spring(local, response: 0.42, damping: 0.55)
++        let opacity = Motion.progress(local, duration: 0.12)
++        // Gentle float once it has settled: up 4 pt and back, 1.5 s each way.
++        let floatPhase = max(0, t - 3.05)
++        let float = floatPhase > 0 ? -2 * (1 - cos(Double.pi * floatPhase / 1.5)) : 0
++        return Image("welcome-noodles")
++            .resizable()
++            .interpolation(.high)
++            .frame(width: 139.5, height: 139.5)
++            .shadow(color: .black.opacity(0.13), radius: 11, x: 0, y: 6)
++            .scaleEffect(scale)
++            .opacity(opacity)
++            .position(x: 341, y: 553 + float)
++    }
++}
++
++/// The pinned recommendation note. Laid out in its own unrotated 340 × 202 space,
++/// then tilted 1.5° counter-clockwise like the reference.
++private struct NoteCard: View {
++    /// Seconds since the step started.
++    let t: Double
++
++    private static let text = "这是上海我最喜欢吃的河南拉面之一，面条劲道，特别是蒜的味道很好。"
++    private static let characters = Array(text)
++
++    private let start = 0.45
++    private let typingStart = 0.47
++    private let perCharacter = 0.032
++
++    var body: some View {
++        let local = t - start
++        let rise = 1 - Motion.spring(local, response: 0.485, damping: 0.68)
++        let opacity = Motion.progress(local, duration: 0.2)
++        return card
++            .rotationEffect(.degrees(-1.5))
++            .position(x: 220, y: 402.6 + 30 * rise)
++            .opacity(opacity)
++    }
++
++    private var typedText: String {
++        guard t >= typingStart else { return "" }
++        let count = min(Self.characters.count, Int((t - typingStart) / perCharacter) + 1)
++        return String(Self.characters.prefix(count))
++    }
++
++    private var card: some View {
++        let pingFang = AppFont.pingFang
++        let smiley = AppFont.smiley
++        return ZStack(alignment: .topLeading) {
++            // Second sheet peeking out behind: a bit shorter and turned the other way.
++            sheet(fill: Palette.paperBack, width: 338.6, height: 187.2)
++                .rotationEffect(.degrees(4.25))
++                .position(x: 171.9, y: 94.55)
++            sheet(fill: Palette.paper, width: 340, height: 202)
++
++            ForEach(0..<3, id: \.self) { i in
++                Rectangle()
++                    .fill(Palette.rule)
++                    .frame(width: 309, height: 0.75)
++                    .offset(x: 15.5, y: [84.5, 116.7, 149.0][i])
++            }
++
++            HStack(alignment: .center, spacing: 6.6) {
++                Text("特别乌啦啦")
++                    .font(smiley.font(21.7))
++                    .foregroundStyle(Palette.ink)
++                Text("推荐")
++                    .font(pingFang.font(14.7))
++                    .foregroundStyle(Palette.meta)
++            }
++            .placed(x: 15.5, y: smiley.top(baseline: 42.8, size: 21.7))
++
++            Text(typedText)
++                .font(pingFang.font(20.6))
++                .foregroundStyle(Palette.noteBody)
++                .lineSpacing(3.4)
++                .frame(width: 310, alignment: .topLeading)
++                .fixedSize(horizontal: false, vertical: true)
++                .offset(x: 15.4, y: pingFang.top(baseline: 81.5, size: 20.6))
++
++            Text("推荐度")
++                .font(pingFang.font(12.5))
++                .foregroundStyle(Palette.meta)
++                .placed(x: 15.3, y: pingFang.top(baseline: 185.4, size: 12.5))
++
++            ForEach(0..<3, id: \.self) { i in
++                flame(index: i)
++            }
++
++            PushPin()
++                .position(x: 23.3, y: 5.3)
++        }
++        .frame(width: 340, height: 202, alignment: .topLeading)
++    }
++
++    private func sheet(fill: Color, width: CGFloat, height: CGFloat) -> some View {
++        RoundedRectangle(cornerRadius: 3, style: .continuous)
++            .fill(fill)
++            .overlay(
++                RoundedRectangle(cornerRadius: 3, style: .continuous)
++                    .strokeBorder(Palette.paperEdge, lineWidth: 0.9)
++            )
++            .frame(width: width, height: height)
++            .shadow(color: .black.opacity(0.07), radius: 5, x: 0, y: 2)
++    }
++
++    private func flame(index i: Int) -> some View {
++        let local = t - (1.633 + 0.183 * Double(i))
++        let scale = 0.3 + 0.7 * Motion.spring(local, response: 0.25, damping: 0.55)
++        let opacity = Motion.progress(local, duration: 0.08)
++        return Image("icon-flame")
++            .resizable()
++            .interpolation(.high)
++            .frame(width: 24.5, height: 24.5)
++            .scaleEffect(scale)
++            .opacity(opacity)
++            .position(x: 69.1 + 25.4 * CGFloat(i), y: 177.2)
++    }
++}
++
++/// Green clay thumbtack holding the note: a flat disc with a domed cap,
++/// a short needle and a soft shadow on the paper.
++private struct PushPin: View {
++    var body: some View {
++        ZStack {
++            Circle()
++                .fill(Color.black.opacity(0.16))
++                .frame(width: 12, height: 12)
++                .blur(radius: 1.6)
++                .offset(x: -8.5, y: 9.5)
++            Capsule()
++                .fill(Color(r: 125, g: 113, b: 106))
++                .frame(width: 1.2, height: 5)
++                .rotationEffect(.degrees(35))
++                .offset(x: -6.6, y: 7.6)
++            Ellipse()
++                .fill(
++                    LinearGradient(
++                        colors: [Color(r: 72, g: 160, b: 132), Color(r: 16, g: 116, b: 86), Color(r: 0, g: 72, b: 50)],
++                        startPoint: UnitPoint(x: 0.15, y: 0.1),
++                        endPoint: UnitPoint(x: 0.8, y: 0.95)
++                    )
++                )
++                .overlay(
++                    Ellipse()
++                        .strokeBorder(Color.white.opacity(0.12), lineWidth: 1)
++                        .blur(radius: 0.4)
++                )
++                .frame(width: 19.6, height: 19.2)
++                .shadow(color: .black.opacity(0.18), radius: 1.2, x: 0.4, y: 1.2)
++            // Groove the cap sits in.
++            Circle()
++                .fill(Color(r: 6, g: 70, b: 50).opacity(0.7))
++                .frame(width: 11.4, height: 11.4)
++                .blur(radius: 0.7)
++                .offset(x: 0.3, y: 0.2)
++            Circle()
++                .fill(
++                    RadialGradient(
++                        colors: [Color(r: 64, g: 166, b: 136), Color(r: 21, g: 128, b: 99), Color(r: 5, g: 93, b: 65)],
++                        center: UnitPoint(x: 0.32, y: 0.26),
++                        startRadius: 0,
++                        endRadius: 6.5
++                    )
++                )
++                .frame(width: 10, height: 10)
++                .offset(x: -0.4, y: -1.0)
++        }
++        .frame(width: 24, height: 24)
++    }
++}
+diff --git a/Replica/Onboarding/MapScene.swift b/Replica/Onboarding/MapScene.swift
+new file mode 100644
+index 0000000..e6cc0fa
+--- /dev/null
++++ b/Replica/Onboarding/MapScene.swift
+@@ -0,0 +1,105 @@
++import SwiftUI
++
++/// Step 2 — 世界各地都有好店: the folded map scales in, pins drop onto it one by one
++/// and the shop counter rolls up to 2000 in step with the pins.
++struct MapScene: View {
++    /// Seconds since this step started (the tap that brought it in).
++    let t: Double
++    /// Identifies this run of the scene so the counter restarts when the step is re-entered.
++    let runID: Date
++
++    private struct Pin {
++        let red: Bool
++        let x: CGFloat
++        let y: CGFloat
++    }
++
++    /// In drop order.
++    private let pins: [Pin] = [
++        Pin(red: true, x: 125, y: 246),
++        Pin(red: false, x: 306, y: 250.5),
++        Pin(red: false, x: 217, y: 303),
++        Pin(red: true, x: 99, y: 358),
++        Pin(red: false, x: 340, y: 334.5),
++        Pin(red: false, x: 175.5, y: 410.5),
++        Pin(red: true, x: 273.5, y: 422),
++        Pin(red: false, x: 264.5, y: 334.5),
++    ]
++
++    static let pinStart = 0.503
++    static let pinInterval = 0.152
++
++    var body: some View {
++        ZStack(alignment: .topLeading) {
++            map
++            ForEach(pins.indices, id: \.self) { i in
++                pinView(pins[i], index: i)
++            }
++            ShopCounter(runID: runID)
++                .opacity(Motion.progress(t, start: 0.47, duration: 0.15))
++                .placed(centerX: 220.5, y: AppFont.barlow.top(baseline: 591.3, size: 50), width: 440)
++        }
++        .canvasLayer()
++    }
++
++    private var map: some View {
++        let grow = Motion.easeOut(Motion.progress(t, start: 0.16, duration: 0.3))
++        return Image("welcome-map")
++            .resizable()
++            .interpolation(.high)
++            .frame(width: 378, height: 378)
++            .shadow(color: .black.opacity(0.13), radius: 12, x: 0, y: 6)
++            .scaleEffect(0.85 + 0.15 * grow)
++            .position(x: 220, y: 340.5)
++    }
++
++    private func pinView(_ pin: Pin, index: Int) -> some View {
++        let local = t - (Self.pinStart + Self.pinInterval * Double(index))
++        // Drops 27 pt on a bouncy spring: overshoots ~6 pt into the map, then settles.
++        let drop = -27 * (1 - Motion.spring(local, response: 0.343, damping: 0.456))
++        let opacity = Motion.progress(local, duration: 0.06)
++        return Image(pin.red ? "icon-pin-red" : "icon-pin")
++            .resizable()
++            .interpolation(.high)
++            .frame(width: 45, height: 45)
++            .offset(y: drop)
++            .opacity(local > 0 ? opacity : 0)
++            .position(x: pin.x, y: pin.y)
++    }
++}
++
++/// "2000 多家小店" — the number rolls with SwiftUI's numeric content transition.
++private struct ShopCounter: View {
++    let runID: Date
++
++    @State private var value = 0
++
++    /// Shown as each pin starts to fall.
++    private static let steps = [250, 550, 700, 1150, 1200, 1550, 1700, 2000]
++
++    var body: some View {
++        HStack(alignment: .firstTextBaseline, spacing: 5) {
++            Text(String(value))
++                .font(AppFont.barlow.font(50))
++                .foregroundStyle(Palette.orange)
++                .contentTransition(.numericText(value: Double(value)))
++            Text("多家小店")
++                .font(AppFont.smiley.font(23))
++                .foregroundStyle(Palette.ink)
++        }
++        .task(id: runID) {
++            value = 0
++            for (i, next) in Self.steps.enumerated() {
++                let fireAt = runID.addingTimeInterval(0.48 + 0.143 * Double(i))
++                let wait = fireAt.timeIntervalSinceNow
++                if wait > 0 {
++                    try? await Task.sleep(for: .seconds(wait), tolerance: .zero, clock: .continuous)
++                }
++                if Task.isCancelled { return }
++                withAnimation(.snappy(duration: 0.3)) {
++                    value = next
++                }
++            }
++        }
++    }
++}
+diff --git a/Replica/Onboarding/Motion.swift b/Replica/Onboarding/Motion.swift
+new file mode 100644
+index 0000000..983092d
+--- /dev/null
++++ b/Replica/Onboarding/Motion.swift
+@@ -0,0 +1,80 @@
++import Foundation
++
++/// Time-based easing helpers. Every animation on the onboarding page is a pure
++/// function of "seconds since something happened", which keeps the choreography
++/// deterministic and lets several overlapping effects share one timeline.
++enum Motion {
++    static func clamp(_ x: Double, _ lo: Double = 0, _ hi: Double = 1) -> Double {
++        min(max(x, lo), hi)
++    }
++
++    /// Linear 0…1 progress of `t` inside `[start, start + duration]`.
++    static func progress(_ t: Double, start: Double = 0, duration: Double) -> Double {
++        guard duration > 0 else { return t >= start ? 1 : 0 }
++        return clamp((t - start) / duration)
++    }
++
++    static func lerp(_ a: Double, _ b: Double, _ p: Double) -> Double {
++        a + (b - a) * p
++    }
++
++    /// Step response of a SwiftUI-style spring (`response`, `dampingFraction`), 0 → 1.
++    static func spring(_ t: Double, response: Double, damping: Double) -> Double {
++        guard t > 0 else { return 0 }
++        let w = 2 * Double.pi / response
++        if damping >= 1 {
++            return 1 - (1 + w * t) * exp(-w * t)
++        }
++        let wd = w * sqrt(1 - damping * damping)
++        return 1 - exp(-damping * w * t) * (cos(wd * t) + damping * w / wd * sin(wd * t))
++    }
++
++    /// CSS-style cubic bezier timing curve evaluated at linear progress `x`.
++    static func bezier(_ x1: Double, _ y1: Double, _ x2: Double, _ y2: Double, _ x: Double) -> Double {
++        if x <= 0 { return 0 }
++        if x >= 1 { return 1 }
++        func bx(_ t: Double) -> Double { 3 * (1 - t) * (1 - t) * t * x1 + 3 * (1 - t) * t * t * x2 + t * t * t }
++        func by(_ t: Double) -> Double { 3 * (1 - t) * (1 - t) * t * y1 + 3 * (1 - t) * t * t * y2 + t * t * t }
++        func dbx(_ t: Double) -> Double {
++            3 * (1 - t) * (1 - t) * x1 + 6 * (1 - t) * t * (x2 - x1) + 3 * t * t * (1 - x2)
++        }
++        var t = x
++        for _ in 0..<8 {
++            let d = dbx(t)
++            if abs(d) < 1e-6 { break }
++            t = clamp(t - (bx(t) - x) / d)
++        }
++        if abs(bx(t) - x) > 1e-4 {
++            var lo = 0.0, hi = 1.0
++            for _ in 0..<40 {
++                let m = (lo + hi) / 2
++                if bx(m) < x { lo = m } else { hi = m }
++            }
++            t = (lo + hi) / 2
++        }
++        return by(t)
++    }
++
++    static func easeOut(_ p: Double) -> Double {
++        let q = 1 - clamp(p)
++        return 1 - q * q * q
++    }
++
++    static func easeIn(_ p: Double) -> Double {
++        let q = clamp(p)
++        return q * q
++    }
++
++    static func easeInOut(_ p: Double) -> Double {
++        bezier(0.42, 0, 0.58, 1, clamp(p))
++    }
++
++    /// 0 → 1 → 0 hump over `duration`, with a quick attack and a softer release.
++    static func pulse(_ t: Double, attack: Double, release: Double) -> Double {
++        guard t > 0 else { return 0 }
++        if t < attack { return easeOut(t / attack) }
++        let r = (t - attack) / release
++        guard r < 1 else { return 0 }
++        return 1 - easeInOut(r)
++    }
++}
+diff --git a/Replica/Onboarding/NavigateScene.swift b/Replica/Onboarding/NavigateScene.swift
+new file mode 100644
+index 0000000..bb273d0
+--- /dev/null
++++ b/Replica/Onboarding/NavigateScene.swift
+@@ -0,0 +1,210 @@
++import SwiftUI
++
++/// Step 3 — 一键导航到门口: the shop slides in, a pin drops at the start of a dotted
++/// route, a paper plane flies the route leaving an orange trail, and "到了" pops
++/// up when it reaches the door.
++struct NavigateScene: View {
++    /// Seconds since this step started (the tap that brought it in).
++    let t: Double
++
++    private let routeAppear = 0.42
++    private let flightStart = 0.71
++    private let flightDuration = 1.4
++    private let trailLag = 0.075
++    private var arrival: Double { flightStart + flightDuration }
++
++    var body: some View {
++        ZStack(alignment: .topLeading) {
++            shop
++            routeDots
++            startPin
++            plane
++            arrivedBubble
++        }
++        .canvasLayer()
++    }
++
++    // MARK: Shop
++
++    private var shop: some View {
++        let settle = Motion.easeOut(Motion.progress(t, start: 0.16, duration: 0.3))
++        let bump = Motion.pulse(t - (arrival + 0.11), attack: 0.12, release: 0.3)
++        return Image("welcome-shop")
++            .resizable()
++            .interpolation(.high)
++            .frame(width: 256, height: 256)
++            .shadow(color: .black.opacity(0.13), radius: 12, x: 0, y: 6)
++            .scaleEffect(0.975 + 0.025 * settle + 0.047 * bump, anchor: UnitPoint(x: 0.5, y: 0.82))
++            .position(x: 276, y: 283 + 5 * (1 - settle))
++    }
++
++    // MARK: Route
++
++    private var routeOpacity: Double {
++        Motion.progress(t, start: routeAppear, duration: 0.25)
++    }
++
++    private var routeDots: some View {
++        let trail = Route.length * flightProgress(at: t - trailLag)
++        return ZStack(alignment: .topLeading) {
++            ForEach(Route.dots.indices, id: \.self) { i in
++                let reached = t > flightStart + trailLag && Route.dotArc[i] <= trail + 0.5
++                // Each dot is a short round-capped dash lying along the route.
++                Capsule()
++                    .fill(reached ? Palette.orange : Palette.pathGrey)
++                    .frame(width: 6.6, height: 5.4)
++                    .rotationEffect(.radians(Route.dotHeading[i]))
++                    .position(Route.dots[i])
++            }
++        }
++        .canvasLayer()
++        .opacity(routeOpacity)
++    }
++
++    private var startPin: some View {
++        let local = t - (routeAppear + 0.06)
++        let p = Motion.spring(local, response: 0.3, damping: 0.9)
++        let scale = 0.35 + 0.65 * p
++        return Image("icon-pin")
++            .resizable()
++            .interpolation(.high)
++            .frame(width: 52, height: 52)
++            .scaleEffect(scale)
++            .offset(x: -16 * (1 - p), y: -150 * (1 - p))
++            .opacity(local > 0 ? Motion.progress(local, duration: 0.1) : 0)
++            .position(x: 86.5, y: 535)
++    }
++
++    // MARK: Plane
++
++    private func flightProgress(at time: Double) -> Double {
++        Motion.bezier(0.1, 0, 0.9, 1, Motion.progress(time, start: flightStart, duration: flightDuration))
++    }
++
++    private var plane: some View {
++        let arc = Route.length * flightProgress(at: t)
++        let sample = Route.sample(at: arc)
++        let fadeIn = Motion.progress(t, start: flightStart, duration: 0.07)
++        let fadeOut = 1 - Motion.progress(t, start: arrival + 0.17, duration: 0.12)
++        return Image("icon-paper-plane")
++            .resizable()
++            .interpolation(.high)
++            .frame(width: 55, height: 55)
++            // The artwork points up-right (-45°); turn it to face along the route.
++            .rotationEffect(.radians(sample.heading + .pi / 4))
++            .opacity(t > flightStart ? fadeIn * fadeOut : 0)
++            .position(sample.point)
++    }
++
++    // MARK: Arrival
++
++    private var arrivedBubble: some View {
++        let local = t - (arrival + 0.12)
++        let scale = 0.5 + 0.5 * Motion.spring(local, response: 0.46, damping: 0.53)
++        let opacity = Motion.progress(local, duration: 0.15)
++        return Text("到了")
++            .font(AppFont.smiley.font(23))
++            .foregroundStyle(.white)
++            .frame(width: 74, height: 43.6)
++            .background(Capsule().fill(Palette.green))
++            .shadow(color: .black.opacity(0.04), radius: 4, x: 0, y: 2)
++            .scaleEffect(scale)
++            .opacity(local > 0 ? opacity : 0)
++            .position(x: 276, y: 443.7)
++    }
++}
++
++/// The dotted route from the pin to the shop door, measured from the reference
++/// (dots are evenly spaced ~14.8 pt apart along the curve).
++private enum Route {
++    static let dots: [CGPoint] = [
++        CGPoint(x: 86.9, y: 559.5), CGPoint(x: 101.7, y: 560.5), CGPoint(x: 116.5, y: 561.4),
++        CGPoint(x: 131.3, y: 561.9), CGPoint(x: 146.2, y: 561.8), CGPoint(x: 161.0, y: 560.5),
++        CGPoint(x: 175.6, y: 557.9), CGPoint(x: 189.3, y: 552.2), CGPoint(x: 199.4, y: 541.7),
++        CGPoint(x: 202.1, y: 527.3), CGPoint(x: 199.7, y: 512.6), CGPoint(x: 195.2, y: 498.6),
++        CGPoint(x: 190.0, y: 484.6), CGPoint(x: 185.1, y: 470.4), CGPoint(x: 181.5, y: 456.1),
++        CGPoint(x: 180.5, y: 441.2), CGPoint(x: 183.9, y: 426.9), CGPoint(x: 192.6, y: 415.1),
++        CGPoint(x: 204.9, y: 406.7), CGPoint(x: 218.5, y: 400.8), CGPoint(x: 232.9, y: 397.0),
++        CGPoint(x: 247.4, y: 394.3), CGPoint(x: 262.2, y: 392.4),
++    ]
++
++    /// Dense Catmull-Rom samples through the dots, with cumulative arc length.
++    static let samples: [(point: CGPoint, arc: Double)] = {
++        var points: [CGPoint] = []
++        let n = dots.count
++        for i in 0..<(n - 1) {
++            let p0 = dots[max(i - 1, 0)], p1 = dots[i], p2 = dots[i + 1], p3 = dots[min(i + 2, n - 1)]
++            let steps = 12
++            for s in 0..<steps {
++                let u = Double(s) / Double(steps)
++                points.append(catmullRom(p0, p1, p2, p3, u))
++            }
++        }
++        points.append(dots[n - 1])
++        // The plane glides a few points past the last dot before it stops at the door.
++        let last = dots[n - 1], prev = dots[n - 2]
++        let dx = last.x - prev.x, dy = last.y - prev.y
++        let len = max(hypot(dx, dy), 0.001)
++        points.append(CGPoint(x: last.x + dx / len * 3, y: last.y + dy / len * 3))
++        var result: [(CGPoint, Double)] = []
++        var arc = 0.0
++        for (i, p) in points.enumerated() {
++            if i > 0 {
++                let q = points[i - 1]
++                arc += hypot(Double(p.x - q.x), Double(p.y - q.y))
++            }
++            result.append((p, arc))
++        }
++        return result
++    }()
++
++    static let length: Double = samples.last?.arc ?? 1
++
++    /// Arc length at which each dot sits.
++    static let dotArc: [Double] = {
++        dots.map { dot in
++            samples.min(by: { distance($0.point, dot) < distance($1.point, dot) })?.arc ?? 0
++        }
++    }()
++
++    /// Direction of travel at each dot.
++    static let dotHeading: [Double] = dotArc.map { sample(at: $0).heading }
++
++    static func sample(at arc: Double) -> (point: CGPoint, heading: Double) {
++        let a = Motion.clamp(arc, 0, length)
++        var i = 1
++        while i < samples.count - 1 && samples[i].arc < a { i += 1 }
++        let lo = samples[i - 1], hi = samples[i]
++        let span = max(hi.arc - lo.arc, 1e-6)
++        let f = (a - lo.arc) / span
++        let here = CGPoint(x: lo.point.x + (hi.point.x - lo.point.x) * f,
++                           y: lo.point.y + (hi.point.y - lo.point.y) * f)
++        // Heading from a short look-around window so the plane turns smoothly.
++        let ahead = point(atArc: min(a + 6, length))
++        let behind = point(atArc: max(a - 6, 0))
++        let heading = atan2(Double(ahead.y - behind.y), Double(ahead.x - behind.x))
++        return (here, heading)
++    }
++
++    private static func point(atArc a: Double) -> CGPoint {
++        var i = 1
++        while i < samples.count - 1 && samples[i].arc < a { i += 1 }
++        let lo = samples[i - 1], hi = samples[i]
++        let f = (a - lo.arc) / max(hi.arc - lo.arc, 1e-6)
++        return CGPoint(x: lo.point.x + (hi.point.x - lo.point.x) * f,
++                       y: lo.point.y + (hi.point.y - lo.point.y) * f)
++    }
++
++    private static func distance(_ a: CGPoint, _ b: CGPoint) -> Double {
++        hypot(Double(a.x - b.x), Double(a.y - b.y))
++    }
++
++    private static func catmullRom(_ p0: CGPoint, _ p1: CGPoint, _ p2: CGPoint, _ p3: CGPoint, _ u: Double) -> CGPoint {
++        let u2 = u * u, u3 = u2 * u
++        func c(_ a: CGFloat, _ b: CGFloat, _ c: CGFloat, _ d: CGFloat) -> CGFloat {
++            let a = Double(a), b = Double(b), cc = Double(c), d = Double(d)
++            return CGFloat(0.5 * ((2 * b) + (-a + cc) * u + (2 * a - 5 * b + 4 * cc - d) * u2 + (-a + 3 * b - 3 * cc + d) * u3))
++        }
++        return CGPoint(x: c(p0.x, p1.x, p2.x, p3.x), y: c(p0.y, p1.y, p2.y, p3.y))
++    }
++}
+diff --git a/Replica/Onboarding/OnboardingView.swift b/Replica/Onboarding/OnboardingView.swift
+new file mode 100644
+index 0000000..c0e98d7
+--- /dev/null
++++ b/Replica/Onboarding/OnboardingView.swift
+@@ -0,0 +1,377 @@
++import SwiftUI
++import QuartzCore
++
++/// New-user onboarding for 烟火小店: three steps, each with an animated illustration.
++///
++/// Everything is laid out on the 440 × 956 pt canvas of the iPhone 18 Pro Max and
++/// driven by a single animation timeline, so page transitions and each step's
++/// choreography stay in lockstep with the reference recording.
++struct OnboardingView: View {
++    private struct PageTransition {
++        let from: Int
++        let to: Int
++        let start: Date
++        var direction: CGFloat { to > from ? 1 : -1 }
++    }
++
++    private static let stepCount = 3
++    private static let transitionDuration = 0.5
++
++    /// Longest choreography of a step (step 3 settles ~2.6 s after its tap).
++    private static let sceneDuration = 3.5
++
++    @State private var step = 0
++    @State private var transition: PageTransition?
++    @State private var sceneStarts = Array(repeating: Date.distantFuture, count: stepCount)
++    /// Stops per-frame updates once a step has finished animating (step 1 floats forever).
++    @State private var timelinePaused = false
++    @State private var idleToken = 0
++    @State private var firstFrames: FirstFramesWaiter?
++
++    var body: some View {
++        GeometryReader { geo in
++            let scale = min(geo.size.width / Canvas.width, geo.size.height / Canvas.height)
++            TimelineView(.animation(minimumInterval: nil, paused: timelinePaused)) { context in
++                canvas(now: context.date)
++                    .canvasLayer()
++                    .scaleEffect(scale, anchor: .topLeading)
++                    .frame(width: Canvas.width * scale, height: Canvas.height * scale, alignment: .topLeading)
++            }
++            .frame(width: geo.size.width, height: geo.size.height)
++        }
++        .background(Palette.background)
++        .ignoresSafeArea()
++        .onAppear {
++            guard sceneStarts[0] == .distantFuture, firstFrames == nil else { return }
++            // Start step 1 once frames are actually reaching the screen (a cold launch can
++            // stall the first commit), plus a beat for the launch zoom to land.
++            let waiter = FirstFramesWaiter(frames: 3) {
++                let start = Date().addingTimeInterval(Self.launchDelay)
++                sceneStarts[0] = start
++                firstFrames = nil
++                scheduleScriptedTaps(from: start)
++            }
++            firstFrames = waiter
++            waiter.start()
++        }
++    }
++
++    private static let launchDelay = 0.17
++
++    /// Capture aid for side-by-side comparison with the reference recording without touch
++    /// input: launch with `-scriptedTaps 6.47,11.57` to press "下一步" that many seconds into
++    /// step 1. Inert unless that launch argument is passed.
++    private func scheduleScriptedTaps(from start: Date) {
++        let args = ProcessInfo.processInfo.arguments
++        guard let i = args.firstIndex(of: "-scriptedTaps"), i + 1 < args.count else { return }
++        let times = args[i + 1].split(separator: ",").compactMap { Double($0) }
++        Task { @MainActor in
++            for time in times.sorted() {
++                let delay = start.addingTimeInterval(time).timeIntervalSinceNow
++                if delay > 0 {
++                    // Zero tolerance: GCD timers would otherwise coalesce by up to ~10% of the delay.
++                    try? await Task.sleep(for: .seconds(delay), tolerance: .zero, clock: .continuous)
++                }
++                advance()
++            }
++        }
++    }
++
++    // MARK: Timeline
++
++    /// Page transition progress (0…1) on the reference's ease curve.
++    private func transitionProgress(at now: Date) -> Double {
++        guard let transition else { return 1 }
++        let linear = now.timeIntervalSince(transition.start) / Self.transitionDuration
++        return Motion.bezier(0.45, 0.2, 0.3, 0.95, Motion.clamp(linear))
++    }
++
++    private func isTransitioning(at now: Date) -> Bool {
++        guard let transition else { return false }
++        return now.timeIntervalSince(transition.start) < Self.transitionDuration
++    }
++
++    @ViewBuilder
++    private func canvas(now: Date) -> some View {
++        let p = transitionProgress(at: now)
++        let active = isTransitioning(at: now) ? transition : nil
++        let visibleSteps = active.map { [$0.from, $0.to] } ?? [step]
++
++        ZStack(alignment: .topLeading) {
++            Palette.background
++
++            ForEach(visibleSteps, id: \.self) { s in
++                page(s, now: now, p: p, transition: active)
++            }
++
++            header(p: p, transition: active)
++            primaryButton(now: now)
++        }
++    }
++
++    private func page(_ s: Int, now: Date, p: Double, transition: PageTransition?) -> some View {
++        let t = now.timeIntervalSince(sceneStarts[s])
++        var illustrationOffset: CGFloat = 0
++        var illustrationOpacity = 1.0
++        var textOffset: CGFloat = 0
++        var numberOffset: CGFloat = 0
++        var textOpacity = 1.0
++
++        if let transition {
++            let d = transition.direction
++            let q = CGFloat(p)
++            if s == transition.to {
++                // Incoming: slides in from the trailing side; the illustration fades in late.
++                illustrationOffset = d * Canvas.width * (1 - q)
++                illustrationOpacity = pow(p, 4.5)
++                textOffset = d * 400 * (1 - q)
++                numberOffset = d * 464 * (1 - q)
++                textOpacity = pow(p, 1.5)
++            } else {
++                // Outgoing: pushed off the leading side; only the copy fades.
++                illustrationOffset = -d * Canvas.width * q
++                textOffset = -d * 400 * q
++                numberOffset = -d * 464 * q
++                textOpacity = 1 - p
++            }
++        }
++
++        return StepPage(
++            step: s,
++            t: t,
++            runID: sceneStarts[s],
++            illustrationOffset: illustrationOffset,
++            illustrationOpacity: illustrationOpacity,
++            textOffset: textOffset,
++            numberOffset: numberOffset,
++            textOpacity: textOpacity
++        )
++    }
++
++    // MARK: Header
++
++    private func header(p: Double, transition: PageTransition?) -> some View {
++        let from = transition?.from ?? step
++        let backOpacity = Motion.lerp(from > 0 ? 1 : 0, step > 0 ? 1 : 0, p)
++
++        return ZStack(alignment: .topLeading) {
++            Button(action: goBack) {
++                ZStack {
++                    Circle().fill(Palette.backButton)
++                    Image(systemName: "chevron.left")
++                        .font(.system(size: 16, weight: .semibold))
++                        .foregroundStyle(Palette.ink)
++                }
++                .frame(width: 44, height: 44)
++                .contentShape(Circle())
++            }
++            .buttonStyle(PressScaleStyle(scale: 0.94))
++            .opacity(backOpacity)
++            .allowsHitTesting(step > 0)
++            .position(x: 42, y: 92)
++
++            HStack(spacing: 6) {
++                ForEach(0..<Self.stepCount, id: \.self) { i in
++                    let fill = Motion.lerp(i <= from ? 1 : 0, i <= step ? 1 : 0, p)
++                    Capsule()
++                        .fill(Palette.track)
++                        .overlay(alignment: .leading) {
++                            GeometryReader { g in
++                                Capsule()
++                                    .fill(Palette.orange)
++                                    .frame(width: g.size.width * CGFloat(fill))
++                                    .opacity(fill > 0.001 ? 1 : 0)
++                            }
++                        }
++                }
++            }
++            .frame(width: 290, height: 5)
++            .position(x: 222.7, y: 92.2)
++
++            Button(action: skip) {
++                Text("跳过")
++                    .font(AppFont.pingFang.font(15))
++                    .foregroundStyle(Palette.secondary)
++                    .padding(.horizontal, 4)
++                    .frame(height: 44)
++                    .contentShape(Rectangle())
++            }
++            .buttonStyle(PressScaleStyle(scale: 0.94))
++            // Text origin lands at x 385.9 with its baseline at y 97.2.
++            .placed(x: 381.9, y: AppFont.pingFang.top(baseline: 97.2, size: 15)
++                    - (44 - 15 * (AppFont.pingFang.ascent + AppFont.pingFang.descent)) / 2)
++        }
++        .canvasLayer()
++    }
++
++    // MARK: Primary button
++
++    private func primaryButton(now: Date) -> some View {
++        let label = Self.buttonLabel(for: step)
++        var oldLabel: String?
++        var oldOpacity = 0.0
++        var newOpacity = 1.0
++        if let transition, Self.buttonLabel(for: transition.from) != label {
++            let tt = now.timeIntervalSince(transition.start)
++            oldOpacity = 1 - Motion.progress(tt, start: 0.03, duration: 0.1)
++            newOpacity = Motion.progress(tt, start: 0.17, duration: 0.15)
++            if oldOpacity > 0 { oldLabel = Self.buttonLabel(for: transition.from) }
++        }
++
++        return Button(action: advance) {
++            ZStack {
++                Capsule().fill(Palette.green)
++                if let oldLabel {
++                    buttonText(oldLabel).opacity(oldOpacity)
++                }
++                buttonText(label).opacity(newOpacity)
++            }
++            .frame(width: 400, height: 56)
++            .contentShape(Capsule())
++        }
++        .buttonStyle(PressScaleStyle(scale: 0.99))
++        .position(x: 220, y: 882)
++    }
++
++    private func buttonText(_ s: String) -> some View {
++        Text(s)
++            .font(AppFont.smiley.font(20))
++            .foregroundStyle(.white)
++    }
++
++    private static func buttonLabel(for step: Int) -> String {
++        step == stepCount - 1 ? "继续" : "下一步"
++    }
++
++    // MARK: Actions
++
++    private func advance() {
++        guard step < Self.stepCount - 1 else { return }
++        go(to: step + 1)
++    }
++
++    private func goBack() {
++        guard step > 0 else { return }
++        go(to: step - 1)
++    }
++
++    private func skip() {
++        guard step < Self.stepCount - 1 else { return }
++        go(to: Self.stepCount - 1)
++    }
++
++    private func go(to target: Int) {
++        let now = Date()
++        guard !isTransitioning(at: now), target != step else { return }
++        transition = PageTransition(from: step, to: target, start: now)
++        sceneStarts[target] = now
++        step = target
++        scheduleIdle(after: target)
++    }
++
++    private func scheduleIdle(after target: Int) {
++        timelinePaused = false
++        idleToken += 1
++        let token = idleToken
++        guard target != 0 else { return }
++        Task { @MainActor in
++            try? await Task.sleep(for: .seconds(Self.sceneDuration))
++            if token == idleToken { timelinePaused = true }
++        }
++    }
++}
++
++/// One step's illustration plus its numbered title and subtitle.
++private struct StepPage: View {
++    let step: Int
++    let t: Double
++    let runID: Date
++    let illustrationOffset: CGFloat
++    let illustrationOpacity: Double
++    let textOffset: CGFloat
++    let numberOffset: CGFloat
++    let textOpacity: Double
++
++    private static let titles = ["跟着推荐者去吃", "世界各地都有好店", "一键导航到门口"]
++    private static let subtitles = [
++        "关注你喜欢的推荐者，跟着他们一家家吃过去",
++        "遍布 200 多座城市，出差旅行走到哪儿都能吃上",
++        "看中的店点一下，直接导航带你过去",
++    ]
++
++    var body: some View {
++        ZStack(alignment: .topLeading) {
++            illustration
++                .offset(x: illustrationOffset)
++                .opacity(illustrationOpacity)
++
++            HStack(alignment: .firstTextBaseline, spacing: 12) {
++                Text(String(step + 1))
++                    .font(AppFont.barlow.font(46))
++                    .foregroundStyle(Palette.orange)
++                    .offset(x: numberOffset - textOffset)
++                Text(Self.titles[step])
++                    .font(AppFont.smiley.font(30))
++                    .foregroundStyle(Palette.ink)
++            }
++            .placed(x: 20, y: AppFont.barlow.top(baseline: 691.4, size: 46))
++            .offset(x: textOffset)
++            .opacity(textOpacity)
++
++            Text(Self.subtitles[step])
++                .font(AppFont.marker.font(17))
++                .foregroundStyle(Palette.secondary)
++                .placed(x: 20, y: AppFont.marker.top(baseline: 725.3, size: 17))
++                .offset(x: textOffset)
++                .opacity(textOpacity)
++        }
++        .canvasLayer()
++    }
++
++    @ViewBuilder
++    private var illustration: some View {
++        switch step {
++        case 0: FollowScene(t: t)
++        case 1: MapScene(t: t, runID: runID)
++        default: NavigateScene(t: t)
++        }
++    }
++}
++
++/// Calls back after the display has ticked a few times, i.e. once the main thread is
++/// free and the first frames have been committed.
++private final class FirstFramesWaiter: NSObject {
++    private var link: CADisplayLink?
++    private var remaining: Int
++    private let completion: () -> Void
++
++    init(frames: Int, completion: @escaping () -> Void) {
++        self.remaining = frames
++        self.completion = completion
++    }
++
++    func start() {
++        let link = CADisplayLink(target: self, selector: #selector(tick))
++        link.add(to: .main, forMode: .common)
++        self.link = link
++    }
++
++    @objc private func tick() {
++        remaining -= 1
++        guard remaining <= 0 else { return }
++        link?.invalidate()
++        link = nil
++        completion()
++    }
++}
++
++/// Subtle press feedback used by the onboarding buttons.
++private struct PressScaleStyle: ButtonStyle {
++    var scale: CGFloat
++
++    func makeBody(configuration: Configuration) -> some View {
++        configuration.label
++            .scaleEffect(configuration.isPressed ? scale : 1)
++            .animation(.easeOut(duration: 0.12), value: configuration.isPressed)
++    }
++}
+diff --git a/Replica/Onboarding/Theme.swift b/Replica/Onboarding/Theme.swift
+new file mode 100644
+index 0000000..39c832a
+--- /dev/null
++++ b/Replica/Onboarding/Theme.swift
+@@ -0,0 +1,89 @@
++import SwiftUI
++import CoreText
++
++extension Color {
++    init(r: Double, g: Double, b: Double, opacity: Double = 1) {
++        self.init(.sRGB, red: r / 255, green: g / 255, blue: b / 255, opacity: opacity)
++    }
++}
++
++enum Palette {
++    static let background = Color(r: 251, g: 250, b: 246)
++    static let ink = Color(r: 31, g: 27, b: 22)
++    static let noteBody = Color(r: 65, g: 58, b: 50)
++    static let secondary = Color(r: 115, g: 113, b: 109)
++    static let meta = Color(r: 119, g: 111, b: 100)
++    static let orange = Color(r: 242, g: 131, b: 61)
++    static let green = Color(r: 0, g: 130, b: 90)
++    static let track = Color(r: 229, g: 228, b: 224)
++    static let backButton = Color(r: 242, g: 239, b: 234)
++    static let avatarYellow = Color(r: 253, g: 242, b: 203)
++    static let avatarMint = Color(r: 217, g: 240, b: 227)
++    static let paper = Color(r: 252, g: 244, b: 233)
++    static let paperBack = Color(r: 249, g: 241, b: 230)
++    static let paperEdge = Color(r: 229, g: 222, b: 214)
++    static let rule = Color(r: 233, g: 225, b: 214)
++    static let pathGrey = Color(r: 218, g: 217, b: 213)
++}
++
++/// A bundled font plus the vertical metrics SwiftUI uses for its line box,
++/// so text can be placed by baseline exactly where the reference puts it.
++struct AppFont {
++    /// PostScript name of the font (bundled, or PingFang SC which ships with iOS).
++    let name: String
++    let ascent: CGFloat
++    let descent: CGFloat
++
++    static let barlow = AppFont(name: "BarlowCondensed-Bold", ascent: 1.0, descent: 0.2)
++    static let smiley = AppFont(name: "SmileySans-Oblique", ascent: 0.97, descent: 0.23)
++    static let marker = AppFont(name: "LXGWMarkerGothic-Regular", ascent: 0.982, descent: 0.198)
++    static let pingFang = AppFont(name: "PingFangSC-Regular", ascent: 1.06, descent: 0.34)
++
++    func font(_ size: CGFloat) -> Font {
++        .custom(name, fixedSize: size)
++    }
++
++    /// Top of the text's line box for a given baseline.
++    func top(baseline: CGFloat, size: CGFloat) -> CGFloat {
++        baseline - ascent * size
++    }
++
++    static func registerBundledFonts() {
++        let files = ["BarlowCondensed-Bold", "SmileySans-Oblique", "LXGWMarkerGothic-Regular"]
++        for file in files {
++            guard let url = Bundle.main.url(forResource: file, withExtension: "ttf") else { continue }
++            CTFontManagerRegisterFontsForURL(url as CFURL, .process, nil)
++        }
++    }
++}
++
++/// The page is laid out on the iPhone 18 Pro Max canvas (440 × 956 pt).
++enum Canvas {
++    static let width: CGFloat = 440
++    static let height: CGFloat = 956
++}
++
++extension View {
++    /// Places a view's top-leading corner at (x, y) inside a top-leading canvas ZStack.
++    func placed(x: CGFloat, y: CGFloat) -> some View {
++        fixedSize().offset(x: x, y: y)
++    }
++
++    /// Horizontally centers a view on `centerX` with its top at `y` inside a top-leading canvas ZStack.
++    func placed(centerX: CGFloat, y: CGFloat, width: CGFloat = 400) -> some View {
++        fixedSize()
++            .frame(width: width)
++            .offset(x: centerX - width / 2, y: y)
++    }
++
++    /// Full-canvas layer, so transforms can use canvas coordinates as anchors.
++    func canvasLayer() -> some View {
++        frame(width: Canvas.width, height: Canvas.height, alignment: .topLeading)
++    }
++}
++
++extension UnitPoint {
++    static func canvas(_ x: CGFloat, _ y: CGFloat) -> UnitPoint {
++        UnitPoint(x: x / Canvas.width, y: y / Canvas.height)
++    }
++}
+diff --git a/Replica/ReplicaApp.swift b/Replica/ReplicaApp.swift
+index 220aa8c..c78707b 100644
+--- a/Replica/ReplicaApp.swift
++++ b/Replica/ReplicaApp.swift
+@@ -2,9 +2,15 @@ import SwiftUI
+ 
+ @main
+ struct ReplicaApp: App {
++    init() {
++        AppFont.registerBundledFonts()
++    }
++
+     var body: some Scene {
+         WindowGroup {
+-            Text("Replace me with the onboarding")
++            OnboardingView()
++                .preferredColorScheme(.light)
++                .persistentSystemOverlays(.hidden)
+         }
+     }
+ }

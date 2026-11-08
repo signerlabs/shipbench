@@ -1,0 +1,273 @@
+ Sources/ClipData/Store/ClipStore.swift    | 14 +++++-
+ Sources/ClipData/Store/CloudWorker.swift  |  5 +-
+ Sources/ClipData/Store/SearchIndex.swift  | 32 ++++++++----
+ Tests/ClipDataTests/ClipStoreTests.swift  | 32 ++++++++++++
+ Tests/ClipDataTests/CloudMergeTests.swift | 83 ++++++++++++++++++++++++++++++-
+ 5 files changed, 151 insertions(+), 15 deletions(-)
+diff --git a/Sources/ClipData/Store/ClipStore.swift b/Sources/ClipData/Store/ClipStore.swift
+index 3daa440..89f2ace 100644
+--- a/Sources/ClipData/Store/ClipStore.swift
++++ b/Sources/ClipData/Store/ClipStore.swift
+@@ -446,8 +446,16 @@ actor ClipStore: ModelActor {
+         case let (nil, next?): newKey = next - 1
+         case (nil, nil): newKey = nil
+         }
+-        if let newKey {
++        // 新键须严格落在两个邻居之间才排得到落点上：两边相同时中点就等于它们（排在哪边全看 uuid，常常弹回原处）；
++        // 反复挪进同一处、浮点数的精度用完时，中点也会等于其中一边
++        if let newKey, previous.map({ $0 < newKey }) ?? true, next.map({ newKey < $0 }) ?? true {
+             for record in recordsByID[id] ?? [] { record.sortKey = newKey }
++        } else {
++            // 整体重排成 0、1、2…（同 uuid 的每一份一起改）；排序键本来就对的不写，少改同步库
++            for (position, uuid) in ordered.enumerated() {
++                let sortKey = Double(position)
++                for record in recordsByID[uuid] ?? [] where record.sortKey != sortKey { record.sortKey = sortKey }
++            }
+         }
+         for record in recordsByID[id] ?? [] { record.isExample = false }
+         try commit()
+@@ -974,8 +982,10 @@ actor ClipStore: ModelActor {
+         return ClipPage(items: items, nextCursor: nil)
+     }
+ 
++    /// 游标带着上一页最后一条当时的最近使用时间：翻页途中它被删掉、被取用（跳到最前）都不影响下一页从哪里接着
+     private func searchPage(_ text: String, after cursor: ClipCursor?, limit: Int) throws -> ClipPage {
+-        let ids = try index.search(SearchFolding.fold(text), after: cursor?.id, limit: limit + 1)
++        let after = cursor.map { (rank: Self.rank($0.lastUsedAt), id: $0.id) }
++        let ids = try index.search(SearchFolding.fold(text), after: after, limit: limit + 1)
+         let pageIDs = Array(ids.prefix(limit))
+         let history = try visibleHistory(pageIDs)
+         let items = pageIDs.compactMap { try? snapshot(history: history[$0], pinned: cache.copies[$0]) }
+diff --git a/Sources/ClipData/Store/CloudWorker.swift b/Sources/ClipData/Store/CloudWorker.swift
+index 791fce6..be66a01 100644
+--- a/Sources/ClipData/Store/CloudWorker.swift
++++ b/Sources/ClipData/Store/CloudWorker.swift
+@@ -186,11 +186,12 @@ enum CloudMerge {
+         Int64(date.timeIntervalSince1970.rounded(.down))
+     }
+ 
+-    /// 排好序、同 uuid 只留一份的 Pinboard：按排序键，相同再按 uuid（各台 Mac 排出同一个顺序）
++    /// 排好序、同 uuid 只留一份的 Pinboard：按排序键，相同再按 uuid（各台 Mac 排出同一个顺序，与库里的行序无关）。
++    /// 同 uuid 的留排序键最小的那份
+     static func dedupedOrder(_ records: [PinboardRecord]) -> [PinboardRecord] {
+         var seen = Set<UUID>()
+         return records
+-            .sorted { $0.sortKey < $1.sortKey }
++            .sorted { ($0.sortKey, $0.uuid.uuidString) < ($1.sortKey, $1.uuid.uuidString) }
+             .filter { seen.insert($0.uuid).inserted }
+     }
+ 
+diff --git a/Sources/ClipData/Store/SearchIndex.swift b/Sources/ClipData/Store/SearchIndex.swift
+index e87b707..7d8d6a0 100644
+--- a/Sources/ClipData/Store/SearchIndex.swift
++++ b/Sources/ClipData/Store/SearchIndex.swift
+@@ -42,6 +42,8 @@ final class SearchIndex {
+ 
+     /// SQLite 绑定文本时让它自己拷一份
+     private static let transient = unsafeBitCast(-1, to: sqlite3_destructor_type.self)
++    /// rank 撞上同一毫秒时最多往前挪几位（apply），超过就报错
++    private static let rankProbeLimit: Int64 = 8
+ 
+     /// 打开索引：打不开或格式不对就删掉文件重建；还不行退到内存库（本次运行搜索照常，下次启动再试文件）
+     static func open(url: URL) throws -> SearchIndex {
+@@ -162,7 +164,7 @@ final class SearchIndex {
+ 
+                 var candidate = entry.rank
+                 var inserted = false
+-                for _ in 0..<8 where !inserted {
++                for _ in 0..<Self.rankProbeLimit where !inserted {
+                     sqlite3_reset(insert)
+                     sqlite3_bind_int64(insert, 1, candidate)
+                     bind(key, to: insert, at: 2)
+@@ -302,15 +304,15 @@ final class SearchIndex {
+         return signatures
+     }
+ 
+-    /// 按最近使用倒序返回命中的 uuid；afterID 是上一页最后一条（keyset 翻页）
+-    func search(_ foldedNeedle: String, after afterID: UUID?, limit: Int) throws -> [UUID] {
++    /// 按最近使用倒序返回命中的 uuid。after 是上一页最后一条（keyset 翻页）：rank 是它在上一页上的最近使用时间（毫秒，同 Entry.rank），
++    /// id 是它的 uuid。翻页途中它可能已被删掉（索引里没了这一行）或被取用、又复制了一次（行挪到了最前），
++    /// 所以位置以游标里的 rank 为准，不按 id 现查；它还在原处时用它实际的 rowid（撞上同一毫秒时往前挪过几位），同一毫秒的几条不漏不重
++    func search(_ foldedNeedle: String, after cursor: (rank: Int64, id: UUID)?, limit: Int) throws -> [UUID] {
+         var before = Int64.max
+-        if let afterID {
+-            let statement = try prepare("SELECT rank FROM clip_rank WHERE uuid = ?")
+-            defer { sqlite3_finalize(statement) }
+-            bind(afterID.uuidString, to: statement, at: 1)
+-            if sqlite3_step(statement) == SQLITE_ROW {
+-                before = sqlite3_column_int64(statement, 0)
++        if let cursor {
++            before = cursor.rank
++            if let stored = try rank(of: cursor.id), stored <= cursor.rank, stored > cursor.rank - Self.rankProbeLimit {
++                before = stored
+             }
+         }
+         let statement: OpaquePointer?
+@@ -342,6 +344,18 @@ final class SearchIndex {
+ 
+     // MARK: - 内部
+ 
++    /// 这一条在索引里的 rowid（nil = 不在索引里）
++    private func rank(of id: UUID) throws -> Int64? {
++        let statement = try prepare("SELECT rank FROM clip_rank WHERE uuid = ?")
++        defer { sqlite3_finalize(statement) }
++        bind(id.uuidString, to: statement, at: 1)
++        switch sqlite3_step(statement) {
++        case SQLITE_ROW: return sqlite3_column_int64(statement, 0)
++        case SQLITE_DONE: return nil
++        default: throw IndexError.sqlite(lastError)
++        }
++    }
++
+     private func userVersion() throws -> Int32 {
+         let statement = try prepare("PRAGMA user_version")
+         defer { sqlite3_finalize(statement) }
+diff --git a/Tests/ClipDataTests/ClipStoreTests.swift b/Tests/ClipDataTests/ClipStoreTests.swift
+index 06fd3af..1b29402 100644
+--- a/Tests/ClipDataTests/ClipStoreTests.swift
++++ b/Tests/ClipDataTests/ClipStoreTests.swift
+@@ -214,6 +214,38 @@ import Testing
+         #expect(second.items.map(\.preview) == ["note 2", "note 1"])
+     }
+ 
++    /// 翻页途中删掉或取用了上一页的最后一条（游标指向的那条）：下一页仍从游标处接着往下，
++    /// 不从第一条重新开始（删掉后索引里找不到它），也不和已显示的重复（取用后它跳到最前、索引里的位置变了）。
++    /// "note" 走 trigram 索引，"ot" 走 1–2 个字符的扫描
++    @Test(arguments: ["note", "ot"])
++    func searchPagingContinuesAfterCursorItemChanges(needle: String) async throws {
++        let (repository, _) = makeRepository()
++        for index in 1...8 { _ = try await repository.ingest(text("note \(index)")) }
++        let query = ClipQuery(scope: .history, searchText: needle)
++
++        let first = try await repository.page(query, after: nil, limit: 2)
++        #expect(first.items.map(\.preview) == ["note 8", "note 7"])
++        // 搜索结果里删除 = 两边都删
++        _ = try await repository.remove(first.items[1].id, from: .everywhere)
++        let second = try await repository.page(query, after: first.nextCursor, limit: 2)
++        #expect(second.items.map(\.preview) == ["note 6", "note 5"])
++
++        // 粘贴：取用后跳到最前
++        _ = try await repository.markUsed(second.items[1].id)
++        let third = try await repository.page(query, after: second.nextCursor, limit: 2)
++        #expect(third.items.map(\.preview) == ["note 4", "note 3"])
++
++        // 又复制了一次同样的内容：同样跳到最前
++        _ = try await repository.ingest(text("note 3"))
++        let fourth = try await repository.page(query, after: third.nextCursor, limit: 2)
++        #expect(fourth.items.map(\.preview) == ["note 2", "note 1"])
++        #expect(fourth.nextCursor == nil)
++
++        // 从头再搜：删掉的不在，取用过的排在最前
++        let all = try await repository.page(query, after: nil, limit: 100)
++        #expect(all.items.map(\.preview) == ["note 3", "note 5", "note 8", "note 6", "note 4", "note 2", "note 1"])
++    }
++
+     // MARK: - 清空历史（分批）
+ 
+     @Test func batchedEraseKeepsPinboardsAndIndexConsistent() async throws {
+diff --git a/Tests/ClipDataTests/CloudMergeTests.swift b/Tests/ClipDataTests/CloudMergeTests.swift
+index ed5ebfa..caff2f8 100644
+--- a/Tests/ClipDataTests/CloudMergeTests.swift
++++ b/Tests/ClipDataTests/CloudMergeTests.swift
+@@ -186,6 +186,85 @@ import Testing
+         _ = first
+     }
+ 
++    /// 两台 Mac 各建了几个 Pinboard：各自的排序键都是 0、1、2…，同步合并后两两相同
++    private func makeStoreWithPinboardsFromTwoMacs() async throws -> ClipStore {
++        let store = try await makeStore()
++        // 这台 Mac 建的（uuid 故意比另一台的大：排序键相同时按 uuid，另一台的排在前面）
++        for (index, name) in ["A", "B", "C"].enumerated() {
++            _ = try await store.createPinboard(id: UUID(uuidString: "F000000\(index)-0000-0000-0000-000000000000")!, name: name, color: .red)
++        }
++        // 另一台 Mac 建的，同步过来
++        for (index, name) in ["D", "E", "F"].enumerated() {
++            try await store.insertRemotePinboard(
++                id: UUID(uuidString: "0000000\(index)-0000-0000-0000-000000000000")!, name: name,
++                createdAt: .now.addingTimeInterval(-3600), isExample: false, sortKey: Double(index)
++            )
++        }
++        _ = try await store.mergeCloudChanges()
++        return store
++    }
++
++    @Test func pinboardsFromTwoMacsSortByUUIDWhenKeysTie() async throws {
++        let store = try await makeStoreWithPinboardsFromTwoMacs()
++        // 排序键相同按 uuid 定先后：各台 Mac 排出同一个顺序（与库里的行序无关）
++        #expect(try await store.pinboards().map(\.name) == ["D", "A", "E", "B", "F", "C"])
++    }
++
++    /// 按界面上的顺序挪一个（与 movePinboard 同样的规则：挪过头就停在两头），返回挪完应有的顺序
++    private func moved(_ order: [String], _ name: String, by offset: Int) throws -> [String] {
++        var order = order
++        let index = try #require(order.firstIndex(of: name))
++        order.remove(at: index)
++        order.insert(name, at: min(max(index + offset, 0), order.count))
++        return order
++    }
++
++    private func movePinboard(_ store: ClipStore, named name: String, by offset: Int) async throws {
++        let id = try #require(try await store.pinboards().first { $0.name == name }?.id)
++        try await store.movePinboard(id, by: offset)
++    }
++
++    /// 合并后拖动任意一个到任意位置：松手后停在新位置，不弹回原处（落点两边的排序键常常相同，取中点等于没挪）
++    @Test(arguments: ["A", "B", "C", "D", "E", "F"], [-5, -4, -3, -2, -1, 1, 2, 3, 4, 5])
++    func pinboardFromTwoMacsStaysWhereDropped(name: String, offset: Int) async throws {
++        let store = try await makeStoreWithPinboardsFromTwoMacs()
++        let expected = try moved(try await store.pinboards().map(\.name), name, by: offset)
++        try await movePinboard(store, named: name, by: offset)
++        #expect(try await store.pinboards().map(\.name) == expected)
++        // 写进了库：重新合并、装缓存后还是这样
++        _ = try await store.mergeCloudChanges()
++        #expect(try await store.pinboards().map(\.name) == expected)
++    }
++
++    @Test func pinboardsFromTwoMacsCanBeReorderedRepeatedly() async throws {
++        let store = try await makeStoreWithPinboardsFromTwoMacs()
++        var expected = try await store.pinboards().map(\.name)
++        var moves: [(String, Int)] = []
++        for name in expected { moves += [(name, 1), (name, -2), (name, 1)] }
++        moves += [("C", -5), ("D", 5), ("B", -2), ("E", 3), ("A", -1), ("F", 1)]
++        for (name, offset) in moves {
++            expected = try moved(expected, name, by: offset)
++            try await movePinboard(store, named: name, by: offset)
++            #expect(try await store.pinboards().map(\.name) == expected, "move \(name) by \(offset)")
++        }
++    }
++
++    @Test func reorderingKeepsWorkingAfterGapIsUsedUp() async throws {
++        let store = try await makeStore()
++        var ids: [String: UUID] = [:]
++        for name in ["A", "B", "C", "D"] {
++            ids[name] = try await store.createPinboard(id: UUID(), name: name, color: .blue).id
++        }
++        // 反复把最后一个挪进第 2、3 个之间：每次取中点，几十次后排序键就挤到没缝了
++        var expected = ["A", "B", "C", "D"]
++        for _ in 0..<80 {
++            let last = expected.removeLast()
++            expected.insert(last, at: 2)
++            try await store.movePinboard(try #require(ids[last]), by: -1)
++            #expect(try await store.pinboards().map(\.name) == expected)
++        }
++    }
++
+     @Test func renamedExampleOnSecondMacSurvivesMerge() async throws {
+         let store = try await makeStore()
+         let snippets = UUID()
+@@ -275,13 +354,13 @@ import Testing
+ // MARK: - 模拟别的 Mac 同步来的记录
+ 
+ extension ClipStore {
+-    func insertRemotePinboard(id: UUID, name: String, createdAt: Date, isExample: Bool) throws {
++    func insertRemotePinboard(id: UUID, name: String, createdAt: Date, isExample: Bool, sortKey: Double = 99) throws {
+         let record = PinboardRecord()
+         record.uuid = id
+         record.name = name
+         record.createdAt = createdAt
+         record.isExample = isExample
+-        record.sortKey = 99
++        record.sortKey = sortKey
+         cloud.insert(record)
+         try cloud.save()
+     }

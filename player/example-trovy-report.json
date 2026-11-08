@@ -1,0 +1,7 @@
+{"bundleId":"com.signerlabs.trovy-ios","launchArgs":["-tvShotMock","-tvShotReport"],"steps":[
+ {"op":"wait","t":4},
+ {"op":"drag","x":0.5,"y":0.8,"x2":0.5,"y2":0.35,"v":700},{"op":"wait","t":1.8},
+ {"op":"drag","x":0.5,"y":0.8,"x2":0.5,"y2":0.35,"v":700},{"op":"wait","t":1.8},
+ {"op":"drag","x":0.5,"y":0.8,"x2":0.5,"y2":0.35,"v":700},{"op":"wait","t":1.8},
+ {"op":"drag","x":0.5,"y":0.3,"x2":0.5,"y2":0.85,"v":900},{"op":"wait","t":1.2},
+ {"op":"drag","x":0.5,"y":0.3,"x2":0.5,"y2":0.85,"v":900},{"op":"wait","t":1.5}]}

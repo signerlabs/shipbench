@@ -1,0 +1,22 @@
+{
+ "源码文件数": 14,
+ "源码非空行数": 1142,
+ "最大文件": [
+  "src/handlers/items.ts",
+  210
+ ],
+ "测试文件数": 3,
+ "测试用例数（粗数）": 54,
+ "tsc 报错（自己的 tsconfig）": 0,
+ "tsc 报错（加 --strict）": 0,
+ "tsc 报错示例": [],
+ "Biome 告警数": 30,
+ "Biome 每千行": 26.3,
+ "Biome 按规则": {
+  "lint/style/noNonNullAssertion": 25,
+  "lint/suspicious/noControlCharactersInRegex": 2,
+  "lint/complexity/noExcessiveCognitiveComplexity": 2,
+  "lint/style/noUnusedTemplateLiteral": 1
+ },
+ "重复行占比 %": 0
+}

@@ -1,0 +1,57 @@
+{
+  "score": 100,
+  "build_ok": true,
+  "checks": [
+    {
+      "name": "搜索翻页｜锚点被删后下一页接着往下（长搜索词，全文索引）",
+      "ok": true
+    },
+    {
+      "name": "搜索翻页｜锚点被删后下一页接着往下（两个字的短搜索词）",
+      "ok": true
+    },
+    {
+      "name": "搜索翻页｜锚点被取用（移到最前）后不回到开头（长搜索词）",
+      "ok": true
+    },
+    {
+      "name": "搜索翻页｜锚点被取用后不回到开头（短搜索词）",
+      "ok": true
+    },
+    {
+      "name": "搜索翻页｜边翻边取用，翻到底不重不漏",
+      "ok": true
+    },
+    {
+      "name": "搜索翻页｜边翻边删，翻到底不重不漏",
+      "ok": true
+    },
+    {
+      "name": "Pinboard 排序｜三个排序键相同：顺序固定、拖得动",
+      "ok": true
+    },
+    {
+      "name": "Pinboard 排序｜四个排序键相同：跨两三格拖动都到位",
+      "ok": true
+    },
+    {
+      "name": "没改坏别的：其余测试全过、底稿原有测试一条不少（不满足分数减半）",
+      "ok": true
+    },
+    {
+      "name": "补了复现测试（只记录、不计分）",
+      "ok": true,
+      "info": true
+    }
+  ],
+  "other_failed": [],
+  "missing_base_tests": [],
+  "added_tests": [
+    "pinboardFromTwoMacsStaysWhereDropped",
+    "pinboardsFromTwoMacsCanBeReorderedRepeatedly",
+    "pinboardsFromTwoMacsSortByUUIDWhenKeysTie",
+    "reorderingKeepsWorkingAfterGapIsUsedUp",
+    "searchPagingContinuesAfterCursorItemChanges"
+  ],
+  "seconds": 11
+}

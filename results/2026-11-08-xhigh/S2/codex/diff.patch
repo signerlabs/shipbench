@@ -1,0 +1,502 @@
+ Sources/ClipData/Store/ClipStore.swift     |  13 +++-
+ Sources/ClipData/Store/CloudWorker.swift   |   2 +-
+ Sources/ClipData/Store/SearchIndex.swift   | 100 ++++++++++++++++-------------
+ Tests/ClipDataTests/ClipStoreTests.swift   |  25 ++++++++
+ Tests/ClipDataTests/CloudMergeTests.swift  |  96 ++++++++++++++++++++++++++-
+ Tests/ClipDataTests/RecoveryTests.swift    |   4 +-
+ Tests/ClipDataTests/SearchIndexTests.swift |  59 +++++++++++++++++
+ 7 files changed, 246 insertions(+), 53 deletions(-)
+diff --git a/Sources/ClipData/Store/ClipStore.swift b/Sources/ClipData/Store/ClipStore.swift
+index 3daa440..bf52848 100644
+--- a/Sources/ClipData/Store/ClipStore.swift
++++ b/Sources/ClipData/Store/ClipStore.swift
+@@ -446,8 +446,15 @@ actor ClipStore: ModelActor {
+         case let (nil, next?): newKey = next - 1
+         case (nil, nil): newKey = nil
+         }
+-        if let newKey {
++        if let newKey, newKey.isFinite,
++           previous.map({ newKey > $0 }) ?? true,
++           next.map({ newKey < $0 }) ?? true {
+             for record in recordsByID[id] ?? [] { record.sortKey = newKey }
++        } else {
++            // 相同键、舍入到邻居或溢出都放不下新位置；同 uuid 的全部副本一起改。
++            for (position, boardID) in ordered.enumerated() {
++                for record in recordsByID[boardID] ?? [] { record.sortKey = Double(position) }
++            }
+         }
+         for record in recordsByID[id] ?? [] { record.isExample = false }
+         try commit()
+@@ -975,7 +982,7 @@ actor ClipStore: ModelActor {
+     }
+ 
+     private func searchPage(_ text: String, after cursor: ClipCursor?, limit: Int) throws -> ClipPage {
+-        let ids = try index.search(SearchFolding.fold(text), after: cursor?.id, limit: limit + 1)
++        let ids = try index.search(SearchFolding.fold(text), after: cursor, limit: limit + 1)
+         let pageIDs = Array(ids.prefix(limit))
+         let history = try visibleHistory(pageIDs)
+         let items = pageIDs.compactMap { try? snapshot(history: history[$0], pinned: cache.copies[$0]) }
+@@ -1146,7 +1153,7 @@ actor ClipStore: ModelActor {
+     }
+ 
+     private static func entry(_ clip: any ClipFields) -> SearchIndex.Entry {
+-        SearchIndex.Entry(rank: rank(clip.lastUsedAt), body: indexBody(clip))
++        SearchIndex.Entry(lastUsedAt: clip.lastUsedAt, body: indexBody(clip))
+     }
+ 
+     private static func indexBody(_ clip: any ClipFields) -> String {
+diff --git a/Sources/ClipData/Store/CloudWorker.swift b/Sources/ClipData/Store/CloudWorker.swift
+index 791fce6..5cf97e8 100644
+--- a/Sources/ClipData/Store/CloudWorker.swift
++++ b/Sources/ClipData/Store/CloudWorker.swift
+@@ -190,7 +190,7 @@ enum CloudMerge {
+     static func dedupedOrder(_ records: [PinboardRecord]) -> [PinboardRecord] {
+         var seen = Set<UUID>()
+         return records
+-            .sorted { $0.sortKey < $1.sortKey }
++            .sorted { ($0.sortKey, $0.uuid.uuidString) < ($1.sortKey, $1.uuid.uuidString) }
+             .filter { seen.insert($0.uuid).inserted }
+     }
+ 
+diff --git a/Sources/ClipData/Store/SearchIndex.swift b/Sources/ClipData/Store/SearchIndex.swift
+index e87b707..ccf25ff 100644
+--- a/Sources/ClipData/Store/SearchIndex.swift
++++ b/Sources/ClipData/Store/SearchIndex.swift
+@@ -3,8 +3,8 @@
+ //  ClipData
+ //
+ //  搜索旁路索引：SQLite FTS5 + trigram 分词。派生数据，不同步、可随时从 SwiftData 重建。
+-//  - rowid 用条目的"最近使用时间（毫秒）"：结果天然新的在前，按它做 keyset 翻页
+-//  - 3 个字符以上走 trigram 索引（短语 MATCH）；1–2 个字符走 LIKE 扫描（实测比 instr、mmap 都快，10 万条无命中约 90 ms）
++//  - clip_rank 单独存完整的最近使用时间：按时间与 uuid 倒序做 keyset 翻页，rowid 只用来定位 FTS 行
++//  - 3 个字符以上走 trigram 索引（短语 MATCH）；1–2 个字符按新旧顺序走 LIKE 扫描
+ //  - 存的与查的都是 SearchFolding 折叠后的文本（不分大小写与变音符），不依赖 SQLite 的折叠
+ //  - pinned_state 记着上次核对时每个 Pinboard 副本的"指纹"：iCloud 收到改动后只重写变过的行
+ //  - meta 记着"待修补"：写索引失败或修补到一半退出，下次启动接着在后台修补
+@@ -22,9 +22,9 @@ final class SearchIndex {
+         case sqlite(String)
+     }
+ 
+-    /// 一条索引行：rank = 最近使用时间（毫秒），body = 折叠后的"标题 + 内容"
++    /// 一条索引行：保留与 ClipCursor 相同的时间精度，body = 折叠后的"标题 + 内容"
+     struct Entry {
+-        let rank: Int64
++        let lastUsedAt: Date
+         let body: String
+     }
+ 
+@@ -36,8 +36,8 @@ final class SearchIndex {
+     /// 上次写索引失败或修补没做完（存在 meta 里，跨启动保留）
+     private(set) var needsRepair = false
+ 
+-    /// 表结构版本（PRAGMA user_version）：0 = 早期没有 meta 表的版本，原地补建即可
+-    private static let schemaVersion: Int32 = 1
++    /// 表结构版本：0 没有 meta 表；1 用毫秒 rowid 排序；2 独立保存完整时间，旧索引原地升级后修补。
++    private static let schemaVersion: Int32 = 2
+     private static let needsRepairKey = "needsRepair"
+ 
+     /// SQLite 绑定文本时让它自己拷一份
+@@ -110,14 +110,17 @@ final class SearchIndex {
+                 wasReset = true
+             }
+             try execute("CREATE VIRTUAL TABLE IF NOT EXISTS clip_search USING fts5(uuid UNINDEXED, body, tokenize='trigram')")
+-            try execute("CREATE TABLE IF NOT EXISTS clip_rank(uuid TEXT PRIMARY KEY, rank INTEGER NOT NULL)")
++            try execute("CREATE TABLE IF NOT EXISTS clip_rank(uuid TEXT PRIMARY KEY, rank INTEGER NOT NULL, last_used_at REAL NOT NULL)")
+             try execute("CREATE TABLE IF NOT EXISTS pinned_state(uuid TEXT PRIMARY KEY, signature TEXT NOT NULL)")
+             try execute("CREATE TABLE IF NOT EXISTS meta(key TEXT PRIMARY KEY, value TEXT NOT NULL)")
+             try execute("CREATE TABLE IF NOT EXISTS orphan_seen(key TEXT PRIMARY KEY, first_seen REAL NOT NULL)")
+-            if version != Self.schemaVersion { try execute("PRAGMA user_version = \(Self.schemaVersion)") }
+             // 读一遍：坏文件往往到第一次读才报错
+             _ = try count()
+             needsRepair = try metaValue(Self.needsRepairKey) == "1"
++            try upgradeOrdering()
++            try execute("CREATE UNIQUE INDEX IF NOT EXISTS clip_rank_rowid ON clip_rank(rank)")
++            try execute("CREATE INDEX IF NOT EXISTS clip_rank_order ON clip_rank(last_used_at DESC, uuid DESC)")
++            if version != Self.schemaVersion { try execute("PRAGMA user_version = \(Self.schemaVersion)") }
+         } catch {
+             sqlite3_close_v2(db)
+             db = nil
+@@ -127,7 +130,7 @@ final class SearchIndex {
+ 
+     // MARK: - 写
+ 
+-    /// 一批改动放进一个事务：entry 为 nil 表示删掉这一行。rank 撞上同一毫秒时往前挪一位
++    /// 一批改动放进一个事务：entry 为 nil 表示删掉这一行。FTS 行号由 SQLite 分配，不参与排序。
+     func apply(_ changes: [(UUID, Entry?)]) throws {
+         guard !changes.isEmpty else { return }
+         try execute("BEGIN")
+@@ -138,9 +141,9 @@ final class SearchIndex {
+             defer { sqlite3_finalize(deleteRow) }
+             let forget = try prepare("DELETE FROM clip_rank WHERE uuid = ?")
+             defer { sqlite3_finalize(forget) }
+-            let insert = try prepare("INSERT INTO clip_search(rowid, uuid, body) VALUES (?, ?, ?)")
++            let insert = try prepare("INSERT INTO clip_search(uuid, body) VALUES (?, ?)")
+             defer { sqlite3_finalize(insert) }
+-            let remember = try prepare("INSERT OR REPLACE INTO clip_rank(uuid, rank) VALUES (?, ?)")
++            let remember = try prepare("INSERT OR REPLACE INTO clip_rank(uuid, rank, last_used_at) VALUES (?, ?, ?)")
+             defer { sqlite3_finalize(remember) }
+ 
+             for (uuid, entry) in changes {
+@@ -160,27 +163,15 @@ final class SearchIndex {
+                 sqlite3_reset(find)
+                 guard let entry else { continue }
+ 
+-                var candidate = entry.rank
+-                var inserted = false
+-                for _ in 0..<8 where !inserted {
+-                    sqlite3_reset(insert)
+-                    sqlite3_bind_int64(insert, 1, candidate)
+-                    bind(key, to: insert, at: 2)
+-                    bind(entry.body, to: insert, at: 3)
+-                    let result = sqlite3_step(insert)
+-                    if result == SQLITE_DONE {
+-                        inserted = true
+-                    } else if result == SQLITE_CONSTRAINT {
+-                        candidate -= 1
+-                    } else {
+-                        throw IndexError.sqlite(lastError)
+-                    }
+-                }
+                 sqlite3_reset(insert)
+-                guard inserted else { throw IndexError.sqlite("rank collision") }
++                bind(key, to: insert, at: 1)
++                bind(entry.body, to: insert, at: 2)
++                try step(insert)
++                let rowID = sqlite3_last_insert_rowid(db)
+                 sqlite3_reset(remember)
+                 bind(key, to: remember, at: 1)
+-                sqlite3_bind_int64(remember, 2, candidate)
++                sqlite3_bind_int64(remember, 2, rowID)
++                sqlite3_bind_double(remember, 3, entry.lastUsedAt.timeIntervalSinceReferenceDate)
+                 try step(remember)
+             }
+             try execute("COMMIT")
+@@ -302,30 +293,30 @@ final class SearchIndex {
+         return signatures
+     }
+ 
+-    /// 按最近使用倒序返回命中的 uuid；afterID 是上一页最后一条（keyset 翻页）
+-    func search(_ foldedNeedle: String, after afterID: UUID?, limit: Int) throws -> [UUID] {
+-        var before = Int64.max
+-        if let afterID {
+-            let statement = try prepare("SELECT rank FROM clip_rank WHERE uuid = ?")
+-            defer { sqlite3_finalize(statement) }
+-            bind(afterID.uuidString, to: statement, at: 1)
+-            if sqlite3_step(statement) == SQLITE_ROW {
+-                before = sqlite3_column_int64(statement, 0)
+-            }
+-        }
++    /// 按时间与 uuid 倒序返回命中；直接使用上一页的边界值，不重新查找可能已删除或前移的游标条目。
++    func search(_ foldedNeedle: String, after cursor: ClipCursor?, limit: Int) throws -> [UUID] {
++        let boundary = cursor == nil ? "" : " AND (r.last_used_at, r.uuid) < (?, ?)"
++        let order = boundary + " ORDER BY r.last_used_at DESC, r.uuid DESC LIMIT ?"
++        let usesTrigram = foldedNeedle.count >= 3
++        // 短词固定从时间索引开始，避免 SQLite 先扫完 FTS 表再整体排序；长词先走 MATCH 找命中。
++        let join = usesTrigram ? "JOIN" : "CROSS JOIN"
++        let source = "SELECT r.uuid FROM clip_rank r \(join) clip_search ON clip_search.rowid = r.rank WHERE "
+         let statement: OpaquePointer?
+-        if foldedNeedle.count >= 3 {
++        if usesTrigram {
+             // trigram：任意 3 个字符以上的子串都走索引；整串当一个短语
+-            statement = try prepare("SELECT uuid FROM clip_search WHERE clip_search MATCH ? AND rowid < ? ORDER BY rowid DESC LIMIT ?")
++            statement = try prepare(source + "clip_search MATCH ?" + order)
+             bind("\"" + foldedNeedle.replacingOccurrences(of: "\"", with: "\"\"") + "\"", to: statement, at: 1)
+         } else {
+             // 1–2 个字符：trigram 用不上，按新旧顺序扫描，够 limit 条就停
+-            statement = try prepare("SELECT uuid FROM clip_search WHERE body LIKE ? ESCAPE '\\' AND rowid < ? ORDER BY rowid DESC LIMIT ?")
++            statement = try prepare(source + "body LIKE ? ESCAPE '\\'" + order)
+             bind("%" + Self.escapeLike(foldedNeedle) + "%", to: statement, at: 1)
+         }
+         defer { sqlite3_finalize(statement) }
+-        sqlite3_bind_int64(statement, 2, before)
+-        sqlite3_bind_int64(statement, 3, Int64(limit))
++        if let cursor {
++            sqlite3_bind_double(statement, 2, cursor.lastUsedAt.timeIntervalSinceReferenceDate)
++            bind(cursor.id.uuidString, to: statement, at: 3)
++        }
++        sqlite3_bind_int64(statement, cursor == nil ? 2 : 4, Int64(limit))
+         var ids: [UUID] = []
+         while true {
+             let result = sqlite3_step(statement)
+@@ -342,6 +333,25 @@ final class SearchIndex {
+ 
+     // MARK: - 内部
+ 
++    /// 旧版 rank 是可能因碰撞而偏移的毫秒时间，只能暂用；保留现有搜索行并安排从主库恢复准确时间。
++    private func upgradeOrdering() throws {
++        let statement = try prepare("SELECT name FROM pragma_table_info('clip_rank') WHERE name = 'last_used_at'")
++        defer { sqlite3_finalize(statement) }
++        let result = sqlite3_step(statement)
++        if result == SQLITE_ROW { return }
++        guard result == SQLITE_DONE else { throw IndexError.sqlite(lastError) }
++        try execute("BEGIN")
++        do {
++            try execute("ALTER TABLE clip_rank ADD COLUMN last_used_at REAL")
++            try execute("UPDATE clip_rank SET last_used_at = rank / 1000.0 - \(Date.timeIntervalBetween1970AndReferenceDate)")
++            if try count() > 0 { try setNeedsRepair(true) }
++            try execute("COMMIT")
++        } catch {
++            try? execute("ROLLBACK")
++            throw error
++        }
++    }
++
+     private func userVersion() throws -> Int32 {
+         let statement = try prepare("PRAGMA user_version")
+         defer { sqlite3_finalize(statement) }
+diff --git a/Tests/ClipDataTests/ClipStoreTests.swift b/Tests/ClipDataTests/ClipStoreTests.swift
+index 06fd3af..ab17f8c 100644
+--- a/Tests/ClipDataTests/ClipStoreTests.swift
++++ b/Tests/ClipDataTests/ClipStoreTests.swift
+@@ -214,6 +214,31 @@ import Testing
+         #expect(second.items.map(\.preview) == ["note 2", "note 1"])
+     }
+ 
++    @Test(arguments: ["no", "note"], ["removed", "used", "copied"])
++    func searchPaginationKeepsBoundaryWhenCursorItemChanges(needle: String, change: String) async throws {
++        let (repository, _) = makeRepository()
++        for index in 1...6 { _ = try await repository.ingest(text("note \(index)")) }
++        let query = ClipQuery(scope: .history, searchText: needle)
++        let first = try await repository.page(query, after: nil, limit: 2)
++        #expect(first.items.map(\.preview) == ["note 6", "note 5"])
++        let cursor = try #require(first.nextCursor)
++
++        // 上一页末尾的条目消失或移到最前，下一页仍从原来的时间边界继续。
++        switch change {
++        case "removed": _ = try await repository.remove(cursor.id, from: .everywhere)
++        case "used": _ = try await repository.markUsed(cursor.id)
++        default: _ = try await repository.ingest(text("note 5"))
++        }
++
++        let second = try await repository.page(query, after: cursor, limit: 2)
++        #expect(second.items.map(\.preview) == ["note 4", "note 3"])
++        let third = try await repository.page(query, after: #require(second.nextCursor), limit: 2)
++        #expect(third.items.map(\.preview) == ["note 2", "note 1"])
++        #expect(third.nextCursor == nil)
++        let ids = (first.items + second.items + third.items).map(\.id)
++        #expect(Set(ids).count == ids.count)
++    }
++
+     // MARK: - 清空历史（分批）
+ 
+     @Test func batchedEraseKeepsPinboardsAndIndexConsistent() async throws {
+diff --git a/Tests/ClipDataTests/CloudMergeTests.swift b/Tests/ClipDataTests/CloudMergeTests.swift
+index ed5ebfa..97b7e74 100644
+--- a/Tests/ClipDataTests/CloudMergeTests.swift
++++ b/Tests/ClipDataTests/CloudMergeTests.swift
+@@ -116,6 +116,36 @@ import Testing
+         #expect(try await pinboard(store, board.id).isEmpty)
+     }
+ 
++    @Test(arguments: ["no", "note"])
++    func searchPaginationPreservesTimestampPrecisionAndUUIDOrder(needle: String) async throws {
++        let store = try await makeStore()
++        let board = try await store.createPinboard(id: UUID(), name: "Synced", color: .blue)
++        let ids = (1...12).map { UUID(uuidString: String(format: "00000000-0000-0000-0000-%012d", $0))! }
++        let date = Date(timeIntervalSinceReferenceDate: 800_000_000)
++        // 同步来的记录可以同一毫秒，甚至时间完全相同；不能靠挪动 FTS 行号决定次序。
++        for (index, id) in ids.enumerated() {
++            let timestamp = date.addingTimeInterval(Double((index + 1) % 3) * 0.0001)
++            try await store.insertRemotePinned(id: id, text: "note \(index + 1)", pinboardID: board.id, createdAt: timestamp)
++        }
++        _ = try await store.mergeCloudChanges()
++        let expected = [11, 8, 5, 2, 10, 7, 4, 1, 12, 9, 6, 3].map { ids[$0 - 1] }
++        let query = ClipQuery(scope: .history, searchText: needle)
++        var cursor: ClipCursor?
++        var found: [UUID] = []
++        for pageNumber in 0..<4 {
++            let page = try await store.page(query, after: cursor, limit: 3)
++            found += page.items.map(\.id)
++            cursor = page.nextCursor
++            if pageNumber < 3 { _ = try #require(cursor) }
++            if pageNumber == 0 {
++                let boundary = try #require(cursor)
++                _ = try await store.remove(boundary.id, from: .everywhere)
++            }
++        }
++        #expect(found == expected)
++        #expect(cursor == nil)
++    }
++
+     @Test func identicalCopiesAreKeptButShownOnceAndRemovedTogether() async throws {
+         let store = try await makeStore()
+         let board = try await store.createPinboard(id: UUID(), name: "Work", color: .orange)
+@@ -186,6 +216,58 @@ import Testing
+         _ = first
+     }
+ 
++    @Test func pinboardOrderBreaksSortKeyTiesByUUID() async throws {
++        let store = try await makeStore()
++        let ids = (1...3).map { UUID(uuidString: String(format: "00000000-0000-0000-0000-%012d", $0))! }
++        for id in ids.reversed() {
++            try await store.insertRemotePinboard(id: id, name: id.uuidString, createdAt: .now, isExample: false, sortKey: 0)
++        }
++        _ = try await store.mergeCloudChanges()
++        #expect(try await store.pinboards().map(\.id) == ids)
++        #expect(try await store.pinboardOrderWithReversedRecords() == ids)
++    }
++
++    @Test func movePinboardBetweenEqualKeysAfterCloudMerge() async throws {
++        let store = try await makeStore()
++        let ids = (1...4).map { UUID(uuidString: String(format: "00000000-0000-0000-0000-%012d", $0))! }
++        _ = try await store.createPinboard(id: ids[0], name: "Local A", color: .red)
++        _ = try await store.createPinboard(id: ids[2], name: "Local B", color: .green)
++        try await store.insertRemotePinboard(id: ids[1], name: "Remote A", createdAt: .now, isExample: true, sortKey: 0)
++        try await store.insertRemotePinboard(id: ids[3], name: "Remote B", createdAt: .now, isExample: true, sortKey: 1)
++        // 同 uuid 的完全相同副本也必须一起重排，避免重读时跳回去。
++        try await store.duplicatePinboardRecord(ids[1])
++        try await store.duplicatePinboardRecord(ids[3])
++        _ = try await store.mergeCloudChanges()
++        #expect(try await store.pinboards().map(\.id) == ids)
++
++        try await store.movePinboard(ids[3], by: -2)
++        let expected = [ids[0], ids[3], ids[1], ids[2]]
++        let moved = try await store.pinboards()
++        #expect(moved.map(\.id) == expected)
++        #expect(zip(moved, moved.dropFirst()).allSatisfy { $0.sortKey < $1.sortKey })
++        for board in moved {
++            let records = try await store.pinboardRecordOrdering(board.id)
++            #expect(records.allSatisfy { $0.sortKey == board.sortKey })
++        }
++        #expect(try await store.pinboardRecordOrdering(ids[3]).allSatisfy { !$0.isExample })
++        #expect(try await store.pinboardRecordOrdering(ids[1]).allSatisfy { $0.isExample })
++        _ = try await store.mergeCloudChanges()
++        #expect(try await store.pinboards().map(\.id) == expected)
++    }
++
++    @Test func movePinboardRenumbersWhenDoubleHasNoGap() async throws {
++        let store = try await makeStore()
++        let ids = (1...3).map { UUID(uuidString: String(format: "00000000-0000-0000-0000-%012d", $0))! }
++        for (id, key) in zip(ids, [1.0, 1.0.nextUp, 2.0]) {
++            try await store.insertRemotePinboard(id: id, name: id.uuidString, createdAt: .now, isExample: false, sortKey: key)
++        }
++        _ = try await store.mergeCloudChanges()
++        try await store.movePinboard(ids[2], by: -1)
++        let moved = try await store.pinboards()
++        #expect(moved.map(\.id) == [ids[0], ids[2], ids[1]])
++        #expect(zip(moved, moved.dropFirst()).allSatisfy { $0.sortKey < $1.sortKey })
++    }
++
+     @Test func renamedExampleOnSecondMacSurvivesMerge() async throws {
+         let store = try await makeStore()
+         let snippets = UUID()
+@@ -275,13 +357,13 @@ import Testing
+ // MARK: - 模拟别的 Mac 同步来的记录
+ 
+ extension ClipStore {
+-    func insertRemotePinboard(id: UUID, name: String, createdAt: Date, isExample: Bool) throws {
++    func insertRemotePinboard(id: UUID, name: String, createdAt: Date, isExample: Bool, sortKey: Double = 99) throws {
+         let record = PinboardRecord()
+         record.uuid = id
+         record.name = name
+         record.createdAt = createdAt
+         record.isExample = isExample
+-        record.sortKey = 99
++        record.sortKey = sortKey
+         cloud.insert(record)
+         try cloud.save()
+     }
+@@ -341,6 +423,16 @@ extension ClipStore {
+         try cloud.fetch(FetchDescriptor<PinboardRecord>(predicate: #Predicate { $0.uuid == id })).map(\.name)
+     }
+ 
++    func pinboardRecordOrdering(_ id: UUID) throws -> [(sortKey: Double, isExample: Bool)] {
++        try cloud.fetch(FetchDescriptor<PinboardRecord>(predicate: #Predicate { $0.uuid == id }))
++            .map { ($0.sortKey, $0.isExample) }
++    }
++
++    func pinboardOrderWithReversedRecords() throws -> [UUID] {
++        let records = try cloud.fetch(FetchDescriptor<PinboardRecord>())
++        return CloudMerge.dedupedOrder(Array(records.reversed())).map(\.uuid)
++    }
++
+     func backdateTrash(of id: UUID, by seconds: TimeInterval) throws {
+         for copy in try cloud.fetch(FetchDescriptor<PinnedClip>(predicate: #Predicate { $0.uuid == id })) {
+             copy.trashedAt = copy.trashedAt?.addingTimeInterval(-seconds)
+diff --git a/Tests/ClipDataTests/RecoveryTests.swift b/Tests/ClipDataTests/RecoveryTests.swift
+index 239ae62..504b994 100644
+--- a/Tests/ClipDataTests/RecoveryTests.swift
++++ b/Tests/ClipDataTests/RecoveryTests.swift
+@@ -91,7 +91,7 @@ import Testing
+         #expect(try await store.indexNeedsRepair() == false)
+ 
+         // 索引丢了两行、多了一行数据里没有的（比如崩在保存与写索引之间）
+-        try await store.debugApplyToIndex([(ids[0], nil), (ids[3], nil), (UUID(), SearchIndex.Entry(rank: 1, body: "ghost entry"))])
++        try await store.debugApplyToIndex([(ids[0], nil), (ids[3], nil), (UUID(), SearchIndex.Entry(lastUsedAt: .distantPast, body: "ghost entry"))])
+         #expect(try await store.indexNeedsRepair())
+         await store.startBackgroundWork()
+         let events = await collect(stream) { $0 == .searchIndexRebuilding(false) }
+@@ -368,7 +368,7 @@ import Testing
+         let url = makeDirectory().appending(path: StoreFiles.searchIndexName)
+         do {
+             let index = try SearchIndex(url: url)
+-            try index.apply([(UUID(), SearchIndex.Entry(rank: 10, body: "kept row"))])
++            try index.apply([(UUID(), SearchIndex.Entry(lastUsedAt: .distantPast, body: "kept row"))])
+         }
+         var db: OpaquePointer?
+         #expect(sqlite3_open_v2(url.path(percentEncoded: false), &db, SQLITE_OPEN_READWRITE, nil) == SQLITE_OK)
+diff --git a/Tests/ClipDataTests/SearchIndexTests.swift b/Tests/ClipDataTests/SearchIndexTests.swift
+new file mode 100644
+index 0000000..ccf3853
+--- /dev/null
++++ b/Tests/ClipDataTests/SearchIndexTests.swift
+@@ -0,0 +1,59 @@
++import Foundation
++import SQLite3
++import Testing
++@testable import ClipData
++
++@Suite struct SearchIndexTests {
++    @Test(arguments: [0, 1])
++    func legacyOrderingIsUpgradedWithoutLosingRows(version: Int) throws {
++        let directory = FileManager.default.temporaryDirectory.appending(path: "ClipIndexTests-\(UUID())")
++        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
++        defer { try? FileManager.default.removeItem(at: directory) }
++        let url = directory.appending(path: "Search.sqlite")
++        let older = UUID()
++        let newer = UUID()
++        // 真正的旧表结构：rank 既是毫秒时间也是 FTS 行号，没有完整时间列。
++        do {
++            var db: OpaquePointer?
++            try #require(sqlite3_open(url.path(percentEncoded: false), &db) == SQLITE_OK)
++            defer { sqlite3_close_v2(db) }
++            let sql = """
++                CREATE VIRTUAL TABLE clip_search USING fts5(uuid UNINDEXED, body, tokenize='trigram');
++                CREATE TABLE clip_rank(uuid TEXT PRIMARY KEY, rank INTEGER NOT NULL);
++                INSERT INTO clip_search(rowid, uuid, body) VALUES
++                    (1700000000000, '\(older.uuidString)', 'legacy older'),
++                    (1700000001000, '\(newer.uuidString)', 'legacy newer');
++                INSERT INTO clip_rank(uuid, rank) VALUES
++                    ('\(older.uuidString)', 1700000000000),
++                    ('\(newer.uuidString)', 1700000001000);
++                PRAGMA user_version = \(version);
++                """
++            try #require(sqlite3_exec(db, sql, nil, nil, nil) == SQLITE_OK)
++        }
++        do {
++            let index = try SearchIndex.open(url: url)
++            #expect(!index.wasReset)
++            #expect(index.needsRepair)
++            #expect(try index.count() == 2)
++            #expect(try index.search("legacy", after: nil, limit: 10) == [newer, older])
++        }
++        let timestamp = Date(timeIntervalSinceReferenceDate: 800_000_000.0001)
++        do {
++            let index = try SearchIndex.open(url: url)
++            #expect(index.needsRepair)
++            // 后台修补写回真实时间，旧行号不再影响排序。
++            try index.apply([
++                (older, .init(lastUsedAt: timestamp, body: "legacy older")),
++                (newer, .init(lastUsedAt: timestamp.addingTimeInterval(0.0001), body: "legacy newer")),
++            ])
++            try index.setNeedsRepair(false)
++        }
++        let index = try SearchIndex.open(url: url)
++        #expect(!index.wasReset)
++        #expect(!index.needsRepair)
++        let cursor = ClipCursor(lastUsedAt: timestamp.addingTimeInterval(0.0001), id: newer)
++        try index.apply([(newer, nil)])
++        #expect(try index.search("legacy", after: cursor, limit: 10) == [older])
++        #expect(try index.search("le", after: cursor, limit: 10) == [older])
++    }
++}

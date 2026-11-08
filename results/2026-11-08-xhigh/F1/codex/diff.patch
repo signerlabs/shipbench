@@ -1,0 +1,897 @@
+ Replica/Fonts/BarlowCondensed-Bold.ttf     | Bin 0 -> 109912 bytes
+ Replica/Fonts/BarlowCondensed-OFL.txt      |  93 ++++++++
+ Replica/Fonts/LXGWMarkerGothic-OFL.txt     |  93 ++++++++
+ Replica/Fonts/LXGWMarkerGothic-Regular.ttf | Bin 0 -> 3190368 bytes
+ Replica/Fonts/SmileySans-OFL.txt           |  93 ++++++++
+ Replica/Fonts/SmileySans-Oblique.ttf       | Bin 0 -> 2629764 bytes
+ Replica/OnboardingView.swift               | 188 ++++++++++++++++
+ Replica/ReplicaApp.swift                   |  26 ++-
+ Replica/WelcomeIllustrations.swift         | 338 +++++++++++++++++++++++++++++
+ 9 files changed, 830 insertions(+), 1 deletion(-)
+diff --git a/Replica/Fonts/BarlowCondensed-Bold.ttf b/Replica/Fonts/BarlowCondensed-Bold.ttf
+new file mode 100644
+index 0000000..9e480f4
+Binary files /dev/null and b/Replica/Fonts/BarlowCondensed-Bold.ttf differ
+diff --git a/Replica/Fonts/BarlowCondensed-OFL.txt b/Replica/Fonts/BarlowCondensed-OFL.txt
+new file mode 100644
+index 0000000..2f22ba6
+--- /dev/null
++++ b/Replica/Fonts/BarlowCondensed-OFL.txt
+@@ -0,0 +1,93 @@
++Copyright 2017 The Barlow Project Authors (https://github.com/jpt/barlow)
++
++This Font Software is licensed under the SIL Open Font License, Version 1.1.
++This license is copied below, and is also available with a FAQ at:
++http://scripts.sil.org/OFL
++
++
++-----------------------------------------------------------
++SIL OPEN FONT LICENSE Version 1.1 - 26 February 2007
++-----------------------------------------------------------
++
++PREAMBLE
++The goals of the Open Font License (OFL) are to stimulate worldwide
++development of collaborative font projects, to support the font creation
++efforts of academic and linguistic communities, and to provide a free and
++open framework in which fonts may be shared and improved in partnership
++with others.
++
++The OFL allows the licensed fonts to be used, studied, modified and
++redistributed freely as long as they are not sold by themselves. The
++fonts, including any derivative works, can be bundled, embedded, 
++redistributed and/or sold with any software provided that any reserved
++names are not used by derivative works. The fonts and derivatives,
++however, cannot be released under any other type of license. The
++requirement for fonts to remain under this license does not apply
++to any document created using the fonts or their derivatives.
++
++DEFINITIONS
++"Font Software" refers to the set of files released by the Copyright
++Holder(s) under this license and clearly marked as such. This may
++include source files, build scripts and documentation.
++
++"Reserved Font Name" refers to any names specified as such after the
++copyright statement(s).
++
++"Original Version" refers to the collection of Font Software components as
++distributed by the Copyright Holder(s).
++
++"Modified Version" refers to any derivative made by adding to, deleting,
++or substituting -- in part or in whole -- any of the components of the
++Original Version, by changing formats or by porting the Font Software to a
++new environment.
++
++"Author" refers to any designer, engineer, programmer, technical
++writer or other person who contributed to the Font Software.
++
++PERMISSION & CONDITIONS
++Permission is hereby granted, free of charge, to any person obtaining
++a copy of the Font Software, to use, study, copy, merge, embed, modify,
++redistribute, and sell modified and unmodified copies of the Font
++Software, subject to the following conditions:
++
++1) Neither the Font Software nor any of its individual components,
++in Original or Modified Versions, may be sold by itself.
++
++2) Original or Modified Versions of the Font Software may be bundled,
++redistributed and/or sold with any software, provided that each copy
++contains the above copyright notice and this license. These can be
++included either as stand-alone text files, human-readable headers or
++in the appropriate machine-readable metadata fields within text or
++binary files as long as those fields can be easily viewed by the user.
++
++3) No Modified Version of the Font Software may use the Reserved Font
++Name(s) unless explicit written permission is granted by the corresponding
++Copyright Holder. This restriction only applies to the primary font name as
++presented to the users.
++
++4) The name(s) of the Copyright Holder(s) or the Author(s) of the Font
++Software shall not be used to promote, endorse or advertise any
++Modified Version, except to acknowledge the contribution(s) of the
++Copyright Holder(s) and the Author(s) or with their explicit written
++permission.
++
++5) The Font Software, modified or unmodified, in part or in whole,
++must be distributed entirely under this license, and must not be
++distributed under any other license. The requirement for fonts to
++remain under this license does not apply to any document created
++using the Font Software.
++
++TERMINATION
++This license becomes null and void if any of the above conditions are
++not met.
++
++DISCLAIMER
++THE FONT SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
++EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO ANY WARRANTIES OF
++MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT
++OF COPYRIGHT, PATENT, TRADEMARK, OR OTHER RIGHT. IN NO EVENT SHALL THE
++COPYRIGHT HOLDER BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
++INCLUDING ANY GENERAL, SPECIAL, INDIRECT, INCIDENTAL, OR CONSEQUENTIAL
++DAMAGES, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
++FROM, OUT OF THE USE OR INABILITY TO USE THE FONT SOFTWARE OR FROM
++OTHER DEALINGS IN THE FONT SOFTWARE.
+diff --git a/Replica/Fonts/LXGWMarkerGothic-OFL.txt b/Replica/Fonts/LXGWMarkerGothic-OFL.txt
+new file mode 100644
+index 0000000..b1be6f2
+--- /dev/null
++++ b/Replica/Fonts/LXGWMarkerGothic-OFL.txt
+@@ -0,0 +1,93 @@
++Copyright 2021-2026 The LXGW Marker Gothic Project Authors (https://github.com/lxgw/LxgwMarkerGothic)
++
++This Font Software is licensed under the SIL Open Font License, Version 1.1.
++This license is copied below, and is also available with a FAQ at:
++https://openfontlicense.org
++
++
++-----------------------------------------------------------
++SIL OPEN FONT LICENSE Version 1.1 - 26 February 2007
++-----------------------------------------------------------
++
++PREAMBLE
++The goals of the Open Font License (OFL) are to stimulate worldwide
++development of collaborative font projects, to support the font creation
++efforts of academic and linguistic communities, and to provide a free and
++open framework in which fonts may be shared and improved in partnership
++with others.
++
++The OFL allows the licensed fonts to be used, studied, modified and
++redistributed freely as long as they are not sold by themselves. The
++fonts, including any derivative works, can be bundled, embedded, 
++redistributed and/or sold with any software provided that any reserved
++names are not used by derivative works. The fonts and derivatives,
++however, cannot be released under any other type of license. The
++requirement for fonts to remain under this license does not apply
++to any document created using the fonts or their derivatives.
++
++DEFINITIONS
++"Font Software" refers to the set of files released by the Copyright
++Holder(s) under this license and clearly marked as such. This may
++include source files, build scripts and documentation.
++
++"Reserved Font Name" refers to any names specified as such after the
++copyright statement(s).
++
++"Original Version" refers to the collection of Font Software components as
++distributed by the Copyright Holder(s).
++
++"Modified Version" refers to any derivative made by adding to, deleting,
++or substituting -- in part or in whole -- any of the components of the
++Original Version, by changing formats or by porting the Font Software to a
++new environment.
++
++"Author" refers to any designer, engineer, programmer, technical
++writer or other person who contributed to the Font Software.
++
++PERMISSION & CONDITIONS
++Permission is hereby granted, free of charge, to any person obtaining
++a copy of the Font Software, to use, study, copy, merge, embed, modify,
++redistribute, and sell modified and unmodified copies of the Font
++Software, subject to the following conditions:
++
++1) Neither the Font Software nor any of its individual components,
++in Original or Modified Versions, may be sold by itself.
++
++2) Original or Modified Versions of the Font Software may be bundled,
++redistributed and/or sold with any software, provided that each copy
++contains the above copyright notice and this license. These can be
++included either as stand-alone text files, human-readable headers or
++in the appropriate machine-readable metadata fields within text or
++binary files as long as those fields can be easily viewed by the user.
++
++3) No Modified Version of the Font Software may use the Reserved Font
++Name(s) unless explicit written permission is granted by the corresponding
++Copyright Holder. This restriction only applies to the primary font name as
++presented to the users.
++
++4) The name(s) of the Copyright Holder(s) or the Author(s) of the Font
++Software shall not be used to promote, endorse or advertise any
++Modified Version, except to acknowledge the contribution(s) of the
++Copyright Holder(s) and the Author(s) or with their explicit written
++permission.
++
++5) The Font Software, modified or unmodified, in part or in whole,
++must be distributed entirely under this license, and must not be
++distributed under any other license. The requirement for fonts to
++remain under this license does not apply to any document created
++using the Font Software.
++
++TERMINATION
++This license becomes null and void if any of the above conditions are
++not met.
++
++DISCLAIMER
++THE FONT SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
++EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO ANY WARRANTIES OF
++MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT
++OF COPYRIGHT, PATENT, TRADEMARK, OR OTHER RIGHT. IN NO EVENT SHALL THE
++COPYRIGHT HOLDER BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
++INCLUDING ANY GENERAL, SPECIAL, INDIRECT, INCIDENTAL, OR CONSEQUENTIAL
++DAMAGES, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
++FROM, OUT OF THE USE OR INABILITY TO USE THE FONT SOFTWARE OR FROM
++OTHER DEALINGS IN THE FONT SOFTWARE.
+diff --git a/Replica/Fonts/LXGWMarkerGothic-Regular.ttf b/Replica/Fonts/LXGWMarkerGothic-Regular.ttf
+new file mode 100644
+index 0000000..c2a7c21
+Binary files /dev/null and b/Replica/Fonts/LXGWMarkerGothic-Regular.ttf differ
+diff --git a/Replica/Fonts/SmileySans-OFL.txt b/Replica/Fonts/SmileySans-OFL.txt
+new file mode 100644
+index 0000000..d451163
+--- /dev/null
++++ b/Replica/Fonts/SmileySans-OFL.txt
+@@ -0,0 +1,93 @@
++Copyright (c) 2022--2024, atelierAnchor <https://atelier-anchor.com>,
++with Reserved Font Name <Smiley> and <得意黑>.
++
++This Font Software is licensed under the SIL Open Font License, Version 1.1.
++This license is copied below, and is also available with a FAQ at:
++http://scripts.sil.org/OFL
++
++-----------------------------------------------------------
++SIL OPEN FONT LICENSE Version 1.1 - 26 February 2007
++-----------------------------------------------------------
++
++PREAMBLE
++The goals of the Open Font License (OFL) are to stimulate worldwide
++development of collaborative font projects, to support the font creation
++efforts of academic and linguistic communities, and to provide a free and
++open framework in which fonts may be shared and improved in partnership
++with others.
++
++The OFL allows the licensed fonts to be used, studied, modified and
++redistributed freely as long as they are not sold by themselves. The
++fonts, including any derivative works, can be bundled, embedded, 
++redistributed and/or sold with any software provided that any reserved
++names are not used by derivative works. The fonts and derivatives,
++however, cannot be released under any other type of license. The
++requirement for fonts to remain under this license does not apply
++to any document created using the fonts or their derivatives.
++
++DEFINITIONS
++"Font Software" refers to the set of files released by the Copyright
++Holder(s) under this license and clearly marked as such. This may
++include source files, build scripts and documentation.
++
++"Reserved Font Name" refers to any names specified as such after the
++copyright statement(s).
++
++"Original Version" refers to the collection of Font Software components as
++distributed by the Copyright Holder(s).
++
++"Modified Version" refers to any derivative made by adding to, deleting,
++or substituting -- in part or in whole -- any of the components of the
++Original Version, by changing formats or by porting the Font Software to a
++new environment.
++
++"Author" refers to any designer, engineer, programmer, technical
++writer or other person who contributed to the Font Software.
++
++PERMISSION & CONDITIONS
++Permission is hereby granted, free of charge, to any person obtaining
++a copy of the Font Software, to use, study, copy, merge, embed, modify,
++redistribute, and sell modified and unmodified copies of the Font
++Software, subject to the following conditions:
++
++1) Neither the Font Software nor any of its individual components,
++in Original or Modified Versions, may be sold by itself.
++
++2) Original or Modified Versions of the Font Software may be bundled,
++redistributed and/or sold with any software, provided that each copy
++contains the above copyright notice and this license. These can be
++included either as stand-alone text files, human-readable headers or
++in the appropriate machine-readable metadata fields within text or
++binary files as long as those fields can be easily viewed by the user.
++
++3) No Modified Version of the Font Software may use the Reserved Font
++Name(s) unless explicit written permission is granted by the corresponding
++Copyright Holder. This restriction only applies to the primary font name as
++presented to the users.
++
++4) The name(s) of the Copyright Holder(s) or the Author(s) of the Font
++Software shall not be used to promote, endorse or advertise any
++Modified Version, except to acknowledge the contribution(s) of the
++Copyright Holder(s) and the Author(s) or with their explicit written
++permission.
++
++5) The Font Software, modified or unmodified, in part or in whole,
++must be distributed entirely under this license, and must not be
++distributed under any other license. The requirement for fonts to
++remain under this license does not apply to any document created
++using the Font Software.
++
++TERMINATION
++This license becomes null and void if any of the above conditions are
++not met.
++
++DISCLAIMER
++THE FONT SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
++EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO ANY WARRANTIES OF
++MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT
++OF COPYRIGHT, PATENT, TRADEMARK, OR OTHER RIGHT. IN NO EVENT SHALL THE
++COPYRIGHT HOLDER BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
++INCLUDING ANY GENERAL, SPECIAL, INDIRECT, INCIDENTAL, OR CONSEQUENTIAL
++DAMAGES, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
++FROM, OUT OF THE USE OR INABILITY TO USE THE FONT SOFTWARE OR FROM
++OTHER DEALINGS IN THE FONT SOFTWARE.
+diff --git a/Replica/Fonts/SmileySans-Oblique.ttf b/Replica/Fonts/SmileySans-Oblique.ttf
+new file mode 100644
+index 0000000..c297dc6
+Binary files /dev/null and b/Replica/Fonts/SmileySans-Oblique.ttf differ
+diff --git a/Replica/OnboardingView.swift b/Replica/OnboardingView.swift
+new file mode 100644
+index 0000000..15ce7e1
+--- /dev/null
++++ b/Replica/OnboardingView.swift
+@@ -0,0 +1,188 @@
++import SwiftUI
++
++enum WelcomeStyle {
++    static let background = rgb(252, 249, 248)
++    static let green = rgb(0, 129, 90)
++    static let orange = rgb(244, 131, 61)
++    static let ink = rgb(30, 26, 22)
++    static let secondary = rgb(116, 113, 111)
++    static let paper = rgb(252, 244, 234)
++
++    static func rgb(_ r: Double, _ g: Double, _ b: Double) -> Color {
++        Color(.sRGB, red: r / 255, green: g / 255, blue: b / 255)
++    }
++
++    static func title(_ size: CGFloat) -> Font { .custom("SmileySans-Oblique", size: size) }
++    static func body(_ size: CGFloat) -> Font { .custom("LXGWMarkerGothic-Regular", size: size) }
++    static func number(_ size: CGFloat) -> Font { .custom("BarlowCondensed-Bold", size: size) }
++}
++
++struct OnboardingView: View {
++    @State private var step = 0
++    @State private var starts: [Date?] = [nil, nil, nil]
++    @State private var finished = false
++
++    var body: some View {
++        GeometryReader { geometry in
++            let scale = geometry.size.width / 440
++            let height = geometry.size.height / scale
++            ZStack(alignment: .topLeading) {
++                WelcomeStyle.background
++
++                TimelineView(.animation(minimumInterval: 1.0 / 60.0)) { timeline in
++                    HStack(spacing: 0) {
++                        ForEach(0..<3) { page in
++                            let elapsed = starts[page].map { timeline.date.timeIntervalSince($0) } ?? -10
++                            ZStack(alignment: .topLeading) {
++                                Group {
++                                    switch page {
++                                    case 0: RecommendationIllustration(time: elapsed)
++                                    case 1: MapIllustration(time: elapsed)
++                                    default: NavigationIllustration(time: elapsed)
++                                    }
++                                }
++                                .frame(width: 440, height: 500)
++                                .offset(y: 130)
++
++                                explanation(page)
++                                    .offset(x: 20, y: height * 0.6755)
++                            }
++                            .frame(width: 440, height: height, alignment: .topLeading)
++                            .clipped()
++                        }
++                    }
++                    .offset(x: -CGFloat(step) * 440)
++                }
++
++                header
++                    .offset(x: 20, y: 70)
++
++                Button(action: advance) {
++                    Text(step == 2 ? "继续" : "下一步")
++                        .font(WelcomeStyle.title(20))
++                        .foregroundStyle(.white)
++                        .frame(width: 400, height: 56)
++                        .background(WelcomeStyle.green, in: Capsule())
++                        .contentShape(Capsule())
++                }
++                .buttonStyle(WelcomeButtonStyle())
++                .accessibilityIdentifier("onboarding.next")
++                .offset(x: 20, y: height - 102)
++            }
++            .frame(width: 440, height: height, alignment: .topLeading)
++            .scaleEffect(scale, anchor: .topLeading)
++        }
++        .ignoresSafeArea()
++        .background(WelcomeStyle.background)
++        .onAppear { if starts[0] == nil { starts[0] = Date() } }
++        .fullScreenCover(isPresented: $finished) {
++            WelcomeCompletion {
++                starts[0] = Date()
++                step = 0
++                finished = false
++            }
++        }
++    }
++
++    private var header: some View {
++        HStack(spacing: 14) {
++            Button { select(step - 1) } label: {
++                Image(systemName: "chevron.left")
++                    .font(.system(size: 16, weight: .semibold))
++                    .foregroundStyle(WelcomeStyle.ink)
++                    .frame(width: 44, height: 44)
++                    .background(WelcomeStyle.rgb(242, 238, 234), in: Circle())
++            }
++            .opacity(step == 0 ? 0 : 1)
++            .disabled(step == 0)
++            .accessibilityLabel("上一步")
++            .buttonStyle(WelcomeButtonStyle())
++
++            HStack(spacing: 6) {
++                ForEach(0..<3) { index in
++                    Capsule()
++                        .fill(WelcomeStyle.rgb(230, 227, 226))
++                        .overlay(alignment: .leading) {
++                            Capsule()
++                                .fill(WelcomeStyle.orange)
++                                .frame(width: index <= step ? 92.67 : 0)
++                        }
++                        .frame(width: 92.67, height: 5)
++                }
++            }
++            .accessibilityLabel("第 \(step + 1) 步，共 3 步")
++
++            Button { finished = true } label: {
++                Text("跳过")
++                    .font(.system(size: 15))
++                    .foregroundStyle(WelcomeStyle.secondary)
++                    .frame(width: 38, height: 44)
++            }
++            .buttonStyle(WelcomeButtonStyle())
++        }
++    }
++
++    private func explanation(_ page: Int) -> some View {
++        let titles = ["跟着推荐者去吃", "世界各地都有好店", "一键导航到门口"]
++        let details = [
++            "关注你喜欢的推荐者，跟着他们一家家吃过去",
++            "遍布 200 多座城市，出差旅行走到哪儿都能吃上",
++            "看中的店点一下，直接导航带你过去"
++        ]
++        return VStack(alignment: .leading, spacing: 8) {
++            HStack(alignment: .firstTextBaseline, spacing: 12) {
++                Text("\(page + 1)")
++                    .font(WelcomeStyle.number(46))
++                    .foregroundStyle(WelcomeStyle.orange)
++                    .offset(y: -1)
++                Text(titles[page])
++                    .font(WelcomeStyle.title(30))
++                    .foregroundStyle(WelcomeStyle.ink)
++            }
++            Text(details[page])
++                .font(WelcomeStyle.body(17))
++                .foregroundStyle(WelcomeStyle.secondary)
++                .fixedSize(horizontal: true, vertical: false)
++        }
++    }
++
++    private func select(_ newStep: Int) {
++        guard (0..<3).contains(newStep), newStep != step else { return }
++        starts[newStep] = Date()
++        withAnimation(.spring(response: 0.46, dampingFraction: 0.94)) {
++            step = newStep
++        }
++    }
++
++    private func advance() {
++        if step < 2 { select(step + 1) } else { finished = true }
++    }
++}
++
++private struct WelcomeButtonStyle: ButtonStyle {
++    func makeBody(configuration: Configuration) -> some View {
++        configuration.label
++            .scaleEffect(configuration.isPressed ? 0.975 : 1)
++            .opacity(configuration.isPressed ? 0.86 : 1)
++            .animation(.easeOut(duration: 0.14), value: configuration.isPressed)
++    }
++}
++
++private struct WelcomeCompletion: View {
++    var replay: () -> Void
++
++    var body: some View {
++        ZStack {
++            WelcomeStyle.background.ignoresSafeArea()
++            VStack(spacing: 24) {
++                Image("welcome-shop").resizable().scaledToFit().frame(width: 240, height: 240)
++                Text("烟火小店").font(WelcomeStyle.title(36))
++                Text("跟着推荐者，发现街巷里的好味道")
++                    .font(WelcomeStyle.body(17)).foregroundStyle(WelcomeStyle.secondary)
++                Button("再看一次", action: replay)
++                    .font(WelcomeStyle.title(20)).foregroundStyle(WelcomeStyle.green)
++            }
++            .foregroundStyle(WelcomeStyle.ink)
++        }
++    }
++}
+diff --git a/Replica/ReplicaApp.swift b/Replica/ReplicaApp.swift
+index 220aa8c..1548de3 100644
+--- a/Replica/ReplicaApp.swift
++++ b/Replica/ReplicaApp.swift
+@@ -1,10 +1,34 @@
+ import SwiftUI
++import CoreText
+ 
+ @main
+ struct ReplicaApp: App {
++    init() {
++        for name in ["SmileySans-Oblique", "LXGWMarkerGothic-Regular", "BarlowCondensed-Bold"] {
++            if let url = Bundle.main.url(forResource: name, withExtension: "ttf") {
++                CTFontManagerRegisterFontsForURL(url as CFURL, .process, nil)
++            }
++        }
++    }
++
+     var body: some Scene {
+         WindowGroup {
+-            Text("Replace me with the onboarding")
++            OnboardingHost()
++                .ignoresSafeArea()
++                .preferredColorScheme(.light)
+         }
+     }
+ }
++
++private struct OnboardingHost: UIViewControllerRepresentable {
++    func makeUIViewController(context: Context) -> OnboardingController {
++        OnboardingController(rootView: OnboardingView())
++    }
++
++    func updateUIViewController(_ uiViewController: OnboardingController, context: Context) {}
++}
++
++private final class OnboardingController: UIHostingController<OnboardingView> {
++    override var prefersHomeIndicatorAutoHidden: Bool { true }
++    override var preferredStatusBarStyle: UIStatusBarStyle { .darkContent }
++}
+diff --git a/Replica/WelcomeIllustrations.swift b/Replica/WelcomeIllustrations.swift
+new file mode 100644
+index 0000000..b4ccbea
+--- /dev/null
++++ b/Replica/WelcomeIllustrations.swift
+@@ -0,0 +1,338 @@
++import SwiftUI
++
++// All illustration coordinates use the reference device's 440-point canvas.
++// A shared clock keeps the staggered entrances and the drawn route in sync.
++private func progress(_ time: Double, after delay: Double, duration: Double) -> Double {
++    min(1, max(0, (time - delay) / duration))
++}
++
++private func ease(_ value: Double) -> Double {
++    value * value * (3 - 2 * value)
++}
++
++private func spring(_ time: Double, after delay: Double, speed: Double = 15) -> Double {
++    let t = max(0, time - delay)
++    guard t > 0 else { return 0 }
++    return 1 - exp(-speed * 0.7 * t) * (cos(speed * t) + 0.7 * sin(speed * t))
++}
++
++struct RecommendationIllustration: View {
++    let time: Double
++
++    var body: some View {
++        ZStack(alignment: .topLeading) {
++            recommender("welcome-suipo", name: "特厨隋坡", size: 88, selected: false, delay: -0.08)
++                .position(x: 103, y: 114)
++            recommender("welcome-wulala", name: "特别乌啦啦", size: 114, selected: true, delay: 0.04)
++                .position(x: 220, y: 84)
++            recommender("welcome-jason", name: "刘雨鑫JASON", size: 88, selected: false, delay: 0.16)
++                .position(x: 337, y: 114)
++
++            RecommendationCard(time: time)
++                .frame(width: 340, height: 204)
++                .rotationEffect(.degrees(-1.5))
++                .scaleEffect(0.96 + 0.04 * spring(time, after: 0.35))
++                .opacity(ease(progress(time, after: 0.35, duration: 0.18)))
++                .position(x: 220, y: 273 + 34 * (1 - spring(time, after: 0.35)))
++
++            Image("welcome-noodles")
++                .resizable().scaledToFit()
++                .frame(width: 140, height: 140)
++                .shadow(color: .brown.opacity(0.14), radius: 9, x: 0, y: 9)
++                .scaleEffect(spring(time, after: 2.05, speed: 14))
++                .opacity(progress(time, after: 2.05, duration: 0.12))
++                .rotationEffect(.degrees(-7 * (1 - spring(time, after: 2.05))))
++                .position(x: 340, y: 421 + sin(max(0, time - 2.2) * 2.4) * 2.5)
++        }
++        .frame(width: 440, height: 500)
++        .accessibilityElement(children: .combine)
++    }
++
++    private func recommender(_ asset: String, name: String, size: CGFloat, selected: Bool, delay: Double) -> some View {
++        let arrival = spring(time, after: delay)
++        return ZStack(alignment: .topLeading) {
++            ZStack {
++                Circle().fill(asset == "welcome-suipo" ? WelcomeStyle.rgb(254, 242, 204) : WelcomeStyle.rgb(218, 240, 227))
++                Image(asset).resizable().scaledToFit().clipShape(Circle())
++                if selected {
++                    Circle().strokeBorder(WelcomeStyle.orange, lineWidth: 3)
++                }
++            }
++            .frame(width: size, height: size)
++            .position(x: 60, y: size / 2)
++            Text(name)
++                .font(WelcomeStyle.title(selected ? 17.5 : 15))
++                .foregroundStyle(WelcomeStyle.ink)
++                .fixedSize()
++                .position(x: 60, y: selected ? 130 : 100.5)
++        }
++        .frame(width: 120, height: 150)
++        .scaleEffect(0.6 + arrival * 0.4)
++        .offset(y: (1 - arrival) * 12)
++        .opacity(progress(time, after: delay, duration: 0.19))
++    }
++}
++
++private struct RecommendationCard: View {
++    let time: Double
++    private let recommendation = "这是上海我最喜欢吃的河南拉面之一，面条劲道，特别是蒜的味道很好。"
++
++    private var typedRecommendation: String {
++        let count = Int(progress(time, after: 0.38, duration: 1.03) * Double(recommendation.count))
++        return recommendation.prefix(count).enumerated().map { index, character in
++            (index == 15 || index == 30 ? "\n" : "") + String(character)
++        }.joined()
++    }
++
++    var body: some View {
++        ZStack(alignment: .topLeading) {
++            RoundedRectangle(cornerRadius: 2)
++                .fill(WelcomeStyle.paper)
++                .overlay(RoundedRectangle(cornerRadius: 2).stroke(WelcomeStyle.rgb(231, 222, 209), lineWidth: 1))
++                .rotationEffect(.degrees(4.5))
++                .padding(.vertical, 5)
++
++            RoundedRectangle(cornerRadius: 2)
++                .fill(WelcomeStyle.paper)
++                .overlay(RoundedRectangle(cornerRadius: 2).stroke(WelcomeStyle.rgb(231, 224, 214), lineWidth: 1))
++                .shadow(color: WelcomeStyle.ink.opacity(0.08), radius: 1.5, x: 0, y: 2)
++
++            PaperGrain()
++                .clipShape(RoundedRectangle(cornerRadius: 2))
++
++            VStack(alignment: .leading, spacing: 8) {
++                HStack(alignment: .firstTextBaseline, spacing: 8) {
++                    Text("特别乌啦啦").font(WelcomeStyle.title(22))
++                    Text("推荐").font(.system(size: 14)).foregroundStyle(WelcomeStyle.secondary)
++                }
++                .frame(height: 29, alignment: .leading)
++
++                Text(typedRecommendation)
++                    .font(.system(size: 21.5))
++                    .lineSpacing(7.5)
++                    .fixedSize(horizontal: true, vertical: true)
++                    .frame(width: 308, height: 98, alignment: .topLeading)
++                    .offset(y: 3)
++
++                HStack(alignment: .center, spacing: 0) {
++                    Text("推荐度")
++                        .font(.system(size: 12))
++                        .foregroundStyle(WelcomeStyle.secondary)
++                        .padding(.trailing, 2)
++                    ForEach(0..<3) { index in
++                        Image("icon-flame")
++                            .resizable().scaledToFit()
++                            .frame(width: 26, height: 26)
++                            .scaleEffect(spring(time, after: 1.58 + Double(index) * 0.15, speed: 18))
++                            .opacity(progress(time, after: 1.58 + Double(index) * 0.15, duration: 0.1))
++                    }
++                }
++                .frame(height: 26)
++            }
++            .foregroundStyle(WelcomeStyle.ink)
++            .padding(.horizontal, 16)
++            .padding(.top, 22)
++
++            PushPin()
++                .frame(width: 28, height: 28)
++                .offset(x: 9, y: -7)
++        }
++        .shadow(color: WelcomeStyle.ink.opacity(0.05), radius: 8, x: 0, y: 5)
++    }
++}
++
++private struct PaperGrain: View {
++    var body: some View {
++        Canvas { context, size in
++            for index in 0..<170 {
++                let x = CGFloat((index * 73 + 13) % 997) / 997 * size.width
++                let y = CGFloat((index * 139 + 37) % 991) / 991 * size.height
++                let width = index % 5 == 0 ? 1.5 : 0.6
++                context.fill(Path(ellipseIn: CGRect(x: x, y: y, width: width, height: 0.6)), with: .color(.brown.opacity(0.045)))
++            }
++            for y in [85.0, 117.5, 150.0] {
++                var line = Path()
++                line.move(to: CGPoint(x: 16, y: y))
++                line.addLine(to: CGPoint(x: size.width - 16, y: y))
++                context.stroke(line, with: .color(.brown.opacity(0.07)), lineWidth: 0.6)
++            }
++        }
++    }
++}
++
++private struct PushPin: View {
++    var body: some View {
++        ZStack {
++            Capsule()
++                .fill(LinearGradient(colors: [.gray.opacity(0.25), .gray.opacity(0.8), .white], startPoint: .leading, endPoint: .trailing))
++                .frame(width: 3, height: 16)
++                .rotationEffect(.degrees(36))
++                .offset(x: -5, y: 8)
++            Ellipse()
++                .fill(LinearGradient(colors: [WelcomeStyle.rgb(16, 157, 126), WelcomeStyle.rgb(0, 76, 57)], startPoint: .topLeading, endPoint: .bottomTrailing))
++                .frame(width: 21, height: 19)
++                .rotationEffect(.degrees(-15))
++                .shadow(color: .black.opacity(0.25), radius: 1.2, x: 1, y: 2)
++            Circle()
++                .fill(RadialGradient(colors: [WelcomeStyle.rgb(43, 180, 145), WelcomeStyle.rgb(0, 113, 83), WelcomeStyle.rgb(0, 92, 69)], center: .topLeading, startRadius: 0, endRadius: 13))
++                .frame(width: 14, height: 14)
++                .overlay(Circle().stroke(.white.opacity(0.12), lineWidth: 1))
++                .offset(x: -1, y: -2)
++        }
++        .shadow(color: .black.opacity(0.16), radius: 1, x: -3, y: 5)
++    }
++}
++
++struct MapIllustration: View {
++    let time: Double
++
++    private let pins: [(x: Double, y: Double, red: Bool)] = [
++        (126, 116, true), (306, 120, false), (216, 173, false),
++        (100, 227, true), (340, 202, false), (175, 281, false),
++        (274, 291, true), (264, 204, false)
++    ]
++
++    private var count: Int {
++        Int(progress(time, after: 0.4, duration: 1.2) * 40) * 50
++    }
++
++    var body: some View {
++        ZStack(alignment: .topLeading) {
++            ZStack(alignment: .topLeading) {
++                Image("welcome-map")
++                    .resizable().scaledToFit()
++                    .frame(width: 376, height: 376)
++                    .shadow(color: .brown.opacity(0.14), radius: 10, x: 0, y: 10)
++                    .offset(x: 32, y: 23)
++
++                ForEach(pins.indices, id: \.self) { index in
++                    let pin = pins[index]
++                    let delay = 0.25 + Double(index) * 0.17
++                    let arrival = spring(time, after: delay, speed: 17)
++                    Image(pin.red ? "icon-pin-red" : "icon-pin")
++                        .resizable().scaledToFit()
++                        .frame(width: 44, height: 44)
++                        .scaleEffect(0.65 + 0.35 * arrival, anchor: .bottom)
++                        .opacity(progress(time, after: delay, duration: 0.14))
++                        .position(x: pin.x, y: pin.y - 35 * (1 - arrival))
++                }
++            }
++            .frame(width: 440, height: 400)
++            .scaleEffect(0.88 + 0.12 * spring(time, after: 0.03, speed: 13))
++            .opacity(progress(time, after: 0.02, duration: 0.22))
++
++            HStack(alignment: .firstTextBaseline, spacing: 5) {
++                Text(verbatim: String(count))
++                    .font(WelcomeStyle.number(50))
++                    .foregroundStyle(WelcomeStyle.orange)
++                    .contentTransition(.numericText(value: Double(count)))
++                    .animation(.easeOut(duration: 0.16), value: count)
++                Text("多家小店")
++                    .font(WelcomeStyle.title(23))
++                    .foregroundStyle(WelcomeStyle.ink)
++            }
++            .opacity(progress(time, after: 0.4, duration: 0.2))
++            .position(x: 221, y: 441)
++        }
++        .frame(width: 440, height: 500)
++    }
++}
++
++struct NavigationIllustration: View {
++    let time: Double
++
++    private var travel: Double { progress(time, after: 0.65, duration: 1.4) }
++
++    var body: some View {
++        let plane = NavigationRoute.location(at: travel)
++        let ahead = NavigationRoute.location(at: min(1, travel + 0.015))
++        let behind = NavigationRoute.location(at: max(0, travel - 0.015))
++        let angle = atan2(ahead.y - behind.y, ahead.x - behind.x) * 180 / .pi + 45
++        let arrived = spring(time, after: 2.2, speed: 16)
++
++        ZStack(alignment: .topLeading) {
++            Image("welcome-shop")
++                .resizable().scaledToFit()
++                .frame(width: 256, height: 256)
++                .shadow(color: .brown.opacity(0.17), radius: 12, x: 0, y: 12)
++                .scaleEffect(0.88 + 0.12 * spring(time, after: 0.03, speed: 13))
++                .opacity(progress(time, after: 0.02, duration: 0.22))
++                .position(x: 276, y: 152 - 4 * sin(progress(time, after: 2.2, duration: 0.45) * .pi))
++
++            NavigationRoute.path.trim(from: travel, to: 1)
++                .stroke(WelcomeStyle.rgb(211, 209, 204), style: StrokeStyle(lineWidth: 3, lineCap: .round, dash: [0.1, 7]))
++                .opacity(progress(time, after: 0.36, duration: 0.25))
++
++            NavigationRoute.path.trim(from: 0, to: travel)
++                .stroke(WelcomeStyle.orange, style: StrokeStyle(lineWidth: 5.5, lineCap: .round, dash: [0.1, 14.5]))
++
++            Image("icon-pin")
++                .resizable().scaledToFit()
++                .frame(width: 48, height: 48)
++                .opacity(progress(time, after: 0.35, duration: 0.16))
++                .scaleEffect(0.7 + 0.3 * spring(time, after: 0.35))
++                .position(x: 86, y: 406 - 100 * (1 - spring(time, after: 0.35, speed: 12)))
++
++            Image("icon-paper-plane")
++                .resizable().scaledToFit()
++                .frame(width: 48, height: 48)
++                .rotationEffect(.degrees(angle))
++                .opacity(progress(time, after: 0.59, duration: 0.15) * (1 - progress(time, after: 2.05, duration: 0.15)))
++                .scaleEffect(1 - 0.3 * progress(time, after: 2.05, duration: 0.2))
++                .position(plane)
++
++            Text("到了")
++                .font(WelcomeStyle.title(26))
++                .foregroundStyle(.white)
++                .frame(width: 78, height: 46)
++                .background(WelcomeStyle.green, in: Capsule())
++                .scaleEffect(arrived)
++                .opacity(progress(time, after: 2.2, duration: 0.15))
++                .position(x: 276, y: 314)
++        }
++        .frame(width: 440, height: 500)
++    }
++}
++
++private enum NavigationRoute {
++    static let points: [CGPoint] = {
++        var result: [CGPoint] = []
++        func curve(_ p0: CGPoint, _ p1: CGPoint, _ p2: CGPoint, _ p3: CGPoint) {
++            for i in 0...80 {
++                let t = Double(i) / 80
++                let s = 1 - t
++                result.append(CGPoint(
++                    x: s*s*s*p0.x + 3*s*s*t*p1.x + 3*s*t*t*p2.x + t*t*t*p3.x,
++                    y: s*s*s*p0.y + 3*s*s*t*p1.y + 3*s*t*t*p2.y + t*t*t*p3.y
++                ))
++            }
++        }
++        curve(CGPoint(x: 86, y: 430), CGPoint(x: 145, y: 434), CGPoint(x: 216, y: 439), CGPoint(x: 201, y: 391))
++        curve(CGPoint(x: 201, y: 391), CGPoint(x: 187, y: 346), CGPoint(x: 158, y: 298), CGPoint(x: 212, y: 275))
++        curve(CGPoint(x: 212, y: 275), CGPoint(x: 225, y: 268), CGPoint(x: 246, y: 265), CGPoint(x: 264, y: 262))
++        return result
++    }()
++
++    static let lengths: [CGFloat] = {
++        var result: [CGFloat] = [0]
++        for index in 1..<points.count {
++            result.append(result[index - 1] + hypot(points[index].x - points[index - 1].x, points[index].y - points[index - 1].y))
++        }
++        return result
++    }()
++
++    static var path: Path {
++        Path { path in
++            path.move(to: points[0])
++            path.addLines(Array(points.dropFirst()))
++        }
++    }
++
++    static func location(at progress: Double) -> CGPoint {
++        let distance = progress * (lengths.last ?? 0)
++        guard let index = lengths.firstIndex(where: { $0 >= distance }), index > 0 else { return points[0] }
++        let fraction = (distance - lengths[index - 1]) / max(0.0001, lengths[index] - lengths[index - 1])
++        return CGPoint(x: points[index - 1].x + (points[index].x - points[index - 1].x) * fraction,
++                       y: points[index - 1].y + (points[index].y - points[index - 1].y) * fraction)
++    }
++}

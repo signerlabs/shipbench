@@ -1,0 +1,9 @@
+{"bundleId":"BUNDLE","launchArgs":ARGS,"steps":[
+ {"op":"wait","t":6.0},
+ {"op":"shot","path":"SHOTS/k1.png"},
+ {"op":"tap","x":0.5,"y":0.922},{"op":"wait","t":4.6},
+ {"op":"shot","path":"SHOTS/k2.png"},
+ {"op":"tap","x":0.5,"y":0.922},{"op":"wait","t":3.2},
+ {"op":"shot","path":"SHOTS/k3.png"},
+ {"op":"wait","t":0.5}
+]}

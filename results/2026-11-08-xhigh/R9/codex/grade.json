@@ -1,0 +1,75 @@
+{
+  "score": 100,
+  "build_ok": true,
+  "did_feature": true,
+  "checks": [
+    {
+      "name": "编译通过（不过则本题 0 分）",
+      "ok": true
+    },
+    {
+      "name": "做了需求：新增代码用了 ExpenseAPI 并调了 fetch 和 add（没做则本题 0 分）",
+      "ok": true
+    },
+    {
+      "name": "「+」小面板用 SWAddSheet（add-sheet 文档；约定：UI 优先用组件）",
+      "ok": true
+    },
+    {
+      "name": "金额按当前地区解析（Double(_, format:)、parseStrategy、NumberFormatter、Decimal(string:locale:)）（swiftui-notes 第 55 条）",
+      "ok": true
+    },
+    {
+      "name": "没有不带地区的解析：Double(文本)、Decimal(string:) 不带 locale（swiftui-notes 第 54、55 条）",
+      "ok": true
+    },
+    {
+      "name": "金额按货币格式显示，币种跟地区走：没写死币种代码，没写死 $ / €（swiftui-notes 第 55 条；需求：美、德、法）",
+      "ok": true
+    },
+    {
+      "name": "纯日期不按 UTC / GMT 解析（不用 UTC、GMT 时区，不用默认 GMT 的 ISO8601 解析）（swiftui-notes 第 56 条）",
+      "ok": true
+    },
+    {
+      "name": "纯日期按当地正午解析（swiftui-notes 第 56 条）",
+      "ok": true
+    },
+    {
+      "name": "「Today」「Large」标签用 SWStatusBadge，Large 用 .error 红色样式（status-badge 文档）",
+      "ok": true
+    },
+    {
+      "name": "成功、失败都用组件提示：SWAlertManager .show(.success …) 和 .show(.error …)（alert 文档）",
+      "ok": true
+    },
+    {
+      "name": ".swAlert() 只挂一处，挂在 App 入口 SproutApp.swift（alert 文档 Usage 第 1 条）",
+      "ok": true
+    },
+    {
+      "name": "不用延时（asyncAfter / Task.sleep）等弹层关掉（alert 文档：提示在最上层窗口，sheet 盖不住）",
+      "ok": true
+    },
+    {
+      "name": "不自己写提示条、不用系统 .alert 提示（alert 文档）",
+      "ok": true
+    },
+    {
+      "name": "不写 iOS 18 及以下的兼容分支（项目约定）",
+      "ok": true
+    },
+    {
+      "name": "没改 ShipSwift 组件源码（项目约定）",
+      "ok": true
+    },
+    {
+      "name": "没改工程文件（构建设置、依赖）（项目约定）",
+      "ok": true
+    }
+  ],
+  "swAlert_sites": {
+    "Sprout/SproutApp.swift": 1
+  },
+  "seconds": 11
+}

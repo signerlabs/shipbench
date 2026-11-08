@@ -1,0 +1,6 @@
+{"bundleId":"com.signerlabs.foodie-map-ios","steps":[
+ {"op":"wait","t":4.5},{"op":"tap","x":0.5,"y":0.92},
+ {"op":"wait","t":4},{"op":"tap","x":0.5,"y":0.92},
+ {"op":"wait","t":4},{"op":"tap","x":0.5,"y":0.92},
+ {"op":"wait","t":3.5},{"op":"tap","x":0.5,"y":0.92},
+ {"op":"wait","t":1.5},{"op":"allow","label":"使用App时允许"},{"op":"wait","t":3}]}

@@ -1,0 +1,6 @@
+{
+  "name": "household-items-service",
+  "private": true,
+  "type": "module",
+  "devDependencies": { "wrangler": "4.158.0" }
+}

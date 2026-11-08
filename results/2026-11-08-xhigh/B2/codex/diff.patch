@@ -1,0 +1,2171 @@
+ .dev.vars.example           |   2 +
+ .gitignore                  |   4 +
+ README.md                   | 105 ++++++++++
+ migrations/0001_initial.sql |  82 ++++++++
+ package-lock.json           | 390 ++++++++++++++++++++++++++++++++++-
+ package.json                |  14 +-
+ scripts/setup.mjs           |  12 ++
+ src/auth.ts                 |  47 +++++
+ src/dates.ts                |  47 +++++
+ src/db.ts                   |  34 +++
+ src/households.ts           |  84 ++++++++
+ src/http.ts                 |  92 +++++++++
+ src/index.ts                |  72 +++++++
+ src/items.ts                | 139 +++++++++++++
+ src/locations.ts            |  53 +++++
+ src/reminders.ts            |  33 +++
+ src/security.ts             |  68 ++++++
+ src/types.ts                |  27 +++
+ tests/api.test.mjs          | 490 ++++++++++++++++++++++++++++++++++++++++++++
+ tests/harness.mjs           | 148 +++++++++++++
+ tsconfig.json               |  16 ++
+ wrangler.jsonc              |  16 ++
+ 22 files changed, 1972 insertions(+), 3 deletions(-)
+diff --git a/.dev.vars.example b/.dev.vars.example
+new file mode 100644
+index 0000000..486dc9a
+--- /dev/null
++++ b/.dev.vars.example
+@@ -0,0 +1,2 @@
++# 运行 npm run setup 可安全生成 .dev.vars。也可自行设置至少 32 字符的随机密钥。
++TOKEN_SECRET=
+diff --git a/.gitignore b/.gitignore
+index db3dd13..2b815f9 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -6,3 +6,7 @@ build/
+ *.xcuserstate
+ xcuserdata/
+ .swiftpm/
++.dev.vars
++.dev.vars.*
++!.dev.vars.example
++.test-state/
+diff --git a/README.md b/README.md
+new file mode 100644
+index 0000000..a862470
+--- /dev/null
++++ b/README.md
+@@ -0,0 +1,105 @@
++# 家庭物品与过期提醒
++
++Cloudflare Workers（TypeScript）+ D1 后端，使用 Wrangler 本地运行。已实现账号、家庭与成员、一次性邀请、三层位置、物品管理、游标分页和每日过期提醒。没有运行时第三方依赖。
++
++## 本地启动
++
++本项目在 Node.js 24、Wrangler 4.158.0 下验证。
++
++```sh
++npm ci
++npm run setup
++npx wrangler d1 migrations apply DB --local
++npx wrangler dev --local
++```
++
++默认地址为 `http://localhost:8787`。当前工作目录已经生成 `.dev.vars` 并完成本地迁移，直接运行最后一条命令即可。
++
++`npm run setup` 使用 48 字节密码学随机数生成 `TOKEN_SECRET`，写入 `.dev.vars`，不会覆盖已有文件。代码从 `env.TOKEN_SECRET` 读取非空密钥；`.dev.vars` 已加入 Git 忽略规则。复制项目后重新运行 setup 即可。变更密钥会使旧令牌和游标失效。
++
++`wrangler.jsonc` 的 D1 绑定名为 `DB`，`database_id` 是供本地使用的占位 UUID，无需 Cloudflare 账号。日常开发数据保存在 `.wrangler/state/`。所有文档和测试命令均使用本地模式。
++
++注册示例：
++
++```sh
++curl http://localhost:8787/v1/auth/register \
++  -H 'Content-Type: application/json' \
++  -d '{"email":"a@example.com","password":"password123"}'
++```
++
++后续请求使用返回的 `token`：
++
++```sh
++curl http://localhost:8787/v1/households \
++  -H 'Content-Type: application/json' \
++  -H 'Authorization: Bearer <token>' \
++  -d '{"name":"我家","timezone":"Asia/Singapore"}'
++```
++
++## 定时提醒
++
++配置的 cron 是 `0 * * * *`。本地通过 Wrangler 自带入口触发：
++
++```sh
++curl 'http://localhost:8787/cdn-cgi/handler/scheduled?cron=0+*+*+*+*&time=1795000000000'
++```
++
++该入口由 Wrangler 本地运行器提供，不是应用的业务 API。处理器只使用传入的 `event.scheduledTime`，按各家庭时区取当地日期，再生成当天到未来 3 天（含两端）的提醒。提醒唯一键为 `(item_id, remind_on)`，重复和并发触发不会重复写入。
++
++提醒保存生成时的物品名称和到期日；之后修改物品不会改写已有提醒。删除物品时，其提醒同步删除。数量为 0 的物品依然按到期日生成提醒。
++
++## 验证
++
++```sh
++npm run typecheck
++npm test
++# 或一次运行两项
++npm run check
++```
++
++29 项集成测试会自动创建临时配置、独立随机密钥和临时 D1 数据库，应用真实迁移，启动 `wrangler dev --local`，通过 HTTP 验证接口，结束后清理进程和临时目录。不会修改日常开发数据库。
++
++覆盖内容包括：
++
++- 账号校验、密码加盐哈希、令牌篡改和过期、同一邮箱并发注册。
++- JSON 校验、恰好 64 KB、超过 64 KB、没有 Content-Length 的分块 UTF-8 请求。
++- 家庭隔离、成员角色、退出与踢人、踢人与写入并发。
++- 邀请码失效、重复领取、多人争抢一个码、同一人同时使用不同码。
++- 三层位置树、非空删除、跨家庭引用、位置删除与物品创建并发。
++- 物品字段和公历日期校验、部分更新、并发更新不同字段。
++- 默认和日期排序分页、删除已返回的页尾后继续翻页、游标篡改与跨家庭复用。
++- 国际日期变更线、非整小时时区、当地午夜、夏令时跳时和回拨。
++- 指定触发时刻、0/3 天提醒边界、重复和并发触发、跨日生成新提醒。
++
++## 实现约定
++
++认证令牌采用 HMAC-SHA256 签名，有效期 30 天。密码采用 PBKDF2-SHA256（100,000 次迭代、每用户随机 16 字节盐）；密码原文不写入数据库。认证和游标签名使用不同用途前缀，不能相互替换。
++
++业务操作使用参数化 SQL。家庭权限检查与实际读写放在同一个 [D1 batch 事务](https://developers.cloudflare.com/d1/worker-api/d1-database/#batch) 中，写操作同时带成员或 owner 条件。邀请码消费通过数据库触发器原子添加成员；邮箱和提醒由数据库唯一约束保护。
++
++物品内部使用自增序号表示创建顺序，对外 id 为字符串。游标包含排序位置、家庭、筛选条件、首屏日期和首屏创建序号上界，并进行签名校验；续页不依赖上一页末尾物品仍然存在。一次遍历排除首屏之后新增的物品。更改已有物品的排序字段后，应重新从第一页获取列表。
++
++`days_left` 先取家庭当地的公历日期，再做日期差运算，因此不受夏令时一天为 23 或 25 小时影响。日期仅接受 `0001-01-01` 到 `9999-12-31` 范围内有效的 `YYYY-MM-DD`。
++
++字段的省略和空值规则：
++
++- 新建位置省略 `parent_id` 等同于 `null`，表示第一层。
++- 新建物品省略 `quantity` 为 1，省略 `location_id` / `expires_on` 为 `null`。
++- PATCH 省略字段保持原值，`location_id: null` / `expires_on: null` 清空字段。
++- `name` 始终为非空字符串。`quantity` 始终为非负安全整数，因此 `quantity: null` 返回 400；清零使用 `quantity: 0`。
++- `expired=false` 等同于不筛选；同时提供 `expired=true` 和 `expiring_within_days` 返回 400。翻页需保留原筛选参数，可以调整 `limit`。
++- 成功删除返回 204 空响应；其他业务响应均为 JSON，错误格式统一为 `{"error":"说明"}`。
++
++## 文件
++
++| 路径 | 内容 |
++| --- | --- |
++| `src/index.ts` | HTTP 路由与 Worker scheduled 入口 |
++| `src/auth.ts`、`src/security.ts` | 账号、密码和签名 |
++| `src/db.ts` | 家庭授权及事务操作 |
++| `src/households.ts`、`src/locations.ts`、`src/items.ts` | 业务接口 |
++| `src/dates.ts`、`src/reminders.ts` | 时区日期和定时提醒 |
++| `src/http.ts` | JSON、大小限制、通用校验和错误响应 |
++| `migrations/0001_initial.sql` | 表、索引、外键和邀请码触发器 |
++| `tests/api.test.mjs`、`tests/harness.mjs` | 真实 Wrangler / D1 集成测试 |
++| `scripts/setup.mjs` | 本地随机密钥初始化 |
+diff --git a/migrations/0001_initial.sql b/migrations/0001_initial.sql
+new file mode 100644
+index 0000000..e33865f
+--- /dev/null
++++ b/migrations/0001_initial.sql
+@@ -0,0 +1,82 @@
++PRAGMA foreign_keys = ON;
++
++CREATE TABLE users (
++  id TEXT PRIMARY KEY,
++  email TEXT NOT NULL UNIQUE COLLATE NOCASE,
++  password_hash TEXT NOT NULL,
++  CHECK (email = lower(email))
++);
++
++CREATE TABLE households (
++  id TEXT PRIMARY KEY,
++  name TEXT NOT NULL CHECK (length(trim(name)) > 0),
++  timezone TEXT NOT NULL
++);
++
++CREATE TABLE household_members (
++  household_id TEXT NOT NULL REFERENCES households(id) ON DELETE CASCADE,
++  user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
++  role TEXT NOT NULL CHECK (role IN ('owner', 'member')),
++  PRIMARY KEY (household_id, user_id)
++);
++CREATE INDEX members_by_user ON household_members(user_id, household_id);
++CREATE UNIQUE INDEX one_owner_per_household ON household_members(household_id) WHERE role = 'owner';
++
++CREATE TABLE invites (
++  code TEXT PRIMARY KEY,
++  household_id TEXT NOT NULL REFERENCES households(id) ON DELETE CASCADE,
++  expires_at_ms INTEGER NOT NULL,
++  used_by TEXT REFERENCES users(id),
++  used_at_ms INTEGER,
++  CHECK ((used_by IS NULL) = (used_at_ms IS NULL))
++);
++CREATE INDEX invites_by_household ON invites(household_id);
++
++-- Consuming an invitation and adding the member are one atomic database write.
++-- A membership constraint failure rolls back the invitation update as well.
++CREATE TRIGGER accept_invite_membership
++AFTER UPDATE OF used_by ON invites
++WHEN OLD.used_by IS NULL AND NEW.used_by IS NOT NULL
++BEGIN
++  INSERT INTO household_members (household_id, user_id, role)
++  VALUES (NEW.household_id, NEW.used_by, 'member');
++END;
++
++CREATE TABLE locations (
++  id TEXT PRIMARY KEY,
++  household_id TEXT NOT NULL REFERENCES households(id) ON DELETE CASCADE,
++  name TEXT NOT NULL CHECK (length(trim(name)) > 0),
++  parent_id TEXT,
++  depth INTEGER NOT NULL CHECK (depth BETWEEN 1 AND 3),
++  UNIQUE (household_id, id),
++  FOREIGN KEY (household_id, parent_id) REFERENCES locations(household_id, id) ON DELETE RESTRICT,
++  CHECK ((parent_id IS NULL AND depth = 1) OR (parent_id IS NOT NULL AND depth > 1))
++);
++CREATE INDEX locations_by_parent ON locations(household_id, parent_id);
++
++CREATE TABLE items (
++  seq INTEGER PRIMARY KEY AUTOINCREMENT,
++  id TEXT NOT NULL UNIQUE,
++  household_id TEXT NOT NULL REFERENCES households(id) ON DELETE CASCADE,
++  name TEXT NOT NULL CHECK (length(trim(name)) > 0),
++  quantity INTEGER NOT NULL DEFAULT 1 CHECK (typeof(quantity) = 'integer' AND quantity >= 0),
++  location_id TEXT,
++  expires_on TEXT,
++  UNIQUE (household_id, id),
++  FOREIGN KEY (household_id, location_id) REFERENCES locations(household_id, id) ON DELETE RESTRICT
++);
++CREATE INDEX items_by_creation ON items(household_id, seq);
++CREATE INDEX items_by_expiration ON items(household_id, expires_on, seq);
++CREATE INDEX items_by_location ON items(household_id, location_id);
++
++CREATE TABLE reminders (
++  id TEXT PRIMARY KEY,
++  household_id TEXT NOT NULL REFERENCES households(id) ON DELETE CASCADE,
++  item_id TEXT NOT NULL,
++  item_name TEXT NOT NULL,
++  expires_on TEXT NOT NULL,
++  remind_on TEXT NOT NULL,
++  FOREIGN KEY (household_id, item_id) REFERENCES items(household_id, id) ON DELETE CASCADE,
++  UNIQUE (item_id, remind_on)
++);
++CREATE INDEX reminders_by_day ON reminders(household_id, remind_on, expires_on, id);
+diff --git a/package-lock.json b/package-lock.json
+index b898c45..7e328cc 100644
+--- a/package-lock.json
++++ b/package-lock.json
+@@ -1,11 +1,13 @@
+ {
+-  "name": "subscription-service",
++  "name": "household-items-service",
+   "lockfileVersion": 3,
+   "requires": true,
+   "packages": {
+     "": {
+-      "name": "subscription-service",
++      "name": "household-items-service",
+       "devDependencies": {
++        "@cloudflare/workers-types": "^5.20261108.1",
++        "typescript": "^7.0.2",
+         "wrangler": "4.158.0"
+       }
+     },
+@@ -120,6 +122,14 @@
+         "node": ">=16"
+       }
+     },
++    "node_modules/@cloudflare/workers-types": {
++      "version": "5.20261108.1",
++      "resolved": "https://registry.npmjs.org/@cloudflare/workers-types/-/workers-types-5.20261108.1.tgz",
++      "integrity": "sha512-lCGPhVOCy4sepGLuuy6KGxlxt8pVD8kbAt+mkdPcdr29fi5YLtihOLGKeNtInnmgdkSGiKhPCkRv/iq5tXC1/w==",
++      "dev": true,
++      "license": "MIT OR Apache-2.0",
++      "peer": true
++    },
+     "node_modules/@cspotcode/source-map-support": {
+       "version": "0.8.1",
+       "resolved": "https://registry.npmjs.org/@cspotcode/source-map-support/-/source-map-support-0.8.1.tgz",
+@@ -1190,6 +1200,346 @@
+       "dev": true,
+       "license": "CC0-1.0"
+     },
++    "node_modules/@typescript/typescript-aix-ppc64": {
++      "version": "7.0.2",
++      "resolved": "https://registry.npmjs.org/@typescript/typescript-aix-ppc64/-/typescript-aix-ppc64-7.0.2.tgz",
++      "integrity": "sha512-MTKKkWB7p/0E9xi1d1tHtZ5PiLkGEMIq88pK2CubZjOsLtYTLqhgIgi6zepFa+9GHZ6h05NMCkQxGKiPXMxXtQ==",
++      "cpu": [
++        "ppc64"
++      ],
++      "dev": true,
++      "license": "Apache-2.0",
++      "optional": true,
++      "os": [
++        "aix"
++      ],
++      "engines": {
++        "node": ">=16.20.0"
++      }
++    },
++    "node_modules/@typescript/typescript-darwin-arm64": {
++      "version": "7.0.2",
++      "resolved": "https://registry.npmjs.org/@typescript/typescript-darwin-arm64/-/typescript-darwin-arm64-7.0.2.tgz",
++      "integrity": "sha512-gowzar9MwS/aRWp6f3a4KUqzRjAZjOsmGNCM6LcTgXum+dBfgsBVMN+AgvOCCbguXyick6LJhpBszxMebJ8syA==",
++      "cpu": [
++        "arm64"
++      ],
++      "dev": true,
++      "license": "Apache-2.0",
++      "optional": true,
++      "os": [
++        "darwin"
++      ],
++      "engines": {
++        "node": ">=16.20.0"
++      }
++    },
++    "node_modules/@typescript/typescript-darwin-x64": {
++      "version": "7.0.2",
++      "resolved": "https://registry.npmjs.org/@typescript/typescript-darwin-x64/-/typescript-darwin-x64-7.0.2.tgz",
++      "integrity": "sha512-SZ9xZInqApNlNGc9s0W1VSsktYSOe9cFqNOIqmN1Gs8SmkjKZYFt017G4VwPxASInODuAdbTW7sXiFUf893RgA==",
++      "cpu": [
++        "x64"
++      ],
++      "dev": true,
++      "license": "Apache-2.0",
++      "optional": true,
++      "os": [
++        "darwin"
++      ],
++      "engines": {
++        "node": ">=16.20.0"
++      }
++    },
++    "node_modules/@typescript/typescript-freebsd-arm64": {
++      "version": "7.0.2",
++      "resolved": "https://registry.npmjs.org/@typescript/typescript-freebsd-arm64/-/typescript-freebsd-arm64-7.0.2.tgz",
++      "integrity": "sha512-W5NH4y/J0plIIS5b2xvTEkU7JFxyqdMAOgf+Ilhl0vHQXKO5dZoxd+C/jEtq56c4F3wk71RB4BMRQ2XdI+bwYQ==",
++      "cpu": [
++        "arm64"
++      ],
++      "dev": true,
++      "license": "Apache-2.0",
++      "optional": true,
++      "os": [
++        "freebsd"
++      ],
++      "engines": {
++        "node": ">=16.20.0"
++      }
++    },
++    "node_modules/@typescript/typescript-freebsd-x64": {
++      "version": "7.0.2",
++      "resolved": "https://registry.npmjs.org/@typescript/typescript-freebsd-x64/-/typescript-freebsd-x64-7.0.2.tgz",
++      "integrity": "sha512-UMGDx5sTpzNw3WiPebH7l90IWfJggEd+egHt/q6p7/Cm3zqoV7VxkGXt+3DxPIw8CcmvAB0j3sVVfbhX+M4Tpw==",
++      "cpu": [
++        "x64"
++      ],
++      "dev": true,
++      "license": "Apache-2.0",
++      "optional": true,
++      "os": [
++        "freebsd"
++      ],
++      "engines": {
++        "node": ">=16.20.0"
++      }
++    },
++    "node_modules/@typescript/typescript-linux-arm": {
++      "version": "7.0.2",
++      "resolved": "https://registry.npmjs.org/@typescript/typescript-linux-arm/-/typescript-linux-arm-7.0.2.tgz",
++      "integrity": "sha512-gffT3xPz9sR7j/YJExkyPntrI0P2EP9XbOyWzth2/Gs0RstK+90RBcO0ncXoXy/beYll1SXw846Nf2zdnEz0QQ==",
++      "cpu": [
++        "arm"
++      ],
++      "dev": true,
++      "license": "Apache-2.0",
++      "optional": true,
++      "os": [
++        "linux"
++      ],
++      "engines": {
++        "node": ">=16.20.0"
++      }
++    },
++    "node_modules/@typescript/typescript-linux-arm64": {
++      "version": "7.0.2",
++      "resolved": "https://registry.npmjs.org/@typescript/typescript-linux-arm64/-/typescript-linux-arm64-7.0.2.tgz",
++      "integrity": "sha512-Qh4eU4/y3yDjnfjjyPYihMj5/ODIlmt+Bzu17OI+fiSRDW57QmU5SiN63exPRNJPKUzcc1INa1NXdrJ+MqHjUQ==",
++      "cpu": [
++        "arm64"
++      ],
++      "dev": true,
++      "license": "Apache-2.0",
++      "optional": true,
++      "os": [
++        "linux"
++      ],
++      "engines": {
++        "node": ">=16.20.0"
++      }
++    },
++    "node_modules/@typescript/typescript-linux-loong64": {
++      "version": "7.0.2",
++      "resolved": "https://registry.npmjs.org/@typescript/typescript-linux-loong64/-/typescript-linux-loong64-7.0.2.tgz",
++      "integrity": "sha512-uEHck9i8hoAzXPiYRib1O7miOnz23SxIeVl6F4LXox+qov1K35jHcEW6VHKvZI+pyvl7fZEP4MCU5LYvIq1GuQ==",
++      "cpu": [
++        "loong64"
++      ],
++      "dev": true,
++      "license": "Apache-2.0",
++      "optional": true,
++      "os": [
++        "linux"
++      ],
++      "engines": {
++        "node": ">=16.20.0"
++      }
++    },
++    "node_modules/@typescript/typescript-linux-mips64el": {
++      "version": "7.0.2",
++      "resolved": "https://registry.npmjs.org/@typescript/typescript-linux-mips64el/-/typescript-linux-mips64el-7.0.2.tgz",
++      "integrity": "sha512-R4KvAMnE43W5Qeqb0Ly56O3mWMWIAgsMyz36DCaycd5nbg/9kzm0liw3JocfRqyJY0KPmzFjbswozXyW0DnIYA==",
++      "cpu": [
++        "mips64el"
++      ],
++      "dev": true,
++      "license": "Apache-2.0",
++      "optional": true,
++      "os": [
++        "linux"
++      ],
++      "engines": {
++        "node": ">=16.20.0"
++      }
++    },
++    "node_modules/@typescript/typescript-linux-ppc64": {
++      "version": "7.0.2",
++      "resolved": "https://registry.npmjs.org/@typescript/typescript-linux-ppc64/-/typescript-linux-ppc64-7.0.2.tgz",
++      "integrity": "sha512-DORx5b3sd/4S7eayxm4FQv+A7CrkUIGRaHiwI8oiHTAI1fAPWhF4J0vAlkC8biAlHSVVwxMQ3tjZ2/DVbnQiiA==",
++      "cpu": [
++        "ppc64"
++      ],
++      "dev": true,
++      "license": "Apache-2.0",
++      "optional": true,
++      "os": [
++        "linux"
++      ],
++      "engines": {
++        "node": ">=16.20.0"
++      }
++    },
++    "node_modules/@typescript/typescript-linux-riscv64": {
++      "version": "7.0.2",
++      "resolved": "https://registry.npmjs.org/@typescript/typescript-linux-riscv64/-/typescript-linux-riscv64-7.0.2.tgz",
++      "integrity": "sha512-wf0jqEDOjrPRnKwYRyyJDRo11KMbvMFrU+q4zqKyChODBzvlkbhNQfKvLxQCcwTpdDaXSHZTVuh0JoCrKCUMHQ==",
++      "cpu": [
++        "riscv64"
++      ],
++      "dev": true,
++      "license": "Apache-2.0",
++      "optional": true,
++      "os": [
++        "linux"
++      ],
++      "engines": {
++        "node": ">=16.20.0"
++      }
++    },
++    "node_modules/@typescript/typescript-linux-s390x": {
++      "version": "7.0.2",
++      "resolved": "https://registry.npmjs.org/@typescript/typescript-linux-s390x/-/typescript-linux-s390x-7.0.2.tgz",
++      "integrity": "sha512-IkwJc3L7yhytWd/ewjyxNDfOmswCm9GWMJT/ue/dU4aZNbwZeYAetq42VyLmsmSjvoX7z74X6ZaYCtzAr0EuGw==",
++      "cpu": [
++        "s390x"
++      ],
++      "dev": true,
++      "license": "Apache-2.0",
++      "optional": true,
++      "os": [
++        "linux"
++      ],
++      "engines": {
++        "node": ">=16.20.0"
++      }
++    },
++    "node_modules/@typescript/typescript-linux-x64": {
++      "version": "7.0.2",
++      "resolved": "https://registry.npmjs.org/@typescript/typescript-linux-x64/-/typescript-linux-x64-7.0.2.tgz",
++      "integrity": "sha512-EYdf2cNg7rgCWJnxCdJ+F3V39O8ihb37eHAu1LK8oAFizgTQbPOK7zHHXbPt8rX24COqODXeI3sIf0fCXG7H/A==",
++      "cpu": [
++        "x64"
++      ],
++      "dev": true,
++      "license": "Apache-2.0",
++      "optional": true,
++      "os": [
++        "linux"
++      ],
++      "engines": {
++        "node": ">=16.20.0"
++      }
++    },
++    "node_modules/@typescript/typescript-netbsd-arm64": {
++      "version": "7.0.2",
++      "resolved": "https://registry.npmjs.org/@typescript/typescript-netbsd-arm64/-/typescript-netbsd-arm64-7.0.2.tgz",
++      "integrity": "sha512-+polYF4MF04aPpO5FTkHran9yUQDSXqy5GiSDKpsll5jy3l3+g9QLhpf39T+ePtefhXLOGrLl0QIjkQP6VnelA==",
++      "cpu": [
++        "arm64"
++      ],
++      "dev": true,
++      "license": "Apache-2.0",
++      "optional": true,
++      "os": [
++        "netbsd"
++      ],
++      "engines": {
++        "node": ">=16.20.0"
++      }
++    },
++    "node_modules/@typescript/typescript-netbsd-x64": {
++      "version": "7.0.2",
++      "resolved": "https://registry.npmjs.org/@typescript/typescript-netbsd-x64/-/typescript-netbsd-x64-7.0.2.tgz",
++      "integrity": "sha512-8YIT0EHM/3dq10ZOVF/A7pc/YSMtbcecct4rWtexrnSCHOPcpC2KTLXfTCR6vDpnSiY12heNb1GiN/wu+T/FyA==",
++      "cpu": [
++        "x64"
++      ],
++      "dev": true,
++      "license": "Apache-2.0",
++      "optional": true,
++      "os": [
++        "netbsd"
++      ],
++      "engines": {
++        "node": ">=16.20.0"
++      }
++    },
++    "node_modules/@typescript/typescript-openbsd-arm64": {
++      "version": "7.0.2",
++      "resolved": "https://registry.npmjs.org/@typescript/typescript-openbsd-arm64/-/typescript-openbsd-arm64-7.0.2.tgz",
++      "integrity": "sha512-APT8+ClYnuYm1u9+kgGXoMj2VzWzcymwh2gNSQVySHfkRDGOTVkoWLjCmOQSaO+PoqQ57B0flRp9SA+7GnnkzQ==",
++      "cpu": [
++        "arm64"
++      ],
++      "dev": true,
++      "license": "Apache-2.0",
++      "optional": true,
++      "os": [
++        "openbsd"
++      ],
++      "engines": {
++        "node": ">=16.20.0"
++      }
++    },
++    "node_modules/@typescript/typescript-openbsd-x64": {
++      "version": "7.0.2",
++      "resolved": "https://registry.npmjs.org/@typescript/typescript-openbsd-x64/-/typescript-openbsd-x64-7.0.2.tgz",
++      "integrity": "sha512-yX7s+Q0Dln0Dt9tEzZsAjXXR/+ytBM7AlglaqyeMPxQszJ1JhlJdZ6jLA+IzldHtflX81em7lDao1xXu+aRRkg==",
++      "cpu": [
++        "x64"
++      ],
++      "dev": true,
++      "license": "Apache-2.0",
++      "optional": true,
++      "os": [
++        "openbsd"
++      ],
++      "engines": {
++        "node": ">=16.20.0"
++      }
++    },
++    "node_modules/@typescript/typescript-sunos-x64": {
++      "version": "7.0.2",
++      "resolved": "https://registry.npmjs.org/@typescript/typescript-sunos-x64/-/typescript-sunos-x64-7.0.2.tgz",
++      "integrity": "sha512-dLJDGaLZ1D4HPQn62u1n8mBDkJREwMsAkCdkwd4Ieqw+x3TUyTsqY0YiBCtE6H6OzzgGk3iuZ3vFWRS+E8/d1g==",
++      "cpu": [
++        "x64"
++      ],
++      "dev": true,
++      "license": "Apache-2.0",
++      "optional": true,
++      "os": [
++        "sunos"
++      ],
++      "engines": {
++        "node": ">=16.20.0"
++      }
++    },
++    "node_modules/@typescript/typescript-win32-arm64": {
++      "version": "7.0.2",
++      "resolved": "https://registry.npmjs.org/@typescript/typescript-win32-arm64/-/typescript-win32-arm64-7.0.2.tgz",
++      "integrity": "sha512-Gyl1Vy6OsWesLzmq+EP0Fb7b4Nid5232AvcA2SFcdYreldpNtYFFofPjnt62y9hQy7VTaZp65ICJjuAQRaVcIQ==",
++      "cpu": [
++        "arm64"
++      ],
++      "dev": true,
++      "license": "Apache-2.0",
++      "optional": true,
++      "os": [
++        "win32"
++      ],
++      "engines": {
++        "node": ">=16.20.0"
++      }
++    },
++    "node_modules/@typescript/typescript-win32-x64": {
++      "version": "7.0.2",
++      "resolved": "https://registry.npmjs.org/@typescript/typescript-win32-x64/-/typescript-win32-x64-7.0.2.tgz",
++      "integrity": "sha512-0BQ3HkAHHlKLSp1qRvf3SUhGpGsDuhB/jgFw75guyqbxJqEaS0Cw/VFO8i2nHglJUzQCRtMMR/IBAKE3ETMC4g==",
++      "cpu": [
++        "x64"
++      ],
++      "dev": true,
++      "license": "Apache-2.0",
++      "optional": true,
++      "os": [
++        "win32"
++      ],
++      "engines": {
++        "node": ">=16.20.0"
++      }
++    },
+     "node_modules/blake3-wasm": {
+       "version": "2.1.5",
+       "resolved": "https://registry.npmjs.org/blake3-wasm/-/blake3-wasm-2.1.5.tgz",
+@@ -1414,6 +1764,41 @@
+       "license": "0BSD",
+       "optional": true
+     },
++    "node_modules/typescript": {
++      "version": "7.0.2",
++      "resolved": "https://registry.npmjs.org/typescript/-/typescript-7.0.2.tgz",
++      "integrity": "sha512-8FYau96o3NKOhbjKi/qNvG/W5jhzxkbdm5sj9AbZ/5T5sWqn3hJgLfGx27sRKZWTvyzCP8dLRBTf5tBTSRVUNA==",
++      "dev": true,
++      "license": "Apache-2.0",
++      "bin": {
++        "tsc": "bin/tsc"
++      },
++      "engines": {
++        "node": ">=16.20.0"
++      },
++      "optionalDependencies": {
++        "@typescript/typescript-aix-ppc64": "7.0.2",
++        "@typescript/typescript-darwin-arm64": "7.0.2",
++        "@typescript/typescript-darwin-x64": "7.0.2",
++        "@typescript/typescript-freebsd-arm64": "7.0.2",
++        "@typescript/typescript-freebsd-x64": "7.0.2",
++        "@typescript/typescript-linux-arm": "7.0.2",
++        "@typescript/typescript-linux-arm64": "7.0.2",
++        "@typescript/typescript-linux-loong64": "7.0.2",
++        "@typescript/typescript-linux-mips64el": "7.0.2",
++        "@typescript/typescript-linux-ppc64": "7.0.2",
++        "@typescript/typescript-linux-riscv64": "7.0.2",
++        "@typescript/typescript-linux-s390x": "7.0.2",
++        "@typescript/typescript-linux-x64": "7.0.2",
++        "@typescript/typescript-netbsd-arm64": "7.0.2",
++        "@typescript/typescript-netbsd-x64": "7.0.2",
++        "@typescript/typescript-openbsd-arm64": "7.0.2",
++        "@typescript/typescript-openbsd-x64": "7.0.2",
++        "@typescript/typescript-sunos-x64": "7.0.2",
++        "@typescript/typescript-win32-arm64": "7.0.2",
++        "@typescript/typescript-win32-x64": "7.0.2"
++      }
++    },
+     "node_modules/undici": {
+       "version": "7.30.1",
+       "resolved": "https://registry.npmjs.org/undici/-/undici-7.30.1.tgz",
+@@ -1442,6 +1827,7 @@
+       "dev": true,
+       "hasInstallScript": true,
+       "license": "Apache-2.0",
++      "peer": true,
+       "bin": {
+         "workerd": "bin/workerd"
+       },
+diff --git a/package.json b/package.json
+index 0096041..002b78d 100644
+--- a/package.json
++++ b/package.json
+@@ -2,5 +2,17 @@
+   "name": "household-items-service",
+   "private": true,
+   "type": "module",
+-  "devDependencies": { "wrangler": "4.158.0" }
++  "scripts": {
++    "setup": "node scripts/setup.mjs",
++    "dev": "wrangler dev --local",
++    "db:migrate": "wrangler d1 migrations apply DB --local",
++    "typecheck": "tsc --noEmit",
++    "test": "node --test --test-concurrency=1 tests/*.test.mjs",
++    "check": "npm run typecheck && npm test"
++  },
++  "devDependencies": {
++    "@cloudflare/workers-types": "^5.20261108.1",
++    "typescript": "^7.0.2",
++    "wrangler": "4.158.0"
++  }
+ }
+diff --git a/scripts/setup.mjs b/scripts/setup.mjs
+new file mode 100644
+index 0000000..a53cf9b
+--- /dev/null
++++ b/scripts/setup.mjs
+@@ -0,0 +1,12 @@
++import { randomBytes } from 'node:crypto';
++import { writeFile } from 'node:fs/promises';
++
++try {
++  await writeFile(new URL('../.dev.vars', import.meta.url),
++    `TOKEN_SECRET=${randomBytes(48).toString('base64url')}\n`,
++    { flag: 'wx', mode: 0o600 });
++  console.log('已生成本地 .dev.vars（不会覆盖已有密钥）。');
++} catch (error) {
++  if (error.code !== 'EEXIST') throw error;
++  console.log('.dev.vars 已存在，保留原密钥。');
++}
+diff --git a/src/auth.ts b/src/auth.ts
+new file mode 100644
+index 0000000..26f5dc2
+--- /dev/null
++++ b/src/auth.ts
+@@ -0,0 +1,47 @@
++import { fail, json } from './http';
++import { hashPassword, randomCode, sign, verify, verifyPassword } from './security';
++import type { Body, Env, User } from './types';
++
++function credentials(body: Body): { email: string; password: string } {
++  if (typeof body.email !== 'string' || !body.email.includes('@')) fail(400, '邮箱必须包含 @');
++  if (typeof body.password !== 'string' || [...body.password].length < 8) fail(400, '密码至少 8 个字符');
++  return { email: body.email.toLowerCase(), password: body.password };
++}
++
++async function tokenFor(env: Env, userId: string): Promise<string> {
++  return sign(env, 'auth', { v: 1, sub: userId, exp: Date.now() + 30 * 86_400_000, nonce: randomCode() });
++}
++
++export async function register(env: Env, body: Body): Promise<Response> {
++  const { email, password } = credentials(body);
++  const user = { id: crypto.randomUUID(), email };
++  const token = await tokenFor(env, user.id);
++  const passwordHash = await hashPassword(password);
++  const inserted = await env.DB.prepare(`INSERT INTO users (id, email, password_hash)
++    VALUES (?, ?, ?) ON CONFLICT(email) DO NOTHING RETURNING id`)
++    .bind(user.id, email, passwordHash).first();
++  if (!inserted) fail(409, '邮箱已注册');
++  return json({ user, token }, 201);
++}
++
++export async function login(env: Env, body: Body): Promise<Response> {
++  const { email, password } = credentials(body);
++  const row = await env.DB.prepare('SELECT id, email, password_hash FROM users WHERE email = ?')
++    .bind(email).first<User & { password_hash: string }>();
++  if (!row || !await verifyPassword(password, row.password_hash)) fail(401, '邮箱或密码错误');
++  const user = { id: row.id, email: row.email };
++  return json({ user, token: await tokenFor(env, user.id) });
++}
++
++export async function authenticate(request: Request, env: Env): Promise<User> {
++  const match = /^Bearer ([^\s]+)$/i.exec(request.headers.get('Authorization') ?? '');
++  if (!match) fail(401, '需要 Bearer token');
++  const payload = await verify(env, 'auth', match[1]) as Record<string, unknown> | null;
++  if (!payload || payload.v !== 1 || typeof payload.sub !== 'string'
++    || typeof payload.exp !== 'number' || !Number.isSafeInteger(payload.exp) || payload.exp <= Date.now()) {
++    fail(401, '令牌无效或已过期');
++  }
++  const user = await env.DB.prepare('SELECT id, email FROM users WHERE id = ?').bind(payload.sub).first<User>();
++  if (!user) fail(401, '令牌无效');
++  return user;
++}
+diff --git a/src/dates.ts b/src/dates.ts
+new file mode 100644
+index 0000000..8840c74
+--- /dev/null
++++ b/src/dates.ts
+@@ -0,0 +1,47 @@
++import { fail } from './http';
++
++const DAY_MS = 86_400_000;
++
++export function validDate(value: unknown): value is string {
++  if (typeof value !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
++  if (value.startsWith('0000')) return false;
++  const parsed = new Date(`${value}T00:00:00.000Z`);
++  return Number.isFinite(parsed.getTime()) && parsed.toISOString().slice(0, 10) === value;
++}
++
++export function expiration(value: unknown): string | null {
++  if (value === null) return null;
++  if (!validDate(value)) fail(400, '日期必须是有效的 YYYY-MM-DD');
++  return value;
++}
++
++export function timezone(value: unknown): string {
++  // Intl also accepts numeric offsets in newer runtimes; those are not IANA names.
++  if (typeof value !== 'string' || !value || /^[+-]/.test(value)) fail(400, '无效的 IANA 时区');
++  try {
++    new Intl.DateTimeFormat('en-US', { timeZone: value }).format(0);
++  } catch {
++    fail(400, '无效的 IANA 时区');
++  }
++  return value;
++}
++
++export function todayIn(timeZone: string, instant: number): string {
++  const parts = new Intl.DateTimeFormat('en-US', {
++    timeZone, year: 'numeric', month: '2-digit', day: '2-digit',
++    calendar: 'gregory', numberingSystem: 'latn',
++  }).formatToParts(new Date(instant));
++  const part = (type: string) => parts.find((p) => p.type === type)!.value;
++  return `${part('year').padStart(4, '0')}-${part('month')}-${part('day')}`;
++}
++
++// Calendar dates are converted to UTC midnights only for date arithmetic. This
++// deliberately avoids dividing local timestamps across 23/25-hour DST days.
++export function addDays(date: string, days: number): string {
++  return new Date(Date.parse(`${date}T00:00:00Z`) + days * DAY_MS).toISOString().slice(0, 10);
++}
++
++export function daysLeft(date: string | null, today: string): number | null {
++  if (date === null) return null;
++  return (Date.parse(`${date}T00:00:00Z`) - Date.parse(`${today}T00:00:00Z`)) / DAY_MS;
++}
+diff --git a/src/db.ts b/src/db.ts
+new file mode 100644
+index 0000000..dedaff6
+--- /dev/null
++++ b/src/db.ts
+@@ -0,0 +1,34 @@
++import { fail } from './http';
++import type { Env, Household } from './types';
++
++export const MEMBER = `EXISTS (
++  SELECT 1 FROM household_members AS access
++  WHERE access.household_id = ?1 AND access.user_id = ?2
++)`;
++export const OWNER = `EXISTS (
++  SELECT 1 FROM household_members AS access
++  WHERE access.household_id = ?1 AND access.user_id = ?2 AND access.role = 'owner'
++)`;
++
++export class HouseholdDB {
++  constructor(readonly env: Env, readonly id: string, readonly userId: string) {}
++
++  // Every scoped statement reserves ?1 for household and ?2 for acting user.
++  prepare(sql: string, ...values: (string | number | null)[]): D1PreparedStatement {
++    return this.env.DB.prepare(sql).bind(this.id, this.userId, ...values);
++  }
++
++  async batch(statements: D1PreparedStatement[]): Promise<{ household: Household; results: D1Result[] }> {
++    // Authorization and the operation see the same database snapshot. Mutations
++    // also use MEMBER/OWNER predicates so a kicked user can never write data.
++    const [access, ...results] = await this.env.DB.batch([
++      this.prepare(`SELECT h.id, h.name, h.timezone, m.role FROM households h
++        JOIN household_members m ON m.household_id = h.id
++        WHERE h.id = ?1 AND m.user_id = ?2`),
++      ...statements,
++    ]);
++    const household = access.results[0] as unknown as Household | undefined;
++    if (!household) fail(404, '家庭不存在');
++    return { household, results };
++  }
++}
+diff --git a/src/households.ts b/src/households.ts
+new file mode 100644
+index 0000000..4baa214
+--- /dev/null
++++ b/src/households.ts
+@@ -0,0 +1,84 @@
++import { HouseholdDB, MEMBER, OWNER } from './db';
++import { timezone } from './dates';
++import { empty, fail, json, name } from './http';
++import { randomCode } from './security';
++import type { Body, Env, Household } from './types';
++
++export async function createHousehold(env: Env, userId: string, body: Body): Promise<Response> {
++  const household: Household = {
++    id: crypto.randomUUID(), name: name(body.name), timezone: timezone(body.timezone), role: 'owner',
++  };
++  await env.DB.batch([
++    env.DB.prepare('INSERT INTO households (id, name, timezone) VALUES (?, ?, ?)')
++      .bind(household.id, household.name, household.timezone),
++    env.DB.prepare("INSERT INTO household_members (household_id, user_id, role) VALUES (?, ?, 'owner')")
++      .bind(household.id, userId),
++  ]);
++  return json(household, 201);
++}
++
++export async function listHouseholds(env: Env, userId: string): Promise<Response> {
++  const { results } = await env.DB.prepare(`SELECT h.id, h.name, h.timezone, m.role FROM households h
++    JOIN household_members m ON m.household_id = h.id WHERE m.user_id = ? ORDER BY h.id`)
++    .bind(userId).all();
++  return json({ households: results });
++}
++
++export async function createInvite(db: HouseholdDB): Promise<Response> {
++  const code = randomCode();
++  const expires_at_ms = Date.now() + 86_400_000;
++  const { household } = await db.batch([
++    db.prepare(`INSERT INTO invites (code, household_id, expires_at_ms)
++      SELECT ?3, ?1, ?4 WHERE ${OWNER}`, code, expires_at_ms),
++  ]);
++  if (household.role !== 'owner') fail(403, '只有 owner 可以邀请');
++  return json({ code, expires_at_ms }, 201);
++}
++
++export async function acceptInvite(env: Env, userId: string, code: string): Promise<Response> {
++  const now = Date.now();
++  const [before, accepted, after] = await env.DB.batch([
++    env.DB.prepare(`SELECT i.expires_at_ms, i.used_by,
++      EXISTS(SELECT 1 FROM household_members m WHERE m.household_id = i.household_id AND m.user_id = ?2) AS is_member
++      FROM invites i WHERE i.code = ?1`).bind(code, userId),
++    // The trigger inserts membership in this same transaction. The predicate is
++    // re-evaluated by SQLite; competing requests cannot both claim the code.
++    env.DB.prepare(`UPDATE invites SET used_by = ?2, used_at_ms = ?3
++      WHERE code = ?1 AND used_by IS NULL AND expires_at_ms > ?3
++      AND NOT EXISTS(SELECT 1 FROM household_members m
++        WHERE m.household_id = invites.household_id AND m.user_id = ?2)
++      RETURNING household_id`).bind(code, userId, now),
++    env.DB.prepare(`SELECT h.id, h.name, h.timezone, m.role FROM invites i
++      JOIN households h ON h.id = i.household_id
++      JOIN household_members m ON m.household_id = h.id AND m.user_id = ?2
++      WHERE i.code = ?1`).bind(code, userId),
++  ]);
++  const invite = before.results[0] as { expires_at_ms: number; used_by: string | null; is_member: number } | undefined;
++  if (!invite) fail(404, '邀请码不存在');
++  if (invite.used_by !== null || Number(invite.expires_at_ms) <= now) fail(410, '邀请码已使用或已过期');
++  if (invite.is_member) fail(409, '已经是家庭成员');
++  if (!accepted.results.length) throw new Error('Invitation acceptance invariant failed');
++  return json({ household: after.results[0] });
++}
++
++export async function listMembers(db: HouseholdDB): Promise<Response> {
++  const { results } = await db.batch([
++    db.prepare(`SELECT m.user_id, u.email, m.role FROM household_members m
++      JOIN users u ON u.id = m.user_id
++      WHERE m.household_id = ?1 AND ${MEMBER}
++      ORDER BY CASE m.role WHEN 'owner' THEN 0 ELSE 1 END, m.user_id`),
++  ]);
++  return json({ members: results[0].results });
++}
++
++export async function deleteMember(db: HouseholdDB, target: string): Promise<Response> {
++  const { household, results } = await db.batch([
++    db.prepare(`SELECT role FROM household_members WHERE household_id = ?1 AND user_id = ?3 AND ${MEMBER}`, target),
++    db.prepare(`DELETE FROM household_members WHERE household_id = ?1 AND user_id = ?3
++      AND role = 'member' AND ${MEMBER} AND (user_id = ?2 OR ${OWNER}) RETURNING user_id`, target),
++  ]);
++  if (!results[0].results.length) fail(404, '成员不存在');
++  if (household.role === 'owner' && target === db.userId) fail(400, 'owner 不能退出家庭');
++  if (household.role !== 'owner' && target !== db.userId) fail(403, '不能删除其他成员');
++  return empty();
++}
+diff --git a/src/http.ts b/src/http.ts
+new file mode 100644
+index 0000000..231b4dd
+--- /dev/null
++++ b/src/http.ts
+@@ -0,0 +1,92 @@
++import type { Body } from './types';
++
++export class HttpError extends Error {
++  constructor(public status: number, message: string) {
++    super(message);
++  }
++}
++
++export function fail(status: number, message: string): never {
++  throw new HttpError(status, message);
++}
++
++export function json(data: unknown, status = 200): Response {
++  return Response.json(data, { status, headers: { 'Cache-Control': 'no-store' } });
++}
++
++export function empty(): Response {
++  return new Response(null, { status: 204 });
++}
++
++const MAX_BODY_BYTES = 64 * 1024;
++
++// Count actual streamed bytes, including when Content-Length is absent or false.
++export async function readBody(request: Request): Promise<Body | undefined> {
++  const length = request.headers.get('content-length');
++  if (length !== null && Number(length) > MAX_BODY_BYTES) fail(413, '请求体超过 64 KB');
++  if (!request.body) return undefined;
++  const reader = request.body.getReader();
++  const chunks: Uint8Array[] = [];
++  let size = 0;
++  try {
++    while (true) {
++      const { done, value } = await reader.read();
++      if (done) break;
++      size += value.byteLength;
++      if (size > MAX_BODY_BYTES) {
++        await reader.cancel();
++        fail(413, '请求体超过 64 KB');
++      }
++      chunks.push(value);
++    }
++  } finally {
++    reader.releaseLock();
++  }
++  if (!size) return undefined;
++  const bytes = new Uint8Array(size);
++  let offset = 0;
++  for (const chunk of chunks) {
++    bytes.set(chunk, offset);
++    offset += chunk.length;
++  }
++  let value: unknown;
++  try {
++    value = JSON.parse(new TextDecoder('utf-8', { fatal: true, ignoreBOM: false }).decode(bytes));
++  } catch {
++    fail(400, '请求体必须是合法 JSON');
++  }
++  if (value === null || typeof value !== 'object' || Array.isArray(value)) {
++    fail(400, '请求体必须是 JSON 对象');
++  }
++  return value as Body;
++}
++
++export function requiredBody(body: Body | undefined): Body {
++  if (!body) fail(400, '缺少 JSON 请求体');
++  return body;
++}
++
++export function name(value: unknown): string {
++  if (typeof value !== 'string' || !value.trim()) fail(400, 'name 必须为非空字符串');
++  return value.trim();
++}
++
++export function nullableId(value: unknown): string | null {
++  if (value === null) return null;
++  if (typeof value !== 'string' || !value.trim()) fail(400, 'id 必须为非空字符串或 null');
++  return value;
++}
++
++export function quantity(value: unknown): number {
++  if (typeof value !== 'number' || !Number.isSafeInteger(value) || value < 0) {
++    fail(400, 'quantity 必须为非负安全整数');
++  }
++  return value;
++}
++
++export function integerParam(value: string, min: number, max: number): number {
++  if (!/^\d+$/.test(value)) fail(400, '查询参数必须为整数');
++  const n = Number(value);
++  if (!Number.isSafeInteger(n) || n < min || n > max) fail(400, '查询参数超出范围');
++  return n;
++}
+diff --git a/src/index.ts b/src/index.ts
+new file mode 100644
+index 0000000..d603c12
+--- /dev/null
++++ b/src/index.ts
+@@ -0,0 +1,72 @@
++import { authenticate, login, register } from './auth';
++import { HouseholdDB } from './db';
++import { acceptInvite, createHousehold, createInvite, deleteMember, listHouseholds, listMembers } from './households';
++import { HttpError, fail, json, readBody, requiredBody } from './http';
++import { createItem, deleteItem, getItem, listItems, patchItem } from './items';
++import { createLocation, deleteLocation, listLocations } from './locations';
++import { generateReminders, listReminders } from './reminders';
++import type { Env } from './types';
++
++async function route(request: Request, env: Env): Promise<Response> {
++  const url = new URL(request.url);
++  const method = request.method;
++  const isRegister = method === 'POST' && url.pathname === '/v1/auth/register';
++  const isLogin = method === 'POST' && url.pathname === '/v1/auth/login';
++  const user = isRegister || isLogin ? null : await authenticate(request, env);
++  const body = await readBody(request);
++  if (isRegister) return register(env, requiredBody(body));
++  if (isLogin) return login(env, requiredBody(body));
++  if (method === 'GET' && url.pathname === '/v1/me') return json(user);
++  if (url.pathname === '/v1/households') {
++    if (method === 'POST') return createHousehold(env, user!.id, requiredBody(body));
++    if (method === 'GET') return listHouseholds(env, user!.id);
++  }
++  let path: string[];
++  try { path = url.pathname.split('/').slice(1).map(decodeURIComponent); }
++  catch { fail(400, '无效的路径编码'); }
++  if (method === 'POST' && path.length === 4 && path[0] === 'v1' && path[1] === 'invites' && path[3] === 'accept') {
++    return acceptInvite(env, user!.id, path[2]);
++  }
++  if (path[0] !== 'v1' || path[1] !== 'households' || !path[2]) fail(404, '接口不存在');
++  const db = new HouseholdDB(env, path[2], user!.id);
++  // Hide inaccessible households before interpreting resource fields/cursors.
++  // Handlers still authorize inside their final transaction to cover revocation.
++  const { household } = await db.batch([]);
++  if (path.length === 3 && method === 'GET') return json(household);
++  if (path.length === 4) {
++    switch (`${method} ${path[3]}`) {
++      case 'POST invites': return createInvite(db);
++      case 'GET members': return listMembers(db);
++      case 'POST locations': return createLocation(db, requiredBody(body));
++      case 'GET locations': return listLocations(db);
++      case 'POST items': return createItem(db, requiredBody(body));
++      case 'GET items': return listItems(db, url.searchParams, household);
++      case 'GET reminders': return listReminders(db);
++    }
++  }
++  if (path.length === 5 && path[4]) {
++    switch (`${method} ${path[3]}`) {
++      case 'DELETE members': return deleteMember(db, path[4]);
++      case 'DELETE locations': return deleteLocation(db, path[4]);
++      case 'GET items': return getItem(db, path[4]);
++      case 'PATCH items': return patchItem(db, path[4], requiredBody(body));
++      case 'DELETE items': return deleteItem(db, path[4]);
++    }
++  }
++  fail(404, '接口不存在');
++}
++
++export default {
++  async fetch(request: Request, env: Env): Promise<Response> {
++    try {
++      return await route(request, env);
++    } catch (error) {
++      if (error instanceof HttpError) return json({ error: error.message }, error.status);
++      console.error('Request failed', error);
++      return json({ error: '服务暂时不可用' }, 500);
++    }
++  },
++  async scheduled(event: ScheduledController, env: Env): Promise<void> {
++    await generateReminders(env, event.scheduledTime);
++  },
++} satisfies ExportedHandler<Env>;
+diff --git a/src/items.ts b/src/items.ts
+new file mode 100644
+index 0000000..1aaff0e
+--- /dev/null
++++ b/src/items.ts
+@@ -0,0 +1,139 @@
++import { HouseholdDB, MEMBER } from './db';
++import { addDays, daysLeft, expiration, todayIn, validDate } from './dates';
++import { empty, fail, integerParam, json, name, nullableId, quantity } from './http';
++import { sign, verify } from './security';
++import type { Body, Household, ItemRow } from './types';
++
++const COLUMNS = 'seq, id, name, quantity, location_id, expires_on';
++
++function present(row: ItemRow, today: string) {
++  const { seq: _seq, ...item } = row;
++  return { ...item, days_left: daysLeft(item.expires_on, today) };
++}
++
++export async function createItem(db: HouseholdDB, body: Body): Promise<Response> {
++  const item = {
++    id: crypto.randomUUID(), name: name(body.name),
++    quantity: 'quantity' in body ? quantity(body.quantity) : 1,
++    location_id: 'location_id' in body ? nullableId(body.location_id) : null,
++    expires_on: 'expires_on' in body ? expiration(body.expires_on) : null,
++  };
++  const { household, results } = await db.batch([
++    db.prepare(`INSERT INTO items (id, household_id, name, quantity, location_id, expires_on)
++      SELECT ?3, ?1, ?4, ?5, ?6, ?7 WHERE ${MEMBER}
++      AND (?6 IS NULL OR EXISTS(SELECT 1 FROM locations WHERE household_id = ?1 AND id = ?6))
++      RETURNING ${COLUMNS}`, item.id, item.name, item.quantity, item.location_id, item.expires_on),
++  ]);
++  if (!results[0].results.length) fail(400, 'location_id 不属于本家庭');
++  return json(present(results[0].results[0] as unknown as ItemRow, todayIn(household.timezone, Date.now())), 201);
++}
++
++export async function getItem(db: HouseholdDB, id: string): Promise<Response> {
++  const { household, results } = await db.batch([
++    db.prepare(`SELECT ${COLUMNS} FROM items WHERE household_id = ?1 AND id = ?3 AND ${MEMBER}`, id),
++  ]);
++  const item = results[0].results[0] as unknown as ItemRow | undefined;
++  if (!item) fail(404, '物品不存在');
++  return json(present(item, todayIn(household.timezone, Date.now())));
++}
++
++export async function patchItem(db: HouseholdDB, id: string, body: Body): Promise<Response> {
++  const target = await db.batch([
++    db.prepare(`SELECT id FROM items WHERE household_id = ?1 AND id = ?3 AND ${MEMBER}`, id),
++  ]);
++  if (!target.results[0].results.length) fail(404, '物品不存在');
++  const assignments: string[] = [];
++  const values: (string | number | null)[] = [id];
++  let locationGuard = '';
++  // Only supplied columns are updated, so concurrent disjoint patches do not
++  // overwrite each other with stale copies of unspecified fields.
++  for (const [field, validate] of Object.entries({ name, quantity, location_id: nullableId, expires_on: expiration })) {
++    if (!Object.hasOwn(body, field)) continue;
++    values.push(validate(body[field]));
++    const param = `?${values.length + 2}`;
++    assignments.push(`${field} = ${param}`);
++    if (field === 'location_id') locationGuard = ` AND (${param} IS NULL OR EXISTS(
++      SELECT 1 FROM locations WHERE household_id = ?1 AND id = ${param}))`;
++  }
++  const { household, results } = await db.batch([
++    db.prepare(`SELECT id FROM items WHERE household_id = ?1 AND id = ?3 AND ${MEMBER}`, id),
++    db.prepare(`UPDATE items SET ${assignments.length ? assignments.join(', ') : 'name = name'}
++      WHERE household_id = ?1 AND id = ?3 AND ${MEMBER}${locationGuard} RETURNING ${COLUMNS}`, ...values),
++  ]);
++  if (!results[0].results.length) fail(404, '物品不存在');
++  if (!results[1].results.length) fail(400, 'location_id 不属于本家庭');
++  return json(present(results[1].results[0] as unknown as ItemRow, todayIn(household.timezone, Date.now())));
++}
++
++export async function deleteItem(db: HouseholdDB, id: string): Promise<Response> {
++  const { results } = await db.batch([
++    db.prepare(`DELETE FROM items WHERE household_id = ?1 AND id = ?3 AND ${MEMBER} RETURNING id`, id),
++  ]);
++  if (!results[0].results.length) fail(404, '物品不存在');
++  return empty();
++}
++
++interface Cursor {
++  v: 1;
++  household: string;
++  filter: string;
++  today: string;
++  seq: number;
++  expires: string | null;
++  ceiling: number;
++}
++
++export async function listItems(db: HouseholdDB, params: URLSearchParams, household: Household): Promise<Response> {
++  for (const key of ['limit', 'cursor', 'expiring_within_days', 'expired']) {
++    if (params.getAll(key).length > 1) fail(400, '查询参数不能重复');
++  }
++  const limit = params.has('limit') ? integerParam(params.get('limit')!, 1, 100) : 20;
++  const within = params.has('expiring_within_days') ? integerParam(params.get('expiring_within_days')!, 0, 365) : null;
++  if (params.has('expired') && !['true', 'false'].includes(params.get('expired')!)) fail(400, 'expired 必须为 true 或 false');
++  const expired = params.get('expired') === 'true';
++  if (expired && within !== null) fail(400, '不能同时使用两种过期筛选');
++  const filter = expired ? 'expired' : within !== null ? `within:${within}` : 'all';
++  const sortedByDate = filter !== 'all';
++  let cursor: Cursor | null = null;
++  if (params.has('cursor')) {
++    const value = await verify(db.env, 'cursor', params.get('cursor')!) as Cursor | null;
++    if (!value || value.v !== 1 || value.household !== db.id || value.filter !== filter || !validDate(value.today)
++      || !Number.isSafeInteger(value.seq) || value.seq < 1 || !Number.isSafeInteger(value.ceiling) || value.ceiling < value.seq
++      || (sortedByDate ? !validDate(value.expires) : value.expires !== null)) fail(400, '无效的分页游标');
++    cursor = value;
++  }
++  const currentToday = todayIn(household.timezone, Date.now());
++  // Keep a traversal's filter date stable even if the family's midnight passes.
++  const today = cursor?.today ?? currentToday;
++  const values: (string | number | null)[] = [];
++  const bind = (value: string | number | null) => { values.push(value); return `?${values.length + 2}`; };
++  const conditions = [`household_id = ?1`, MEMBER];
++  if (expired) conditions.push(`expires_on < ${bind(today)}`);
++  if (within !== null) conditions.push(`expires_on BETWEEN ${bind(today)} AND ${bind(addDays(today, within))}`);
++  if (cursor) {
++    conditions.push(`seq <= ${bind(cursor.ceiling)}`);
++    if (sortedByDate) {
++      const dateParam = bind(cursor.expires);
++      conditions.push(`(expires_on > ${dateParam} OR (expires_on = ${dateParam} AND seq > ${bind(cursor.seq)}))`);
++    } else conditions.push(`seq > ${bind(cursor.seq)}`);
++  }
++  const limitParam = bind(limit + 1);
++  const { results } = await db.batch([
++    db.prepare(`SELECT coalesce(max(seq), 0) AS ceiling FROM items WHERE household_id = ?1 AND ${MEMBER}`),
++    db.prepare(`SELECT ${COLUMNS} FROM items WHERE ${conditions.join(' AND ')}
++      ORDER BY ${sortedByDate ? 'expires_on, ' : ''}seq LIMIT ${limitParam}`, ...values),
++  ]);
++  const rows = results[1].results as unknown as ItemRow[];
++  const page = rows.slice(0, limit);
++  let next_cursor: string | null = null;
++  if (rows.length > limit) {
++    const last = page[page.length - 1];
++    const next: Cursor = {
++      v: 1, household: db.id, filter, today, seq: last.seq,
++      expires: sortedByDate ? last.expires_on : null,
++      ceiling: cursor?.ceiling ?? (results[0].results[0] as { ceiling: number }).ceiling,
++    };
++    next_cursor = await sign(db.env, 'cursor', next);
++  }
++  return json({ items: page.map((item) => present(item, currentToday)), next_cursor });
++}
+diff --git a/src/locations.ts b/src/locations.ts
+new file mode 100644
+index 0000000..22c0a8e
+--- /dev/null
++++ b/src/locations.ts
+@@ -0,0 +1,53 @@
++import { HouseholdDB, MEMBER } from './db';
++import { empty, fail, json, name, nullableId } from './http';
++import type { Body } from './types';
++
++interface Location {
++  id: string;
++  name: string;
++  parent_id: string | null;
++}
++interface LocationNode extends Location {
++  children: LocationNode[];
++}
++
++export async function createLocation(db: HouseholdDB, body: Body): Promise<Response> {
++  const location = { id: crypto.randomUUID(), name: name(body.name), parent_id: nullableId(body.parent_id ?? null) };
++  const { results } = await db.batch([
++    db.prepare(`INSERT INTO locations (id, household_id, name, parent_id, depth)
++      SELECT ?3, ?1, ?4, ?5,
++        CASE WHEN ?5 IS NULL THEN 1 ELSE (SELECT depth + 1 FROM locations WHERE household_id = ?1 AND id = ?5) END
++      WHERE ${MEMBER} AND (?5 IS NULL OR EXISTS (
++        SELECT 1 FROM locations WHERE household_id = ?1 AND id = ?5 AND depth < 3))
++      RETURNING id, name, parent_id`, location.id, location.name, location.parent_id),
++  ]);
++  if (!results[0].results.length) fail(400, '父位置不存在于本家庭或已经是第三层');
++  return json(results[0].results[0], 201);
++}
++
++export async function listLocations(db: HouseholdDB): Promise<Response> {
++  const { results } = await db.batch([
++    db.prepare(`SELECT id, name, parent_id FROM locations WHERE household_id = ?1 AND ${MEMBER} ORDER BY rowid`),
++  ]);
++  const nodes = new Map<string, LocationNode>();
++  for (const row of results[0].results as unknown as Location[]) nodes.set(row.id, { ...row, children: [] });
++  const roots: LocationNode[] = [];
++  for (const node of nodes.values()) {
++    if (node.parent_id === null) roots.push(node);
++    else nodes.get(node.parent_id)!.children.push(node);
++  }
++  return json({ locations: roots });
++}
++
++export async function deleteLocation(db: HouseholdDB, id: string): Promise<Response> {
++  const { results } = await db.batch([
++    db.prepare(`SELECT id FROM locations WHERE household_id = ?1 AND id = ?3 AND ${MEMBER}`, id),
++    db.prepare(`DELETE FROM locations WHERE household_id = ?1 AND id = ?3 AND ${MEMBER}
++      AND NOT EXISTS(SELECT 1 FROM locations child WHERE child.household_id = ?1 AND child.parent_id = ?3)
++      AND NOT EXISTS(SELECT 1 FROM items WHERE household_id = ?1 AND location_id = ?3)
++      RETURNING id`, id),
++  ]);
++  if (!results[0].results.length) fail(404, '位置不存在');
++  if (!results[1].results.length) fail(409, '位置中仍有子位置或物品');
++  return empty();
++}
+diff --git a/src/reminders.ts b/src/reminders.ts
+new file mode 100644
+index 0000000..6f67cf2
+--- /dev/null
++++ b/src/reminders.ts
+@@ -0,0 +1,33 @@
++import { HouseholdDB, MEMBER } from './db';
++import { addDays, todayIn } from './dates';
++import { json } from './http';
++import type { Env } from './types';
++
++export async function generateReminders(env: Env, scheduledTime: number): Promise<void> {
++  let after = '';
++  while (true) {
++    const { results: households } = await env.DB.prepare(
++      'SELECT id, timezone FROM households WHERE id > ? ORDER BY id LIMIT 100',
++    ).bind(after).all<{ id: string; timezone: string }>();
++    if (!households.length) return;
++    // Bound the batch and memory usage; each INSERT selects all eligible items
++    // directly in D1, without loading their contents into the Worker.
++    await env.DB.batch(households.map((household) => {
++      const today = todayIn(household.timezone, scheduledTime);
++      return env.DB.prepare(`INSERT INTO reminders (id, household_id, item_id, item_name, expires_on, remind_on)
++        SELECT lower(hex(randomblob(16))), household_id, id, name, expires_on, ?2
++        FROM items WHERE household_id = ?1 AND expires_on BETWEEN ?2 AND ?3
++        ON CONFLICT(item_id, remind_on) DO NOTHING`)
++        .bind(household.id, today, addDays(today, 3));
++    }));
++    after = households[households.length - 1].id;
++  }
++}
++
++export async function listReminders(db: HouseholdDB): Promise<Response> {
++  const { results } = await db.batch([
++    db.prepare(`SELECT id, item_id, item_name, expires_on, remind_on FROM reminders
++      WHERE household_id = ?1 AND ${MEMBER} ORDER BY remind_on, expires_on, id`),
++  ]);
++  return json({ reminders: results[0].results });
++}
+diff --git a/src/security.ts b/src/security.ts
+new file mode 100644
+index 0000000..ca223d5
+--- /dev/null
++++ b/src/security.ts
+@@ -0,0 +1,68 @@
++import type { Env } from './types';
++
++const encoder = new TextEncoder();
++const ITERATIONS = 100_000;
++
++function base64url(bytes: Uint8Array): string {
++  return btoa(String.fromCharCode(...bytes)).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
++}
++
++function decode(value: string): Uint8Array {
++  if (!/^[A-Za-z0-9_-]+$/.test(value)) throw new Error('Invalid base64url');
++  const bytes = Uint8Array.from(atob(value.replace(/-/g, '+').replace(/_/g, '/')), (c) => c.charCodeAt(0));
++  if (base64url(bytes) !== value) throw new Error('Noncanonical base64url');
++  return bytes;
++}
++
++export function randomCode(): string {
++  return base64url(crypto.getRandomValues(new Uint8Array(24)));
++}
++
++async function signingKey(env: Env): Promise<CryptoKey> {
++  if (typeof env.TOKEN_SECRET !== 'string' || !env.TOKEN_SECRET) {
++    throw new Error('TOKEN_SECRET is required; run npm run setup');
++  }
++  return crypto.subtle.importKey('raw', encoder.encode(env.TOKEN_SECRET),
++    { name: 'HMAC', hash: 'SHA-256' }, false, ['sign', 'verify']);
++}
++
++export async function sign(env: Env, purpose: string, payload: unknown): Promise<string> {
++  const encoded = base64url(encoder.encode(JSON.stringify(payload)));
++  const signature = await crypto.subtle.sign('HMAC', await signingKey(env), encoder.encode(`${purpose}.${encoded}`));
++  return `${encoded}.${base64url(new Uint8Array(signature))}`;
++}
++
++export async function verify(env: Env, purpose: string, token: string): Promise<unknown> {
++  const key = await signingKey(env);
++  try {
++    if (token.length > 4096) return null;
++    const parts = token.split('.');
++    if (parts.length !== 2) return null;
++    const [encoded, signature] = parts;
++    if (!await crypto.subtle.verify('HMAC', key, decode(signature), encoder.encode(`${purpose}.${encoded}`))) return null;
++    return JSON.parse(new TextDecoder('utf-8', { fatal: true, ignoreBOM: false }).decode(decode(encoded)));
++  } catch {
++    return null;
++  }
++}
++
++async function derive(password: string, salt: Uint8Array, iterations: number): Promise<Uint8Array> {
++  const key = await crypto.subtle.importKey('raw', encoder.encode(password), 'PBKDF2', false, ['deriveBits']);
++  return new Uint8Array(await crypto.subtle.deriveBits(
++    { name: 'PBKDF2', hash: 'SHA-256', salt, iterations }, key, 256));
++}
++
++export async function hashPassword(password: string): Promise<string> {
++  const salt = crypto.getRandomValues(new Uint8Array(16));
++  return `pbkdf2-sha256$${ITERATIONS}$${base64url(salt)}$${base64url(await derive(password, salt, ITERATIONS))}`;
++}
++
++export async function verifyPassword(password: string, encoded: string): Promise<boolean> {
++  const [algorithm, iterations, salt, hash] = encoded.split('$');
++  if (algorithm !== 'pbkdf2-sha256' || Number(iterations) !== ITERATIONS) return false;
++  const actual = await derive(password, decode(salt), Number(iterations));
++  const expected = decode(hash);
++  let difference = actual.length ^ expected.length;
++  for (let i = 0; i < actual.length; i++) difference |= actual[i] ^ (expected[i] ?? 0);
++  return difference === 0;
++}
+diff --git a/src/types.ts b/src/types.ts
+new file mode 100644
+index 0000000..1083e8a
+--- /dev/null
++++ b/src/types.ts
+@@ -0,0 +1,27 @@
++export interface Env {
++  DB: D1Database;
++  TOKEN_SECRET: string;
++}
++
++export interface User {
++  id: string;
++  email: string;
++}
++
++export interface Household {
++  id: string;
++  name: string;
++  timezone: string;
++  role: 'owner' | 'member';
++}
++
++export interface ItemRow {
++  seq: number;
++  id: string;
++  name: string;
++  quantity: number;
++  location_id: string | null;
++  expires_on: string | null;
++}
++
++export type Body = Record<string, unknown>;
+diff --git a/tests/api.test.mjs b/tests/api.test.mjs
+new file mode 100644
+index 0000000..c1128df
+--- /dev/null
++++ b/tests/api.test.mjs
+@@ -0,0 +1,490 @@
++import assert from 'node:assert/strict';
++import { createHmac } from 'node:crypto';
++import { before, after, test } from 'node:test';
++import { start, stop, call, api, account, household, fixture, join, scheduled, sql, today, plus, secret } from './harness.mjs';
++
++before(start, { timeout: 60_000 });
++after(stop, { timeout: 15_000 });
++
++test('注册、大小写不敏感登录、me、错误密码与重复邮箱', async () => {
++  const email = 'CaseSensitive@example.COM';
++  const registered = await api('POST', '/v1/auth/register', { email, password: 'password123' }, undefined, 201);
++  assert.equal(typeof registered.user.id, 'string');
++  assert.equal(registered.user.email, email.toLowerCase());
++  assert.equal(typeof registered.token, 'string');
++  assert.deepEqual(await api('GET', '/v1/me', undefined, registered.token), registered.user);
++  const logged = await api('POST', '/v1/auth/login', { email: email.toUpperCase(), password: 'password123' });
++  assert.deepEqual(logged.user, registered.user);
++  await api('POST', '/v1/auth/register', { email: email.toUpperCase(), password: 'password123' }, undefined, 409);
++  await api('POST', '/v1/auth/login', { email, password: 'wrong-password' }, undefined, 401);
++  await api('POST', '/v1/auth/login', { email: 'absent@example.com', password: 'password123' }, undefined, 401);
++});
++
++test('账号字段缺失、类型错误和无效值返回 400', async () => {
++  for (const endpoint of ['register', 'login']) {
++    for (const body of [{}, { email: 'a@b' }, { password: '12345678' },
++      { email: 'missing-at', password: '12345678' }, { email: 1, password: '12345678' },
++      { email: 'a@b', password: '1234567' }, { email: 'a@b', password: null }]) {
++      await api('POST', `/v1/auth/${endpoint}`, body, undefined, 400);
++    }
++  }
++});
++
++test('非法 JSON、非对象 JSON、空请求体与 64 KB 字节边界', async () => {
++  for (const raw of ['{', ' ', '[]', 'null', 'true', '"string"']) {
++    const result = await call('POST', '/v1/auth/register', undefined, undefined, { body: raw });
++    assert.equal(result.status, 400);
++  }
++  await api('POST', '/v1/auth/register', undefined, undefined, 400);
++  const member = await account();
++  const basic = JSON.stringify({ name: '边界', timezone: 'UTC', padding: '' });
++  const exact = basic.replace('"padding":""', `"padding":"${'x'.repeat(65536 - Buffer.byteLength(basic))}"`);
++  assert.equal(Buffer.byteLength(exact), 65536);
++  assert.equal((await call('POST', '/v1/households', undefined, member.token, { body: exact })).status, 201);
++  assert.equal((await call('POST', '/v1/households', undefined, member.token, { body: exact + ' ' })).status, 413);
++  // A chunked body has no Content-Length. Chinese text exceeds the limit in
++  // UTF-8 bytes even though its JavaScript character count is below 64K.
++  const large = JSON.stringify({ name: '中'.repeat(22000), timezone: 'UTC' });
++  const chunks = new ReadableStream({ start(controller) {
++    const bytes = new TextEncoder().encode(large);
++    for (let offset = 0; offset < bytes.length; offset += 1024) controller.enqueue(bytes.slice(offset, offset + 1024));
++    controller.close();
++  } });
++  assert.equal((await call('POST', '/v1/households', undefined, member.token, { body: chunks, duplex: 'half' })).status, 413);
++});
++
++test('每类非公开接口必须认证；错误、篡改、过期和跨用途 token 被拒绝', async () => {
++  const routes = [
++    ['GET', '/v1/me'], ['GET', '/v1/households'], ['POST', '/v1/households'],
++    ['GET', '/v1/households/missing'], ['POST', '/v1/households/missing/invites'],
++    ['POST', '/v1/invites/missing/accept'], ['GET', '/v1/households/missing/members'],
++    ['DELETE', '/v1/households/missing/members/id'], ['GET', '/v1/households/missing/locations'],
++    ['POST', '/v1/households/missing/locations'], ['DELETE', '/v1/households/missing/locations/id'],
++    ['GET', '/v1/households/missing/items'], ['POST', '/v1/households/missing/items'],
++    ['GET', '/v1/households/missing/items/id'], ['PATCH', '/v1/households/missing/items/id'],
++    ['DELETE', '/v1/households/missing/items/id'], ['GET', '/v1/households/missing/reminders'],
++  ];
++  for (const [method, endpoint] of routes) {
++    await api(method, endpoint, undefined, undefined, 401);
++    await api(method, endpoint, undefined, 'invalid', 401);
++  }
++  const user = await account();
++  const signed = (purpose, payload) => {
++    const encoded = Buffer.from(JSON.stringify(payload)).toString('base64url');
++    return `${encoded}.${createHmac('sha256', secret).update(`${purpose}.${encoded}`).digest('base64url')}`;
++  };
++  const payload = { v: 1, sub: user.user.id, exp: Date.now() + 60000 };
++  for (const token of [user.token + 'x', signed('auth', { ...payload, exp: 1 }),
++    signed('cursor', payload), signed('auth', { ...payload, sub: 'not-a-user' })]) {
++    await api('GET', '/v1/me', undefined, token, 401);
++  }
++});
++
++test('相同邮箱并发注册恰好一次成功；密码使用独立盐哈希', async () => {
++  const responses = await Promise.all(Array.from({ length: 8 }, (_, i) => call('POST', '/v1/auth/register', {
++    email: i % 2 ? 'RACE@example.com' : 'race@EXAMPLE.COM', password: 'same-password',
++  })));
++  assert.equal(responses.filter((r) => r.status === 201).length, 1);
++  assert.equal(responses.filter((r) => r.status === 409).length, 7);
++  await api('POST', '/v1/auth/register', { email: 'salt-other@example.com', password: 'same-password' }, undefined, 201);
++  const rows = await sql("SELECT email, password_hash FROM users WHERE email IN ('race@example.com', 'salt-other@example.com')");
++  assert.equal(rows.length, 2);
++  assert.notEqual(rows[0].password_hash, rows[1].password_hash);
++  for (const row of rows) {
++    assert.match(row.password_hash, /^pbkdf2-sha256\$100000\$/);
++    assert.ok(!row.password_hash.includes('same-password'));
++  }
++});
++
++test('家庭创建、列表、查询和时区校验', async () => {
++  const f = await fixture('Pacific/Kiritimati');
++  assert.equal(f.home.role, 'owner');
++  assert.equal(f.home.timezone, 'Pacific/Kiritimati');
++  assert.deepEqual(await api('GET', f.prefix, undefined, f.token), f.home);
++  assert.deepEqual((await api('GET', '/v1/households', undefined, f.token)).households, [f.home]);
++  for (const body of [{}, { name: '', timezone: 'UTC' }, { name: '  ', timezone: 'UTC' },
++    { name: null, timezone: 'UTC' }, { name: 'x' }, { name: 'x', timezone: null },
++    { name: 'x', timezone: 'Mars/Olympus' }, { name: 'x', timezone: '+08:00' },
++    { name: 'x', timezone: '' }, { name: 'x', timezone: 8 }]) {
++    await api('POST', '/v1/households', body, f.token, 400);
++  }
++  for (const zone of ['UTC', 'America/New_York', 'Asia/Kathmandu', 'Etc/GMT+12']) await household(f.token, zone);
++});
++
++test('邀请码加入、角色、有效期、已加入不消耗邀请码', async () => {
++  const f = await fixture();
++  const member = await account();
++  const before = Date.now();
++  const invite = await api('POST', `${f.prefix}/invites`, undefined, f.token, 201);
++  assert.ok(invite.expires_at_ms >= before + 86400000);
++  assert.ok(invite.expires_at_ms <= Date.now() + 86400000);
++  await api('POST', `/v1/invites/${invite.code}/accept`, undefined, f.token, 409);
++  const result = await api('POST', `/v1/invites/${invite.code}/accept`, undefined, member.token);
++  assert.deepEqual(result.household, { ...f.home, role: 'member' });
++  assert.deepEqual((await api('GET', '/v1/households', undefined, member.token)).households, [result.household]);
++  assert.deepEqual(await api('GET', f.prefix, undefined, member.token), result.household);
++  await api('POST', `${f.prefix}/invites`, undefined, member.token, 403);
++  await api('POST', `/v1/invites/${invite.code}/accept`, undefined, member.token, 410);
++  await api('POST', '/v1/invites/does-not-exist/accept', undefined, member.token, 404);
++  const unused = await api('POST', `${f.prefix}/invites`, undefined, f.token, 201);
++  await api('POST', `/v1/invites/${unused.code}/accept`, undefined, member.token, 409);
++  const other = await account();
++  await api('POST', `/v1/invites/${unused.code}/accept`, undefined, other.token);
++  const members = (await api('GET', `${f.prefix}/members`, undefined, member.token)).members;
++  assert.deepEqual(members.find((m) => m.role === 'owner'), { user_id: f.user.id, email: f.user.email, role: 'owner' });
++  assert.equal(members.length, 3);
++});
++
++test('过期邀请码返回 410 且不会添加成员', async () => {
++  const f = await fixture();
++  const member = await account();
++  const invite = await api('POST', `${f.prefix}/invites`, undefined, f.token, 201);
++  await sql(`UPDATE invites SET expires_at_ms = 1 WHERE code = '${invite.code}'`);
++  await api('POST', `/v1/invites/${invite.code}/accept`, undefined, member.token, 410);
++  await api('GET', f.prefix, undefined, member.token, 404);
++});
++
++test('多人并发领取同一码：一人成功，其余 410', async () => {
++  const f = await fixture();
++  const users = await Promise.all(Array.from({ length: 8 }, () => account()));
++  const invite = await api('POST', `${f.prefix}/invites`, undefined, f.token, 201);
++  const results = await Promise.all(users.map((u) => call('POST', `/v1/invites/${invite.code}/accept`, undefined, u.token)));
++  assert.equal(results.filter((r) => r.status === 200).length, 1);
++  assert.equal(results.filter((r) => r.status === 410).length, 7);
++  assert.equal((await api('GET', `${f.prefix}/members`, undefined, f.token)).members.length, 2);
++});
++
++test('同一人并发领取不同邀请码：一张成功，另一张保留', async () => {
++  const f = await fixture();
++  const member = await account();
++  const invites = await Promise.all(Array.from({ length: 2 }, () => api('POST', `${f.prefix}/invites`, undefined, f.token, 201)));
++  const results = await Promise.all(invites.map((i) => call('POST', `/v1/invites/${i.code}/accept`, undefined, member.token)));
++  assert.deepEqual(results.map((r) => r.status).sort(), [200, 409]);
++  const preserved = invites[results.findIndex((r) => r.status === 409)];
++  const other = await account();
++  await api('POST', `/v1/invites/${preserved.code}/accept`, undefined, other.token);
++});
++
++test('退出、踢人、owner 保护和删除成员权限', async () => {
++  const f = await fixture();
++  const member = await account();
++  const other = await account();
++  await join(f, member);
++  await join(f, other);
++  await api('DELETE', `${f.prefix}/members/${f.user.id}`, undefined, f.token, 400);
++  await api('DELETE', `${f.prefix}/members/${other.user.id}`, undefined, member.token, 403);
++  await api('DELETE', `${f.prefix}/members/${f.user.id}`, undefined, member.token, 403);
++  await api('DELETE', `${f.prefix}/members/not-member`, undefined, f.token, 404);
++  await api('DELETE', `${f.prefix}/members/not-member`, undefined, member.token, 404);
++  await api('DELETE', `${f.prefix}/members/${member.user.id}`, undefined, member.token, 204);
++  await api('GET', f.prefix, undefined, member.token, 404);
++  await api('DELETE', `${f.prefix}/members/${other.user.id}`, undefined, f.token, 204);
++  for (const user of [member, other]) {
++    for (const endpoint of ['', '/members', '/locations', '/items', '/reminders']) {
++      await api('GET', f.prefix + endpoint, undefined, user.token, 404);
++    }
++    await api('POST', `${f.prefix}/items`, { name: '禁止' }, user.token, 404);
++    await api('POST', `${f.prefix}/locations`, { name: '禁止' }, user.token, 404);
++    await api('POST', `${f.prefix}/invites`, undefined, user.token, 404);
++    assert.deepEqual((await api('GET', '/v1/households', undefined, user.token)).households, []);
++  }
++});
++
++test('家庭、位置、物品与提醒的数据隔离；引用外家庭位置返回 400', async () => {
++  const a = await fixture();
++  const b = await fixture();
++  const loc = await api('POST', `${a.prefix}/locations`, { name: 'A房间', parent_id: null }, a.token, 201);
++  const item = await api('POST', `${a.prefix}/items`, { name: 'A物品', location_id: loc.id }, a.token, 201);
++  for (const prefix of [a.prefix, '/v1/households/not-real']) {
++    for (const suffix of ['', '/members', '/locations', '/items', `/items/${item.id}`, '/reminders']) {
++      await api('GET', prefix + suffix, undefined, b.token, 404);
++    }
++    await api('POST', prefix + '/invites', undefined, b.token, 404);
++    await api('POST', prefix + '/locations', { name: 'x', parent_id: null }, b.token, 404);
++    await api('POST', prefix + '/items', { name: 'x' }, b.token, 404);
++    await api('PATCH', prefix + `/items/${item.id}`, { name: 'hacked' }, b.token, 404);
++    await api('DELETE', prefix + `/items/${item.id}`, undefined, b.token, 404);
++    await api('DELETE', prefix + `/locations/${loc.id}`, undefined, b.token, 404);
++    await api('DELETE', prefix + `/members/${a.user.id}`, undefined, b.token, 404);
++  }
++  await api('GET', `${b.prefix}/items/${item.id}`, undefined, b.token, 404);
++  await api('PATCH', `${b.prefix}/items/${item.id}`, { name: 'x' }, b.token, 404);
++  await api('DELETE', `${b.prefix}/items/${item.id}`, undefined, b.token, 404);
++  await api('DELETE', `${b.prefix}/locations/${loc.id}`, undefined, b.token, 404);
++  await api('POST', `${b.prefix}/locations`, { name: 'x', parent_id: loc.id }, b.token, 400);
++  await api('POST', `${b.prefix}/items`, { name: 'x', location_id: loc.id }, b.token, 400);
++  const own = await api('POST', `${b.prefix}/items`, { name: 'B' }, b.token, 201);
++  await api('PATCH', `${b.prefix}/items/${own.id}`, { location_id: loc.id }, b.token, 400);
++  assert.equal((await api('GET', `${a.prefix}/items/${item.id}`, undefined, a.token)).name, 'A物品');
++});
++
++test('三层位置树、每层 children、删除非空位置 409', async () => {
++  const f = await fixture();
++  const room = await api('POST', `${f.prefix}/locations`, { name: '卧室', parent_id: null }, f.token, 201);
++  const cabinet = await api('POST', `${f.prefix}/locations`, { name: '衣柜', parent_id: room.id }, f.token, 201);
++  const cell = await api('POST', `${f.prefix}/locations`, { name: '格子', parent_id: cabinet.id }, f.token, 201);
++  await api('POST', `${f.prefix}/locations`, { name: '第四层', parent_id: cell.id }, f.token, 400);
++  await api('POST', `${f.prefix}/locations`, { name: '未知', parent_id: 'missing' }, f.token, 400);
++  assert.deepEqual((await api('GET', `${f.prefix}/locations`, undefined, f.token)).locations,
++    [{ ...room, children: [{ ...cabinet, children: [{ ...cell, children: [] }] }] }]);
++  for (const id of [room.id, cabinet.id]) await api('DELETE', `${f.prefix}/locations/${id}`, undefined, f.token, 409);
++  const item = await api('POST', `${f.prefix}/items`, { name: '占位', location_id: cell.id }, f.token, 201);
++  await api('DELETE', `${f.prefix}/locations/${cell.id}`, undefined, f.token, 409);
++  await api('DELETE', `${f.prefix}/items/${item.id}`, undefined, f.token, 204);
++  for (const id of [cell.id, cabinet.id, room.id]) await api('DELETE', `${f.prefix}/locations/${id}`, undefined, f.token, 204);
++  await api('DELETE', `${f.prefix}/locations/${room.id}`, undefined, f.token, 404);
++  assert.deepEqual((await api('GET', `${f.prefix}/locations`, undefined, f.token)).locations, []);
++});
++
++test('不可访问的家庭和物品在业务字段校验前隐藏为 404', async () => {
++  const a = await fixture();
++  const b = await fixture();
++  const item = await api('POST', `${a.prefix}/items`, { name: 'private' }, a.token, 201);
++  for (const prefix of [a.prefix, '/v1/households/nonexistent']) {
++    await api('GET', `${prefix}/items?cursor=invalid&limit=0`, undefined, b.token, 404);
++    await api('POST', `${prefix}/items`, {}, b.token, 404);
++    await api('POST', `${prefix}/locations`, { name: null, parent_id: 42 }, b.token, 404);
++    await api('PATCH', `${prefix}/items/${item.id}`, { name: null }, b.token, 404);
++  }
++  await api('PATCH', `${b.prefix}/items/${item.id}`, { name: null }, b.token, 404);
++  await api('PATCH', `${b.prefix}/items/nonexistent`, { quantity: -1 }, b.token, 404);
++});
++
++test('位置名称、父 id 的类型校验', async () => {
++  const f = await fixture();
++  for (const body of [{}, { name: '' }, { name: null }, { name: 1 }, { name: 'x', parent_id: 1 },
++    { name: 'x', parent_id: '' }, { name: 'x', parent_id: false }]) {
++    await api('POST', `${f.prefix}/locations`, body, f.token, 400);
++  }
++});
++
++test('物品默认值、部分更新、清空可空字段、数量零与删除', async () => {
++  const f = await fixture();
++  const member = await account();
++  await join(f, member);
++  const item = await api('POST', `${f.prefix}/items`, { name: '牛奶' }, member.token, 201);
++  assert.deepEqual(item, { id: item.id, name: '牛奶', quantity: 1, location_id: null, expires_on: null, days_left: null });
++  const loc = await api('POST', `${f.prefix}/locations`, { name: '冰箱' }, f.token, 201);
++  const date = today(f.home.timezone);
++  const changed = await api('PATCH', `${f.prefix}/items/${item.id}`, { quantity: 0, location_id: loc.id, expires_on: date }, member.token);
++  assert.deepEqual(changed, { ...item, quantity: 0, location_id: loc.id, expires_on: date, days_left: 0 });
++  const renamed = await api('PATCH', `${f.prefix}/items/${item.id}`, { name: '燕麦奶' }, f.token);
++  assert.deepEqual(renamed, { ...changed, name: '燕麦奶' });
++  const cleared = await api('PATCH', `${f.prefix}/items/${item.id}`, { location_id: null, expires_on: null }, f.token);
++  assert.deepEqual(cleared, { ...renamed, location_id: null, expires_on: null, days_left: null });
++  assert.deepEqual(await api('PATCH', `${f.prefix}/items/${item.id}`, {}, f.token), cleared);
++  assert.deepEqual(await api('GET', `${f.prefix}/items/${item.id}`, undefined, member.token), cleared);
++  await api('DELETE', `${f.prefix}/items/${item.id}`, undefined, member.token, 204);
++  await api('GET', `${f.prefix}/items/${item.id}`, undefined, f.token, 404);
++  await api('PATCH', `${f.prefix}/items/${item.id}`, { name: 'x' }, f.token, 404);
++  await api('DELETE', `${f.prefix}/items/${item.id}`, undefined, f.token, 404);
++});
++
++test('新建和 PATCH 严格校验物品字段与真实公历日期', async () => {
++  const f = await fixture();
++  const item = await api('POST', `${f.prefix}/items`, { name: 'valid' }, f.token, 201);
++  const invalid = [
++    ...[null, '', '  ', 1, false, []].map((name) => ({ name })),
++    ...[-1, 1.5, '2', null, true, 9007199254740992].map((quantity) => ({ quantity })),
++    ...['', 3, false, 'missing'].map((location_id) => ({ location_id })),
++    ...['2026-02-30', '2026-02-29', '1900-02-29', '2026-2-3', '2026-13-01', '2026-00-01',
++      '2026-01-00', '0000-01-01', '2026-11-20T00:00:00Z', '', 20261120, false].map((expires_on) => ({ expires_on })),
++  ];
++  await api('POST', `${f.prefix}/items`, {}, f.token, 400);
++  for (const body of invalid) {
++    await api('POST', `${f.prefix}/items`, { name: 'x', ...body }, f.token, 400);
++    await api('PATCH', `${f.prefix}/items/${item.id}`, body, f.token, 400);
++  }
++  for (const date of ['2024-02-29', '2000-02-29', '0001-01-01', '9999-12-31']) {
++    assert.equal((await api('PATCH', `${f.prefix}/items/${item.id}`, { expires_on: date }, f.token)).expires_on, date);
++  }
++});
++
++test('并发部分更新不覆盖另一个请求改动的字段', async () => {
++  const f = await fixture();
++  const item = await api('POST', `${f.prefix}/items`, { name: 'before', quantity: 1 }, f.token, 201);
++  await Promise.all([
++    api('PATCH', `${f.prefix}/items/${item.id}`, { name: 'after' }, f.token),
++    api('PATCH', `${f.prefix}/items/${item.id}`, { quantity: 7 }, f.token),
++    api('PATCH', `${f.prefix}/items/${item.id}`, { expires_on: '2030-01-01' }, f.token),
++  ]);
++  const actual = await api('GET', `${f.prefix}/items/${item.id}`, undefined, f.token);
++  assert.equal(actual.name, 'after');
++  assert.equal(actual.quantity, 7);
++  assert.equal(actual.expires_on, '2030-01-01');
++});
++
++test('创建物品与删除位置并发，结果符合串行执行且无外键错误', async () => {
++  const f = await fixture();
++  for (let i = 0; i < 6; i++) {
++    const loc = await api('POST', `${f.prefix}/locations`, { name: 'room' }, f.token, 201);
++    const [created, removed] = await Promise.all([
++      call('POST', `${f.prefix}/items`, { name: 'item', location_id: loc.id }, f.token),
++      call('DELETE', `${f.prefix}/locations/${loc.id}`, undefined, f.token),
++    ]);
++    assert.ok((created.status === 201 && removed.status === 409) || (created.status === 400 && removed.status === 204),
++      JSON.stringify([created, removed]));
++  }
++});
++
++test('踢人和创建物品并发；移除完成后的写入和读取均为 404', async () => {
++  const f = await fixture();
++  const member = await account();
++  await join(f, member);
++  const results = await Promise.all([
++    call('DELETE', `${f.prefix}/members/${member.user.id}`, undefined, f.token),
++    ...Array.from({ length: 8 }, (_, i) => call('POST', `${f.prefix}/items`, { name: `race-${i}` }, member.token)),
++  ]);
++  assert.equal(results[0].status, 204);
++  assert.ok(results.slice(1).every((r) => r.status === 201 || r.status === 404));
++  await api('POST', `${f.prefix}/items`, { name: 'after removal' }, member.token, 404);
++  await api('GET', `${f.prefix}/items`, undefined, member.token, 404);
++  assert.equal((await api('GET', `${f.prefix}/items`, undefined, f.token)).items.length,
++    results.slice(1).filter((r) => r.status === 201).length);
++});
++
++test('days_left 和筛选均按家庭时区，覆盖国际日期变更线与半小时时区', async () => {
++  for (const zone of ['Pacific/Kiritimati', 'Etc/GMT+12', 'Asia/Kathmandu', 'America/New_York']) {
++    const f = await fixture(zone);
++    const date = today(zone);
++    const items = [];
++    for (const days of [-2, -1, 0, 1, 3, 4]) {
++      const item = await api('POST', `${f.prefix}/items`, { name: `${days}`, expires_on: plus(date, days) }, f.token, 201);
++      assert.equal(item.days_left, days, zone);
++      items.push(item);
++    }
++    const noExpiry = await api('POST', `${f.prefix}/items`, { name: '永不过期' }, f.token, 201);
++    assert.equal(noExpiry.days_left, null);
++    const soon = (await api('GET', `${f.prefix}/items?expiring_within_days=3`, undefined, f.token)).items;
++    assert.deepEqual(soon.map((i) => i.days_left), [0, 1, 3]);
++    const expired = (await api('GET', `${f.prefix}/items?expired=true`, undefined, f.token)).items;
++    assert.deepEqual(expired.map((i) => i.days_left), [-2, -1]);
++    const dueToday = (await api('GET', `${f.prefix}/items?expiring_within_days=0`, undefined, f.token)).items;
++    assert.deepEqual(dueToday.map((i) => i.id), [items[2].id]);
++  }
++});
++
++test('limit、日期筛选与游标参数严格校验', async () => {
++  const f = await fixture();
++  for (const query of [
++    ...['0', '101', '-1', '1.5', 'abc', '', '1e1', 'NaN'].map((v) => `limit=${v}`),
++    ...['-1', '366', '1.5', 'abc', '', '1e2'].map((v) => `expiring_within_days=${v}`),
++    'expired=1', 'expired=TRUE', 'expired=', 'expired=true&expiring_within_days=3',
++    'cursor=', 'cursor=garbage', 'cursor=e30.invalid', 'limit=1&limit=2',
++  ]) await api('GET', `${f.prefix}/items?${query}`, undefined, f.token, 400);
++  for (const query of ['limit=1', 'limit=100', 'expiring_within_days=365', 'expired=false']) {
++    assert.deepEqual(await api('GET', `${f.prefix}/items?${query}`, undefined, f.token), { items: [], next_cursor: null });
++  }
++});
++
++for (const mode of ['all', 'within', 'expired']) {
++  test(`${mode} 分页排序稳定，删除前页和页尾后不重不漏`, async () => {
++    const f = await fixture();
++    const date = today(f.home.timezone);
++    const offsets = mode === 'expired' ? [-2, -4, -1, -3, -2, -4, -3, -1, -2] : [2, 0, 3, 1, 2, 0, 1, 3, 2];
++    const created = [];
++    for (const [i, offset] of offsets.entries()) created.push(await api('POST', `${f.prefix}/items`,
++      { name: `item-${i}`, expires_on: plus(date, offset) }, f.token, 201));
++    const expected = mode === 'all' ? created : [...created].sort((a, b) => a.expires_on.localeCompare(b.expires_on));
++    const query = mode === 'all' ? '' : mode === 'within' ? '&expiring_within_days=3' : '&expired=true';
++    let page = await api('GET', `${f.prefix}/items?limit=2${query}`, undefined, f.token);
++    const seen = [...page.items];
++    assert.ok(page.next_cursor);
++    const originalCursor = page.next_cursor;
++    for (const item of page.items) await api('DELETE', `${f.prefix}/items/${item.id}`, undefined, f.token, 204);
++    // Inserts during traversal are outside the first page's creation ceiling.
++    await api('POST', `${f.prefix}/items`, { name: 'new', expires_on: plus(date, offsets[0]) }, f.token, 201);
++    let pages = 1;
++    while (page.next_cursor) {
++      page = await api('GET', `${f.prefix}/items?limit=2${query}&cursor=${encodeURIComponent(page.next_cursor)}`, undefined, f.token);
++      seen.push(...page.items);
++      assert.ok(++pages < 10);
++    }
++    assert.deepEqual(seen.map((i) => i.id), expected.map((i) => i.id));
++    assert.equal(new Set(seen.map((i) => i.id)).size, created.length);
++    assert.equal(page.next_cursor, null);
++    await api('GET', `${f.prefix}/items?limit=2${query}&cursor=${originalCursor}x`, undefined, f.token, 400);
++    const another = await household(f.token);
++    await api('GET', `/v1/households/${another.id}/items?limit=2${query}&cursor=${originalCursor}`, undefined, f.token, 400);
++    const different = mode === 'all' ? '&expired=true' : '';
++    await api('GET', `${f.prefix}/items?limit=2${different}&cursor=${originalCursor}`, undefined, f.token, 400);
++  });
++}
++
++test('默认每页 20 条、并发创建的物品全部恰好返回一次', async () => {
++  const f = await fixture();
++  const created = await Promise.all(Array.from({ length: 25 }, (_, i) => api('POST', `${f.prefix}/items`, { name: `${i}` }, f.token, 201)));
++  const first = await api('GET', `${f.prefix}/items`, undefined, f.token);
++  assert.equal(first.items.length, 20);
++  assert.ok(first.next_cursor);
++  const second = await api('GET', `${f.prefix}/items?cursor=${first.next_cursor}`, undefined, f.token);
++  assert.equal(second.items.length, 5);
++  assert.equal(second.next_cursor, null);
++  assert.deepEqual([...first.items, ...second.items].map((i) => i.id).sort(), created.map((i) => i.id).sort());
++});
++
++test('定时处理使用 scheduledTime 和家庭日期，范围含 0/3 天，重复并发触发唯一', async () => {
++  const instant = '2026-11-18T10:30:00Z';
++  const cases = [];
++  for (const zone of ['Pacific/Kiritimati', 'Etc/GMT+12', 'Asia/Singapore', 'America/New_York']) {
++    const f = await fixture(zone);
++    const date = today(zone, Date.parse(instant));
++    const items = [];
++    for (const offset of [-1, 0, 1, 3, 4]) items.push(await api('POST', `${f.prefix}/items`,
++      { name: `milk-${offset}`, quantity: 0, expires_on: plus(date, offset) }, f.token, 201));
++    await api('POST', `${f.prefix}/items`, { name: 'no-expiry' }, f.token, 201);
++    cases.push({ f, date, items });
++  }
++  await Promise.all(Array.from({ length: 5 }, () => scheduled(instant)));
++  await scheduled('2026-11-18T11:30:00Z');
++  for (const { f, date, items } of cases) {
++    const reminders = (await api('GET', `${f.prefix}/reminders`, undefined, f.token)).reminders;
++    assert.equal(reminders.length, 3, f.home.timezone);
++    assert.deepEqual(reminders.map((r) => r.item_id), items.slice(1, 4).map((i) => i.id));
++    for (const r of reminders) {
++      assert.equal(typeof r.id, 'string');
++      assert.equal(r.remind_on, date);
++      const item = items.find((i) => i.id === r.item_id);
++      assert.equal(r.item_name, item.name);
++      assert.equal(r.expires_on, item.expires_on);
++    }
++  }
++  await scheduled('2026-11-19T10:30:00Z');
++  for (const { f, date, items } of cases) {
++    const reminders = (await api('GET', `${f.prefix}/reminders`, undefined, f.token)).reminders;
++    assert.equal(reminders.length, 6);
++    assert.deepEqual(reminders.slice(3).map((r) => r.item_id), items.slice(2, 5).map((i) => i.id));
++    assert.ok(reminders.slice(3).every((r) => r.remind_on === plus(date, 1)));
++    assert.deepEqual(reminders.map((r) => `${r.remind_on}:${r.expires_on}`),
++      reminders.map((r) => `${r.remind_on}:${r.expires_on}`).sort());
++    assert.equal(new Set(reminders.map((r) => `${r.item_id}:${r.remind_on}`)).size, 6);
++  }
++});
++
++test('定时提醒跨家庭当地午夜和夏令时跳时/回拨仍按日唯一', async () => {
++  const singapore = await fixture('Asia/Singapore');
++  await api('POST', `${singapore.prefix}/items`, { name: 'midnight', expires_on: '2028-01-03' }, singapore.token, 201);
++  await scheduled('2028-01-01T15:59:00Z');
++  await scheduled('2028-01-01T16:00:00Z');
++  assert.deepEqual((await api('GET', `${singapore.prefix}/reminders`, undefined, singapore.token)).reminders.map((r) => r.remind_on),
++    ['2028-01-01', '2028-01-02']);
++  for (const [expires, instants, expected] of [
++    ['2026-03-09', ['2026-03-08T06:59:00Z', '2026-03-08T07:01:00Z', '2026-03-09T03:59:00Z', '2026-03-09T04:01:00Z'], ['2026-03-08', '2026-03-09']],
++    ['2026-11-02', ['2026-11-01T05:30:00Z', '2026-11-01T06:30:00Z', '2026-11-02T04:59:00Z', '2026-11-02T05:01:00Z'], ['2026-11-01', '2026-11-02']],
++  ]) {
++    const f = await fixture('America/New_York');
++    await api('POST', `${f.prefix}/items`, { name: 'DST', expires_on: expires }, f.token, 201);
++    for (const instant of instants) await scheduled(instant);
++    assert.deepEqual((await api('GET', `${f.prefix}/reminders`, undefined, f.token)).reminders.map((r) => r.remind_on), expected);
++  }
++});
++
++test('物品删除级联清理提醒；数据库外键保持完整', async () => {
++  const f = await fixture('UTC');
++  const item = await api('POST', `${f.prefix}/items`, { name: 'delete', expires_on: '2035-01-01' }, f.token, 201);
++  await scheduled('2035-01-01T00:00:00Z');
++  assert.equal((await api('GET', `${f.prefix}/reminders`, undefined, f.token)).reminders.length, 1);
++  await api('DELETE', `${f.prefix}/items/${item.id}`, undefined, f.token, 204);
++  assert.deepEqual((await api('GET', `${f.prefix}/reminders`, undefined, f.token)).reminders, []);
++  assert.deepEqual(await sql('PRAGMA foreign_key_check'), []);
++});
+diff --git a/tests/harness.mjs b/tests/harness.mjs
+new file mode 100644
+index 0000000..41fbb90
+--- /dev/null
++++ b/tests/harness.mjs
+@@ -0,0 +1,148 @@
++import assert from 'node:assert/strict';
++import { spawn, execFile } from 'node:child_process';
++import { randomBytes } from 'node:crypto';
++import { once } from 'node:events';
++import { mkdtemp, readFile, writeFile, rm } from 'node:fs/promises';
++import { createServer } from 'node:net';
++import { tmpdir } from 'node:os';
++import path from 'node:path';
++import { fileURLToPath } from 'node:url';
++import { promisify } from 'node:util';
++import { setTimeout as delay } from 'node:timers/promises';
++
++const exec = promisify(execFile);
++const root = fileURLToPath(new URL('../', import.meta.url));
++const wrangler = path.join(root, 'node_modules/wrangler/bin/wrangler.js');
++const environment = { ...process.env, CI: '1', WRANGLER_SEND_METRICS: 'false', BROWSER: 'none' };
++let temporary;
++let config;
++let state;
++let processHandle;
++let output = '';
++let base;
++export const secret = randomBytes(48).toString('base64url');
++
++async function freePort() {
++  const server = createServer();
++  server.listen(0, '127.0.0.1');
++  await once(server, 'listening');
++  const port = server.address().port;
++  await new Promise((resolve) => server.close(resolve));
++  return port;
++}
++
++export async function start() {
++  temporary = await mkdtemp(path.join(tmpdir(), 'household-worker-test-'));
++  config = path.join(temporary, 'wrangler.jsonc');
++  state = path.join(temporary, 'state');
++  const settings = JSON.parse(await readFile(path.join(root, 'wrangler.jsonc'), 'utf8'));
++  delete settings.$schema;
++  settings.main = path.join(root, settings.main);
++  settings.d1_databases[0].migrations_dir = path.join(root, 'migrations');
++  await writeFile(config, JSON.stringify(settings));
++  await writeFile(path.join(temporary, '.dev.vars'), `TOKEN_SECRET=${secret}\n`, { mode: 0o600 });
++  await exec(process.execPath, [wrangler, 'd1', 'migrations', 'apply', 'DB', '--local', '--config', config, '--persist-to', state],
++    { cwd: root, env: environment, timeout: 30_000 });
++  const port = await freePort();
++  const inspectorPort = await freePort();
++  base = `http://127.0.0.1:${port}`;
++  processHandle = spawn(process.execPath, [wrangler, 'dev', '--local', '--config', config,
++    '--persist-to', state, '--ip', '127.0.0.1', '--port', String(port), '--inspector-port', String(inspectorPort)],
++  { cwd: root, env: environment, stdio: ['ignore', 'pipe', 'pipe'] });
++  processHandle.stdout.on('data', (data) => { output = (output + data).slice(-60_000); });
++  processHandle.stderr.on('data', (data) => { output = (output + data).slice(-60_000); });
++  for (let attempt = 0; attempt < 150; attempt++) {
++    if (processHandle.exitCode !== null) throw new Error(`Wrangler exited: ${output}`);
++    try {
++      const response = await fetch(`${base}/v1/me`, { signal: AbortSignal.timeout(300) });
++      if (response.status === 401) return;
++    } catch { /* Wait for workerd to bind its port. */ }
++    await delay(100);
++  }
++  throw new Error(`Wrangler did not start: ${output}`);
++}
++
++export async function stop() {
++  if (processHandle && processHandle.exitCode === null) {
++    const exited = once(processHandle, 'exit');
++    processHandle.kill('SIGTERM');
++    const killTimer = setTimeout(() => processHandle.kill('SIGKILL'), 5000);
++    await exited;
++    clearTimeout(killTimer);
++  }
++  if (temporary) await rm(temporary, { recursive: true, force: true });
++}
++
++export async function call(method, endpoint, body, token, extra = {}) {
++  const headers = { 'content-type': 'application/json', ...extra.headers };
++  if (token !== undefined) headers.authorization = `Bearer ${token}`;
++  const response = await fetch(`${base}${endpoint}`, {
++    method, headers, body: body === undefined ? undefined : JSON.stringify(body),
++    signal: AbortSignal.timeout(10_000), ...extra,
++  });
++  const text = await response.text();
++  let value;
++  try { value = text ? JSON.parse(text) : null; }
++  catch { throw new Error(`Non-JSON ${response.status}: ${text}\n${output}`); }
++  if (response.status >= 400) {
++    assert.deepEqual(Object.keys(value), ['error']);
++    assert.equal(typeof value.error, 'string');
++  }
++  if (response.status === 204) assert.equal(text, '');
++  return { status: response.status, body: value, headers: response.headers };
++}
++
++export async function api(method, endpoint, body, token, status = 200) {
++  const result = await call(method, endpoint, body, token);
++  assert.equal(result.status, status, `${method} ${endpoint}: ${JSON.stringify(result.body)}\n${result.status === 500 ? output : ''}`);
++  return result.body;
++}
++
++export async function account(label = 'user') {
++  return api('POST', '/v1/auth/register', {
++    email: `${label}-${randomBytes(8).toString('hex')}@example.com`, password: 'testing-password',
++  }, undefined, 201);
++}
++
++export async function household(token, timezone = 'Asia/Singapore') {
++  return api('POST', '/v1/households', { name: '我家', timezone }, token, 201);
++}
++
++export async function fixture(timezone = 'Asia/Singapore') {
++  const owner = await account('owner');
++  const home = await household(owner.token, timezone);
++  return { ...owner, home, prefix: `/v1/households/${home.id}` };
++}
++
++export async function join(owner, member) {
++  const invite = await api('POST', `${owner.prefix}/invites`, undefined, owner.token, 201);
++  await api('POST', `/v1/invites/${invite.code}/accept`, undefined, member.token);
++  return invite;
++}
++
++export async function scheduled(instant) {
++  const time = typeof instant === 'number' ? instant : Date.parse(instant);
++  const response = await fetch(`${base}/cdn-cgi/handler/scheduled?cron=0+*+*+*+*&time=${time}`, {
++    signal: AbortSignal.timeout(30_000),
++  });
++  const result = await response.text();
++  assert.equal(response.status, 200, `Scheduled handler: ${result}\n${output}`);
++}
++
++export async function sql(command) {
++  const { stdout } = await exec(process.execPath, [wrangler, 'd1', 'execute', 'DB', '--local',
++    '--config', config, '--persist-to', state, '--command', command, '--json'],
++  { cwd: root, env: environment, timeout: 30_000 });
++  return JSON.parse(stdout)[0].results;
++}
++
++export function today(timezone, instant = Date.now()) {
++  const values = new Intl.DateTimeFormat('en-CA', {
++    timeZone: timezone, year: 'numeric', month: '2-digit', day: '2-digit',
++  }).formatToParts(instant);
++  return ['year', 'month', 'day'].map((key) => values.find((part) => part.type === key).value).join('-');
++}
++
++export function plus(date, days) {
++  return new Date(Date.parse(`${date}T00:00:00Z`) + days * 86400000).toISOString().slice(0, 10);
++}
+diff --git a/tsconfig.json b/tsconfig.json
+new file mode 100644
+index 0000000..3bc87c8
+--- /dev/null
++++ b/tsconfig.json
+@@ -0,0 +1,16 @@
++{
++  "compilerOptions": {
++    "target": "ES2022",
++    "module": "ESNext",
++    "moduleResolution": "Bundler",
++    "lib": ["ES2022", "ES2022.Intl"],
++    "types": ["@cloudflare/workers-types"],
++    "strict": true,
++    "noEmit": true,
++    "skipLibCheck": true,
++    "noUnusedLocals": true,
++    "noUnusedParameters": true,
++    "verbatimModuleSyntax": true
++  },
++  "include": ["src/**/*.ts"]
++}
+diff --git a/wrangler.jsonc b/wrangler.jsonc
+new file mode 100644
+index 0000000..f8b9024
+--- /dev/null
++++ b/wrangler.jsonc
+@@ -0,0 +1,16 @@
++{
++  "$schema": "node_modules/wrangler/config-schema.json",
++  "name": "household-items-service",
++  "main": "src/index.ts",
++  "compatibility_date": "2026-11-01",
++  "workers_dev": false,
++  "d1_databases": [
++    {
++      "binding": "DB",
++      "database_name": "household-items-local",
++      "database_id": "00000000-0000-0000-0000-000000000001",
++      "migrations_dir": "migrations"
++    }
++  ],
++  "triggers": { "crons": ["0 * * * *"] }
++}

@@ -1,0 +1,22 @@
+{
+ "源码文件数": 11,
+ "源码非空行数": 633,
+ "最大文件": [
+  "src/items.ts",
+  131
+ ],
+ "测试文件数": 2,
+ "测试用例数（粗数）": 27,
+ "tsc 报错（自己的 tsconfig）": 0,
+ "tsc 报错（加 --strict）": 0,
+ "tsc 报错示例": [],
+ "Biome 告警数": 17,
+ "Biome 每千行": 26.9,
+ "Biome 按规则": {
+  "lint/style/noNonNullAssertion": 10,
+  "lint/style/useImportType": 4,
+  "lint/complexity/noExcessiveCognitiveComplexity": 2,
+  "lint/style/noUnusedTemplateLiteral": 1
+ },
+ "重复行占比 %": 0
+}

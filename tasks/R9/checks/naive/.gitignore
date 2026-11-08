@@ -1,0 +1,8 @@
+node_modules/
+.build/
+.wrangler/
+DerivedData/
+build/
+*.xcuserstate
+xcuserdata/
+.swiftpm/

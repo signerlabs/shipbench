@@ -1,0 +1,436 @@
+ Sprout/Models/Expense.swift                  |  43 ++++++
+ Sprout/Models/LocalMoney.swift               |  74 ++++++++++
+ Sprout/Services/ExpenseStore.swift           |  46 +++++++
+ Sprout/ShipSwift/SWComponent/SWLoading.swift |   1 +
+ Sprout/SproutApp.swift                       |   1 +
+ Sprout/Views/ExpenseListView.swift           | 195 +++++++++++++++++++++++++++
+ Sprout/Views/HabitListView.swift             |   9 ++
+ 7 files changed, 369 insertions(+)
+diff --git a/Sprout/Models/Expense.swift b/Sprout/Models/Expense.swift
+index c94a548..00db9b8 100644
+--- a/Sprout/Models/Expense.swift
++++ b/Sprout/Models/Expense.swift
+@@ -10,3 +10,46 @@ struct Expense: Identifiable, Hashable, Codable {
+     var date: String
+     var note: String
+ }
++
++extension Expense {
++    /// Amounts above this (in the user's currency) are flagged as large.
++    static let largeAmountThreshold: Decimal = 50
++
++    var isLarge: Bool { amount > Self.largeAmountThreshold }
++
++    /// `date` as noon of that day in the user's time zone, or nil if the server sent something that isn't a real date.
++    var day: Date? { ExpenseDay.date(from: date) }
++}
++
++/// Converts between the server's plain calendar dates ("2026-11-20": ISO 8601, Gregorian, no time, no time zone) and `Date`.
++///
++/// A day is anchored at **noon in the user's current time zone**. Parsing it as UTC midnight and then showing it in
++/// local time would put US users on the previous day; noon leaves ±12 hours of slack either way.
++enum ExpenseDay {
++    /// "2026-11-20" → noon on that day in `timeZone`. Nil unless `string` is exactly a valid yyyy-MM-dd date.
++    static func date(from string: String, timeZone: TimeZone = .current) -> Date? {
++        let parts = string.split(separator: "-", omittingEmptySubsequences: false)
++        guard parts.count == 3,
++              parts.map(\.count) == [4, 2, 2],
++              parts.allSatisfy({ $0.allSatisfy { $0.isASCII && $0.isNumber } }),
++              let year = Int(parts[0]), let month = Int(parts[1]), let day = Int(parts[2])
++        else { return nil }
++        let calendar = gregorian(in: timeZone)
++        let components = DateComponents(year: year, month: month, day: day, hour: 12)
++        guard components.isValidDate(in: calendar) else { return nil }
++        return calendar.date(from: components)
++    }
++
++    /// The calendar day `date` falls on in `timeZone`, in the server's format.
++    static func string(from date: Date, timeZone: TimeZone = .current) -> String {
++        let parts = gregorian(in: timeZone).dateComponents([.year, .month, .day], from: date)
++        return String(format: "%04d-%02d-%02d", parts.year ?? 0, parts.month ?? 0, parts.day ?? 0)
++    }
++
++    /// The server's dates are always Gregorian, whatever calendar the user has picked.
++    private static func gregorian(in timeZone: TimeZone) -> Calendar {
++        var calendar = Calendar(identifier: .gregorian)
++        calendar.timeZone = timeZone
++        return calendar
++    }
++}
+diff --git a/Sprout/Models/LocalMoney.swift b/Sprout/Models/LocalMoney.swift
+new file mode 100644
+index 0000000..7ce7816
+--- /dev/null
++++ b/Sprout/Models/LocalMoney.swift
+@@ -0,0 +1,74 @@
++import Foundation
++
++/// Money in the user's region: the currency of `locale`, written the way that region writes numbers.
++/// Formatting and parsing share the one locale, so what the app shows is what it accepts back.
++struct LocalMoney {
++    let locale: Locale
++
++    var currencyCode: String { locale.currency?.identifier ?? "USD" }
++
++    /// "$1,234.50" in the US, "1.234,50 €" in Germany, "1 234,50 €" in France.
++    func format(_ amount: Decimal) -> String {
++        amount.formatted(.currency(code: currencyCode).locale(locale))
++    }
++
++    /// An example amount written the local way ("12.50" / "12,50"), for hints and error messages.
++    var sampleInput: String {
++        (Decimal(1250) / 100).formatted(.number.precision(.fractionLength(fractionDigits)).locale(locale))
++    }
++
++    /// Strictly parses an amount the user typed. Returns nil unless the whole text is one number written the local
++    /// way: digits, optional grouping separators in the right places, and at most one local decimal separator
++    /// followed by no more digits than the currency has ("1,234.50" in the US, "1.234,50" in Germany,
++    /// "1 234,50" in France).
++    ///
++    /// Foundation's number parsers are too forgiving for money: they stop at the first character they don't
++    /// understand and keep what they had, so in Germany "12.5" comes back as 12 and "19.99" as 1999, and "12abc"
++    /// comes back as 12 everywhere.
++    func parse(_ text: String) -> Decimal? {
++        let text = text.trimmingCharacters(in: .whitespacesAndNewlines)
++        let halves = text.components(separatedBy: locale.decimalSeparator ?? ".")
++        guard halves.count <= 2 else { return nil }
++        let fraction = halves.count == 2 ? halves[1] : ""
++        guard fraction.count <= fractionDigits,
++              fraction.allSatisfy(Self.isDigit),
++              let integer = integerDigits(halves[0]),
++              !(integer + fraction).isEmpty
++        else { return nil }
++        let normalized = "\(integer.isEmpty ? "0" : integer).\(fraction.isEmpty ? "0" : fraction)"
++        return Decimal(string: normalized, locale: Locale(identifier: "en_US_POSIX"))
++    }
++
++    /// Number of digits after the decimal separator for the currency (2 for USD and EUR).
++    private var fractionDigits: Int {
++        let formatter = NumberFormatter()
++        formatter.numberStyle = .currency
++        formatter.locale = locale
++        formatter.currencyCode = currencyCode
++        return formatter.maximumFractionDigits
++    }
++
++    /// "1,234" → "1234". Grouping separators are optional; where used, the first group is 1–3 digits not starting
++    /// with 0 and every later group has exactly three ("0,001" is not a way to write 1).
++    private func integerDigits(_ text: String) -> String? {
++        let groups = text.split(omittingEmptySubsequences: false, whereSeparator: isGroupingSeparator)
++        guard groups.allSatisfy({ $0.allSatisfy(Self.isDigit) }) else { return nil }
++        if groups.count > 1 {
++            guard (1...3).contains(groups[0].count), groups[0].first != "0",
++                  groups.dropFirst().allSatisfy({ $0.count == 3 })
++            else { return nil }
++        }
++        return groups.joined()
++    }
++
++    /// French groups digits with a narrow no-break space; people type an ordinary space, so any space counts there.
++    private func isGroupingSeparator(_ character: Character) -> Bool {
++        let separator = locale.groupingSeparator ?? ","
++        if !separator.isEmpty, separator.allSatisfy(\.isWhitespace) { return character.isWhitespace }
++        return String(character) == separator
++    }
++
++    nonisolated private static func isDigit(_ character: Character) -> Bool {
++        character.isASCII && character.isNumber
++    }
++}
+diff --git a/Sprout/Services/ExpenseStore.swift b/Sprout/Services/ExpenseStore.swift
+new file mode 100644
+index 0000000..ba5b2c2
+--- /dev/null
++++ b/Sprout/Services/ExpenseStore.swift
+@@ -0,0 +1,46 @@
++import Foundation
++import Observation
++
++/// Fitness expenses for the spending page, loaded from and saved to `ExpenseAPI`.
++@Observable
++final class ExpenseStore {
++    /// Newest day first, as the server orders them.
++    private(set) var expenses: [Expense] = []
++    /// Whether a fetch has succeeded yet. Until then there is no trustworthy list or total to show.
++    private(set) var hasLoaded = false
++
++    @ObservationIgnored private var loadGeneration = 0
++    /// Expenses the server accepted while the latest fetch was in flight; that fetch may not include them yet.
++    @ObservationIgnored private var recentAdds: [(expense: Expense, generation: Int)] = []
++
++    func load() async throws {
++        loadGeneration += 1
++        let generation = loadGeneration
++        let fetched = try await ExpenseAPI.shared.fetch()
++        // A newer fetch started while this one was in flight; its result is the one to keep.
++        guard generation == loadGeneration else { return }
++        // Anything saved before this fetch started is already in `fetched`.
++        recentAdds.removeAll { $0.generation < generation }
++        let fetchedIDs = Set(fetched.map(\.id))
++        let notYetFetched = recentAdds.map(\.expense).filter { !fetchedIDs.contains($0.id) }
++        expenses = (notYetFetched + fetched).sorted { $0.date > $1.date }
++        hasLoaded = true
++    }
++
++    /// Saves `amount` as spent today (the user's local day). The list changes only once the server has accepted it.
++    func addToday(amount: Decimal) async throws {
++        let expense = Expense(id: UUID().uuidString, amount: amount, date: ExpenseDay.string(from: .now), note: "")
++        try await ExpenseAPI.shared.add(expense)
++        recentAdds.append((expense: expense, generation: loadGeneration))
++        let index = expenses.firstIndex { $0.date <= expense.date } ?? expenses.endIndex
++        expenses.insert(expense, at: index)
++    }
++
++    /// Sum of the expenses dated in the same month as `reference`, in the user's calendar and time zone.
++    func total(inMonthOf reference: Date, calendar: Calendar = .current) -> Decimal {
++        expenses.reduce(into: 0) { sum, expense in
++            guard let day = expense.day, calendar.isDate(day, equalTo: reference, toGranularity: .month) else { return }
++            sum += expense.amount
++        }
++    }
++}
+diff --git a/Sprout/ShipSwift/SWComponent/SWLoading.swift b/Sprout/ShipSwift/SWComponent/SWLoading.swift
+index 150cd5b..9bccbec 100644
+--- a/Sprout/ShipSwift/SWComponent/SWLoading.swift
++++ b/Sprout/ShipSwift/SWComponent/SWLoading.swift
+@@ -62,6 +62,7 @@ enum SWLoadingPage: String {
+     case home
+     case settings
+     case profile
++    case expenses
+     // Add more pages as needed
+ }
+ 
+diff --git a/Sprout/SproutApp.swift b/Sprout/SproutApp.swift
+index ee48be1..7175805 100644
+--- a/Sprout/SproutApp.swift
++++ b/Sprout/SproutApp.swift
+@@ -5,6 +5,7 @@ struct SproutApp: App {
+     var body: some Scene {
+         WindowGroup {
+             HabitListView()
++                .swAlert()
+         }
+     }
+ }
+diff --git a/Sprout/Views/ExpenseListView.swift b/Sprout/Views/ExpenseListView.swift
+new file mode 100644
+index 0000000..9ac6c55
+--- /dev/null
++++ b/Sprout/Views/ExpenseListView.swift
+@@ -0,0 +1,195 @@
++import SwiftUI
++import UIKit
++
++/// Fitness spending: this month's total in the user's currency, every expense, and "+" to log one for today.
++struct ExpenseListView: View {
++    @State private var store = ExpenseStore()
++    @State private var isAddSheetPresented = false
++    /// Message from the last failed fetch, shown in place of the list until a fetch succeeds.
++    @State private var loadError: String?
++    /// "Today" and "this month" are judged against this; refreshed when the day or time zone changes.
++    @State private var now = Date.now
++    @Environment(\.locale) private var locale
++
++    var body: some View {
++        let money = LocalMoney(locale: locale)
++        List {
++            if store.hasLoaded {
++                Section {
++                    SWKPICard(
++                        title: "Spent This Month",
++                        value: money.format(store.total(inMonthOf: now)),
++                        icon: "dumbbell.fill",
++                        tint: .accent
++                    ) {
++                        Text(now, format: .dateTime.month(.wide).year())
++                            .font(.caption2)
++                            .foregroundStyle(.secondary)
++                    }
++                    .listRowInsets(EdgeInsets())
++                    .listRowBackground(Color.clear)
++                }
++
++                Section("Expenses") {
++                    if store.expenses.isEmpty {
++                        Text("No expenses yet. Tap + to log today's.")
++                            .foregroundStyle(.secondary)
++                    }
++                    ForEach(store.expenses) { expense in
++                        ExpenseRow(expense: expense, money: money, now: now)
++                    }
++                }
++            }
++        }
++        .animation(.default, value: store.expenses)
++        .overlay {
++            if !store.hasLoaded, let loadError {
++                ContentUnavailableView {
++                    Label("Couldn't Load Expenses", systemImage: "exclamationmark.triangle")
++                } description: {
++                    Text(loadError)
++                } actions: {
++                    Button("Try Again") {
++                        Task { await loadFirstTime() }
++                    }
++                }
++            }
++        }
++        .navigationTitle("Fitness Spending")
++        .toolbar {
++            ToolbarItem(placement: .topBarTrailing) {
++                Button("Log Expense", systemImage: "plus") {
++                    isAddSheetPresented = true
++                }
++                .disabled(!store.hasLoaded)
++            }
++        }
++        .sheet(isPresented: $isAddSheetPresented) {
++            SWAddSheet(
++                isPresented: $isAddSheetPresented,
++                title: "Log Today's Spending",
++                placeHolderText: "Amount, e.g. \(money.sampleInput)",
++                minLines: 1
++            ) { text in
++                logExpense(text, money: money)
++            }
++            .keyboardType(.decimalPad)
++        }
++        .swPageLoading(.expenses)
++        .task { await loadFirstTime() }
++        .refreshable { await load() }
++        .onReceive(NotificationCenter.default.publisher(for: UIApplication.significantTimeChangeNotification)) { _ in
++            now = .now
++        }
++    }
++
++    private func loadFirstTime() async {
++        guard !store.hasLoaded else { return }
++        SWLoadingManager.shared.show(page: .expenses)
++        await load()
++        SWLoadingManager.shared.hide(page: .expenses)
++    }
++
++    private func load() async {
++        now = .now
++        do {
++            try await store.load()
++            loadError = nil
++        } catch {
++            // Leaving the page cancels the fetch; that's not a failure to report.
++            guard !Task.isCancelled else { return }
++            loadError = error.localizedDescription
++            SWAlertManager.shared.show(.error, message: error.localizedDescription)
++        }
++    }
++
++    private func logExpense(_ text: String, money: LocalMoney) {
++        guard let amount = money.parse(text), amount > 0 else {
++            SWAlertManager.shared.show(.error, message: "Enter a valid amount, like \(money.sampleInput).")
++            return
++        }
++        Task {
++            now = .now
++            do {
++                try await store.addToday(amount: amount)
++                SWAlertManager.shared.show(.success, message: "Logged")
++            } catch {
++                SWAlertManager.shared.show(.error, message: error.localizedDescription)
++            }
++        }
++    }
++}
++
++// MARK: - Row
++
++private struct ExpenseRow: View {
++    let expense: Expense
++    let money: LocalMoney
++    let now: Date
++
++    var body: some View {
++        HStack(spacing: 12) {
++            VStack(alignment: .leading, spacing: 4) {
++                HStack(spacing: 8) {
++                    dayText
++                        .font(.headline)
++                    if isToday {
++                        SWStatusBadge(text: "Today", style: .info)
++                    }
++                }
++                if !expense.note.isEmpty {
++                    Text(expense.note)
++                        .font(.subheadline)
++                        .foregroundStyle(.secondary)
++                }
++            }
++
++            Spacer(minLength: 8)
++
++            VStack(alignment: .trailing, spacing: 4) {
++                Text(money.format(expense.amount))
++                    .font(.body.weight(.semibold))
++                    .monospacedDigit()
++                if expense.isLarge {
++                    SWStatusBadge(text: "Large", style: .error)
++                }
++            }
++        }
++        .padding(.vertical, 2)
++        .accessibilityElement(children: .combine)
++    }
++
++    /// "Nov 20" in the US, "20. Nov." in Germany, "20 nov." in France; the year is added outside the current one.
++    @ViewBuilder private var dayText: some View {
++        if let day = expense.day {
++            let isThisYear = Calendar.current.isDate(day, equalTo: now, toGranularity: .year)
++            Text(day, format: isThisYear ? .dateTime.month(.abbreviated).day() : .dateTime.year().month(.abbreviated).day())
++        } else {
++            // Not a real date: show what the server sent rather than guess.
++            Text(expense.date)
++        }
++    }
++
++    private var isToday: Bool {
++        guard let day = expense.day else { return false }
++        return Calendar.current.isDate(day, inSameDayAs: now)
++    }
++}
++
++#Preview("en_US") {
++    NavigationStack { ExpenseListView() }
++        .environment(\.locale, Locale(identifier: "en_US"))
++        .swAlert()
++}
++
++#Preview("de_DE") {
++    NavigationStack { ExpenseListView() }
++        .environment(\.locale, Locale(identifier: "de_DE"))
++        .swAlert()
++}
++
++#Preview("fr_FR") {
++    NavigationStack { ExpenseListView() }
++        .environment(\.locale, Locale(identifier: "fr_FR"))
++        .swAlert()
++}
+diff --git a/Sprout/Views/HabitListView.swift b/Sprout/Views/HabitListView.swift
+index 09d951d..16fdddb 100644
+--- a/Sprout/Views/HabitListView.swift
++++ b/Sprout/Views/HabitListView.swift
+@@ -16,6 +16,15 @@ struct HabitListView: View {
+                 }
+             }
+             .navigationTitle("Habits")
++            .toolbar {
++                ToolbarItem(placement: .topBarTrailing) {
++                    NavigationLink {
++                        ExpenseListView()
++                    } label: {
++                        Label("Fitness Spending", systemImage: "dumbbell")
++                    }
++                }
++            }
+         }
+     }
+ }

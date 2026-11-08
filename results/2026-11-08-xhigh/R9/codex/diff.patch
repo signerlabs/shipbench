@@ -1,0 +1,566 @@
+ Sprout/Models/ExpenseFormatting.swift        |  96 +++++++++++++++
+ Sprout/Services/ExpenseStore.swift           |  51 ++++++++
+ Sprout/ShipSwift/SWComponent/SWLoading.swift |   1 +
+ Sprout/SproutApp.swift                       |   1 +
+ Sprout/Views/ExpenseListView.swift           | 150 ++++++++++++++++++++++++
+ Sprout/Views/HabitListView.swift             |   9 ++
+ Tests/ExpenseFeatureChecks.swift             | 167 +++++++++++++++++++++++++++
+ Tests/README.md                              |  19 +++
+ 8 files changed, 494 insertions(+)
+diff --git a/Sprout/Models/ExpenseFormatting.swift b/Sprout/Models/ExpenseFormatting.swift
+new file mode 100644
+index 0000000..2a45fbe
+--- /dev/null
++++ b/Sprout/Models/ExpenseFormatting.swift
+@@ -0,0 +1,96 @@
++import Foundation
++
++/// Keeps server calendar days separate from instants, and money in Decimal throughout.
++struct ExpenseFormatting {
++    var locale: Locale = .current
++    var timeZone: TimeZone = .current
++
++    var calendar: Calendar {
++        var calendar = Calendar(identifier: .gregorian)
++        calendar.timeZone = timeZone
++        return calendar
++    }
++
++    var currencyCode: String { locale.currency?.identifier ?? "XXX" }
++
++    func currency(_ amount: Decimal) -> String {
++        amount.formatted(.currency(code: currencyCode).locale(locale))
++    }
++
++    func amount(from text: String) throws -> Decimal {
++        let formatter = NumberFormatter()
++        formatter.locale = locale
++        formatter.numberStyle = .decimal
++        let decimalSeparator = formatter.decimalSeparator ?? "."
++        let groupingSeparator = formatter.groupingSeparator ?? ","
++        var input = text.trimmingCharacters(in: .whitespacesAndNewlines)
++
++        // French keyboards and pasted amounts may use any of these space separators.
++        if groupingSeparator.trimmingCharacters(in: .whitespaces).isEmpty {
++            for space in [" ", "\u{00A0}", "\u{202F}"] {
++                input = input.replacingOccurrences(of: space, with: groupingSeparator)
++            }
++        }
++
++        let decimal = NSRegularExpression.escapedPattern(for: decimalSeparator)
++        let grouping = NSRegularExpression.escapedPattern(for: groupingSeparator)
++        let integer = "(?:[0-9]+|[0-9]{1,3}(?:\(grouping)[0-9]{3})+)"
++        let pattern = "\\A\\+?(?:\(integer)(?:\(decimal)[0-9]*)?|\(decimal)[0-9]+)\\z"
++        // Foundation's number parsers can accept a valid prefix; validate the entire input first.
++        guard input.range(of: pattern, options: .regularExpression) != nil else {
++            throw ExpenseAPIError.invalidAmount
++        }
++
++        let normalized = input
++            .replacingOccurrences(of: groupingSeparator, with: "")
++            .replacingOccurrences(of: decimalSeparator, with: ".")
++        let significantDigits = normalized.filter { $0.isNumber }.drop { $0 == "0" }
++        guard significantDigits.count <= 38,
++              let amount = Decimal(string: normalized, locale: Locale(identifier: "en_US_POSIX")),
++              !amount.isNaN, amount > 0 else {
++            throw ExpenseAPIError.invalidAmount
++        }
++        return amount
++    }
++
++    func date(from day: String) -> Date? {
++        guard day.range(of: #"\A[0-9]{4}-[0-9]{2}-[0-9]{2}\z"#,
++                        options: .regularExpression) != nil else { return nil }
++        let parts = day.split(separator: "-").compactMap { Int($0) }
++        guard parts.count == 3, parts[0] > 0 else { return nil }
++        // Local noon avoids the previous-day shift caused by parsing at UTC midnight.
++        let components = DateComponents(
++            year: parts[0], month: parts[1], day: parts[2], hour: 12
++        )
++        guard let date = calendar.date(from: components), dayString(date) == day else { return nil }
++        return date
++    }
++
++    func dayString(_ date: Date) -> String {
++        let parts = calendar.dateComponents([.year, .month, .day], from: date)
++        return String(format: "%04d-%02d-%02d", parts.year ?? 0, parts.month ?? 0, parts.day ?? 0)
++    }
++
++    func dateLabel(_ day: String) -> String {
++        guard let date = date(from: day) else { return day }
++        let formatter = DateFormatter()
++        formatter.locale = locale
++        formatter.calendar = calendar
++        formatter.timeZone = timeZone
++        formatter.setLocalizedDateFormatFromTemplate("MMMd")
++        return formatter.string(from: date)
++    }
++
++    func isToday(_ day: String, now: Date) -> Bool {
++        guard let date = date(from: day) else { return false }
++        return calendar.isDate(date, inSameDayAs: now)
++    }
++
++    func monthlyTotal(_ expenses: [Expense], now: Date) -> Decimal {
++        expenses.reduce(Decimal.zero) { total, expense in
++            guard let date = date(from: expense.date),
++                  calendar.isDate(date, equalTo: now, toGranularity: .month) else { return total }
++            return total + expense.amount
++        }
++    }
++}
+diff --git a/Sprout/Services/ExpenseStore.swift b/Sprout/Services/ExpenseStore.swift
+new file mode 100644
+index 0000000..307b8b5
+--- /dev/null
++++ b/Sprout/Services/ExpenseStore.swift
+@@ -0,0 +1,51 @@
++import Foundation
++import Observation
++
++@MainActor
++@Observable
++final class ExpenseStore {
++    private(set) var expenses: [Expense] = []
++    private(set) var isLoading = false
++    private(set) var isSaving = false
++    private(set) var hasLoaded = false
++
++    private let fetchExpenses: () async throws -> [Expense]
++    private let addExpense: (Expense) async throws -> Void
++
++    init(
++        fetch: @escaping () async throws -> [Expense] = { try await ExpenseAPI.shared.fetch() },
++        add: @escaping (Expense) async throws -> Void = { try await ExpenseAPI.shared.add($0) }
++    ) {
++        fetchExpenses = fetch
++        addExpense = add
++    }
++
++    func load() async throws {
++        guard !isLoading, !isSaving else { return }
++        isLoading = true
++        defer { isLoading = false }
++        let fetched = try await fetchExpenses()
++        try Task.checkCancellation()
++        expenses = fetched.sorted { $0.date > $1.date }
++        hasLoaded = true
++    }
++
++    /// Returns false for a duplicate tap while another operation is running.
++    func log(_ text: String, formatting: ExpenseFormatting, now: Date = .now) async throws -> Bool {
++        guard !isLoading, !isSaving else { return false }
++        let amount = try formatting.amount(from: text)
++        let expense = Expense(
++            id: UUID().uuidString,
++            amount: amount,
++            date: formatting.dayString(now),
++            note: ""
++        )
++        isSaving = true
++        defer { isSaving = false }
++        try await addExpense(expense)
++        // Publish only after the API succeeds, without waiting for another fetch.
++        let index = expenses.firstIndex { $0.date <= expense.date } ?? expenses.endIndex
++        expenses.insert(expense, at: index)
++        return true
++    }
++}
+diff --git a/Sprout/ShipSwift/SWComponent/SWLoading.swift b/Sprout/ShipSwift/SWComponent/SWLoading.swift
+index 150cd5b..f08cd51 100644
+--- a/Sprout/ShipSwift/SWComponent/SWLoading.swift
++++ b/Sprout/ShipSwift/SWComponent/SWLoading.swift
+@@ -59,6 +59,7 @@ struct SWPageLoadingState {
+ 
+ /// Page identifier enum - Add your page cases here
+ enum SWLoadingPage: String {
++    case expenses
+     case home
+     case settings
+     case profile
+diff --git a/Sprout/SproutApp.swift b/Sprout/SproutApp.swift
+index ee48be1..7175805 100644
+--- a/Sprout/SproutApp.swift
++++ b/Sprout/SproutApp.swift
+@@ -5,6 +5,7 @@ struct SproutApp: App {
+     var body: some Scene {
+         WindowGroup {
+             HabitListView()
++                .swAlert()
+         }
+     }
+ }
+diff --git a/Sprout/Views/ExpenseListView.swift b/Sprout/Views/ExpenseListView.swift
+new file mode 100644
+index 0000000..5929eb4
+--- /dev/null
++++ b/Sprout/Views/ExpenseListView.swift
+@@ -0,0 +1,150 @@
++import SwiftUI
++
++struct ExpenseListView: View {
++    @Environment(\.locale) private var locale
++    @Environment(\.timeZone) private var timeZone
++    @State private var store = ExpenseStore()
++    @State private var showAddSheet = false
++
++    private var formatting: ExpenseFormatting {
++        ExpenseFormatting(locale: locale, timeZone: timeZone)
++    }
++
++    var body: some View {
++        TimelineView(.periodic(from: .now, by: 60)) { context in
++            List {
++                Section {
++                    SWKPICard(
++                        title: "This Month",
++                        value: store.hasLoaded
++                            ? formatting.currency(formatting.monthlyTotal(store.expenses, now: context.date))
++                            : "—",
++                        icon: "creditcard.fill",
++                        tint: .green
++                    )
++                    .listRowInsets(EdgeInsets())
++                    .listRowBackground(Color.clear)
++                }
++
++                Section("Expenses") {
++                    ForEach(store.expenses) { expense in
++                        ExpenseRow(expense: expense, formatting: formatting, now: context.date)
++                    }
++                    if store.expenses.isEmpty, !store.isLoading {
++                        if store.hasLoaded {
++                            Text("No expenses yet. Tap + to log today's spending.")
++                                .foregroundStyle(.secondary)
++                        } else {
++                            Button("Retry Loading Expenses") {
++                                Task { await loadExpenses() }
++                            }
++                        }
++                    }
++                }
++            }
++        }
++        .navigationTitle("Fitness Expenses")
++        .toolbar {
++            ToolbarItem(placement: .topBarTrailing) {
++                Button {
++                    showAddSheet = true
++                } label: {
++                    Label("Log Expense", systemImage: "plus")
++                }
++                .disabled(!store.hasLoaded || store.isLoading || store.isSaving)
++            }
++        }
++        .sheet(isPresented: $showAddSheet) {
++            SWAddSheet(
++                isPresented: $showAddSheet,
++                title: "Log Today's Expense",
++                placeHolderText: "Amount (\(formatting.currencyCode))",
++                minLines: 1
++            ) { text in
++                Task { await logExpense(text) }
++            }
++            .keyboardType(.decimalPad)
++        }
++        .swPageLoading(.expenses)
++        .task { await loadExpenses() }
++        .refreshable { await loadExpenses() }
++    }
++
++    private func loadExpenses() async {
++        guard !store.isLoading, !store.isSaving else { return }
++        SWLoadingManager.shared.show(page: .expenses, message: "Loading expenses...")
++        defer { SWLoadingManager.shared.hide(page: .expenses) }
++        do {
++            try await store.load()
++        } catch is CancellationError {
++            // Navigation away cancels the view's loading task.
++        } catch {
++            SWAlertManager.shared.show(.error, message: error.localizedDescription)
++        }
++    }
++
++    private func logExpense(_ text: String) async {
++        guard !store.isLoading, !store.isSaving else { return }
++        SWLoadingManager.shared.show(page: .expenses, message: "Saving expense...")
++        defer { SWLoadingManager.shared.hide(page: .expenses) }
++        do {
++            if try await store.log(text, formatting: formatting) {
++                SWAlertManager.shared.show(.success, message: "Logged")
++            }
++        } catch {
++            SWAlertManager.shared.show(.error, message: error.localizedDescription)
++        }
++    }
++}
++
++private struct ExpenseRow: View {
++    let expense: Expense
++    let formatting: ExpenseFormatting
++    let now: Date
++
++    var body: some View {
++        VStack(alignment: .leading, spacing: 8) {
++            ViewThatFits(in: .horizontal) {
++                HStack(alignment: .firstTextBaseline) {
++                    dateAndBadge
++                    Spacer(minLength: 12)
++                    amountAndBadge
++                }
++                VStack(alignment: .leading, spacing: 8) {
++                    dateAndBadge
++                    amountAndBadge
++                }
++            }
++            if expense.note.isEmpty {
++                Text("Fitness expense")
++                    .foregroundStyle(.secondary)
++            } else {
++                Text(verbatim: expense.note)
++                    .foregroundStyle(.secondary)
++            }
++        }
++        .padding(.vertical, 4)
++        .accessibilityElement(children: .combine)
++    }
++
++    private var dateAndBadge: some View {
++        HStack(spacing: 6) {
++            Text(verbatim: formatting.dateLabel(expense.date))
++            if formatting.isToday(expense.date, now: now) {
++                SWStatusBadge(text: "Today", style: .info)
++            }
++        }
++        .fixedSize(horizontal: true, vertical: false)
++    }
++
++    private var amountAndBadge: some View {
++        HStack(spacing: 6) {
++            Text(verbatim: formatting.currency(expense.amount))
++                .fontWeight(.semibold)
++            if expense.amount > 50 {
++                SWStatusBadge(text: "Large", style: .error)
++            }
++        }
++        .fixedSize(horizontal: true, vertical: false)
++    }
++}
+diff --git a/Sprout/Views/HabitListView.swift b/Sprout/Views/HabitListView.swift
+index 09d951d..db19d58 100644
+--- a/Sprout/Views/HabitListView.swift
++++ b/Sprout/Views/HabitListView.swift
+@@ -16,6 +16,15 @@ struct HabitListView: View {
+                 }
+             }
+             .navigationTitle("Habits")
++            .toolbar {
++                ToolbarItem(placement: .topBarTrailing) {
++                    NavigationLink {
++                        ExpenseListView()
++                    } label: {
++                        Label("Fitness Expenses", systemImage: "creditcard")
++                    }
++                }
++            }
+         }
+     }
+ }
+diff --git a/Tests/ExpenseFeatureChecks.swift b/Tests/ExpenseFeatureChecks.swift
+new file mode 100644
+index 0000000..43133c8
+--- /dev/null
++++ b/Tests/ExpenseFeatureChecks.swift
+@@ -0,0 +1,167 @@
++import Foundation
++
++// Standalone checks, so the app's project and build settings need no test-target changes.
++// Run the command documented in Tests/README.md.
++@main
++struct ExpenseFeatureChecks {
++    @MainActor
++    static func main() async throws {
++        try checkRegionalAmounts()
++        try checkCalendarDays()
++        try await checkStore()
++        print("Expense checks passed: regional money, local calendar days, monthly totals, and API state transitions.")
++    }
++
++    static func expect(_ condition: @autoclosure () -> Bool, _ message: String) throws {
++        if !condition() { throw CheckFailure(message: message) }
++    }
++
++    static func money(_ value: String) -> Decimal {
++        Decimal(string: value, locale: Locale(identifier: "en_US_POSIX"))!
++    }
++
++    static func checkRegionalAmounts() throws {
++        let cases: [(String, [String], [String], String)] = [
++            ("en_US", ["19.99", "1,234.56", ".50", "12."],
++             ["19,99", "12,34.56", "1.234,56", "19.99abc"], "$1,234.56"),
++            ("de_DE", ["19,99", "1.234,56", ",50", "12,"],
++             ["19.99", "12.34,56", "1,234.56", "19,99abc"], "1.234,56 €"),
++            ("fr_FR", ["19,99", "1 234,56", ",50", "12,"],
++             ["19.99", "12 34,56", "1,234.56", "19,99abc"], "1 234,56 €")
++        ]
++        for (identifier, valid, invalid, currency) in cases {
++            let formatting = ExpenseFormatting(locale: Locale(identifier: identifier))
++            let expected = ["19.99", "1234.56", "0.5", "12"].map { money($0) }
++            for (input, amount) in zip(valid, expected) {
++                let actual = try formatting.amount(from: input)
++                try expect(actual == amount, "\(identifier) misparsed \(input): \(actual)")
++            }
++            for input in invalid + ["", " ", "0", "-1", "NaN", "inf", "1e3", "12\n34", "1/2", "1+2"] {
++                do {
++                    _ = try formatting.amount(from: input)
++                    throw CheckFailure(message: "\(identifier) accepted invalid amount: \(input)")
++                } catch ExpenseAPIError.invalidAmount {
++                    // Expected: no partial or nonpositive amounts.
++                }
++            }
++            try expect(formatting.currency(money("1234.56")) == currency, "Wrong currency format for \(identifier)")
++            let sum = try formatting.amount(from: identifier == "en_US" ? "0.10" : "0,10")
++                + formatting.amount(from: identifier == "en_US" ? "0.20" : "0,20")
++            try expect(sum == Decimal(string: "0.30"), "Money lost decimal precision")
++        }
++        let french = ExpenseFormatting(locale: Locale(identifier: "fr_FR"))
++        for input in ["1 234,56", "1 234,56", "1 234,56", " 19,99 "] {
++            let actual = try french.amount(from: input)
++            try expect(actual == money(input.contains("234") ? "1234.56" : "19.99"), "French spaces: \(input)")
++        }
++    }
++
++    static func checkCalendarDays() throws {
++        let regions = [
++            ("en_US", "America/Los_Angeles", "Nov 20"),
++            ("en_US", "America/New_York", "Nov 20"),
++            ("de_DE", "Europe/Berlin", "20. Nov."),
++            ("fr_FR", "Europe/Paris", "20 nov.")
++        ]
++        for (locale, zone, label) in regions {
++            let formatting = ExpenseFormatting(locale: Locale(identifier: locale), timeZone: TimeZone(identifier: zone)!)
++            for day in ["2026-11-20", "2026-11-01", "2026-03-08", "2026-03-29", "2026-10-25", "2028-02-29"] {
++                guard let date = formatting.date(from: day) else { throw CheckFailure(message: "Could not parse \(day)") }
++                try expect(formatting.calendar.component(.hour, from: date) == 12, "Date must be local noon")
++                try expect(formatting.dayString(date) == day, "Date shifted in \(zone)")
++                try expect(formatting.isToday(day, now: date), "Today label missing in \(zone)")
++            }
++            try expect(formatting.dateLabel("2026-11-20") == label, "Wrong date label for \(locale): \(formatting.dateLabel("2026-11-20"))")
++            for day in ["2026-02-29", "2026-02-30", "2026-13-01", "2026-11-00", "2026-1-1", "2026-11-20junk"] {
++                try expect(formatting.date(from: day) == nil, "Invalid server date accepted: \(day)")
++            }
++            let expenses = [
++                Expense(id: "1", amount: money("10.10"), date: "2026-11-01", note: ""),
++                Expense(id: "2", amount: money("20.20"), date: "2026-11-30", note: ""),
++                Expense(id: "3", amount: 500, date: "2026-10-31", note: ""),
++                Expense(id: "4", amount: 500, date: "2026-12-01", note: ""),
++                Expense(id: "5", amount: 500, date: "2025-11-20", note: "")
++            ]
++            let now = formatting.date(from: "2026-11-20")!
++            try expect(formatting.monthlyTotal(expenses, now: now) == money("30.30"), "Month/year boundary failed in \(zone)")
++            try expect(!formatting.isToday("2026-11-19", now: now), "Yesterday marked Today")
++        }
++
++        // At 00:30 UTC on December 1, the user's day and month are still November in California.
++        let instant = ISO8601DateFormatter().date(from: "2026-12-01T00:30:00Z")!
++        let california = ExpenseFormatting(timeZone: TimeZone(identifier: "America/Los_Angeles")!)
++        try expect(california.dayString(instant) == "2026-11-30", "Saving used the UTC day")
++        try expect(california.isToday("2026-11-30", now: instant), "Today used the UTC day")
++        let expense = Expense(id: "boundary", amount: 7, date: "2026-11-30", note: "")
++        try expect(california.monthlyTotal([expense], now: instant) == 7, "Total used the UTC month")
++    }
++
++    @MainActor
++    static func checkStore() async throws {
++        let formatting = ExpenseFormatting(locale: Locale(identifier: "de_DE"), timeZone: TimeZone(identifier: "Europe/Berlin")!)
++        let now = formatting.date(from: "2026-11-20")!
++        let seed = Expense(id: "seed", amount: 10, date: "2026-11-19", note: "Gym")
++        var saved: [Expense] = []
++        var failFetch = false
++        var failAdd = false
++        let store = ExpenseStore(fetch: {
++            if failFetch { throw ExpenseAPIError.network }
++            return [seed]
++        }, add: { expense in
++            if failAdd { throw ExpenseAPIError.network }
++            saved.append(expense)
++        })
++
++        try await store.load()
++        try expect(store.hasLoaded && store.expenses == [seed], "Fetch did not populate state")
++        let added = try await store.log("19,99", formatting: formatting, now: now)
++        try expect(added && saved.count == 1 && store.expenses.count == 2, "Save did not immediately publish")
++        try expect(saved[0].date == "2026-11-20" && saved[0].amount == money("19.99"), "Incorrect API payload")
++        try expect(store.expenses.first == saved.first, "New expense was not sorted first")
++        try expect(formatting.monthlyTotal(store.expenses, now: now) == money("29.99"), "Total did not update")
++        do {
++            _ = try await store.log("19,99abc", formatting: formatting, now: now)
++            throw CheckFailure(message: "Invalid input was logged")
++        } catch ExpenseAPIError.invalidAmount {}
++        try expect(saved.count == 1 && store.expenses.count == 2, "Invalid input called add or mutated the list")
++
++        failAdd = true
++        do {
++            _ = try await store.log("30", formatting: formatting, now: now)
++            throw CheckFailure(message: "Add failure was swallowed")
++        } catch ExpenseAPIError.network {
++            try expect(ExpenseAPIError.network.localizedDescription == "Network error. Please try again.", "Wrong error description")
++        }
++        try expect(!store.isSaving && store.expenses.count == 2, "Failed save changed data or left saving active")
++        failFetch = true
++        do {
++            try await store.load()
++            throw CheckFailure(message: "Fetch failure was swallowed")
++        } catch ExpenseAPIError.network {}
++        try expect(!store.isLoading && store.expenses.count == 2, "Failed refresh discarded existing data")
++
++        var releaseSave: CheckedContinuation<Void, Never>?
++        var addCalls = 0
++        var fetchCalls = 0
++        let delayed = ExpenseStore(fetch: {
++            fetchCalls += 1
++            return []
++        }, add: { _ in
++            addCalls += 1
++            await withCheckedContinuation { releaseSave = $0 }
++        })
++        let first = Task { try await delayed.log("10", formatting: formatting, now: now) }
++        while releaseSave == nil { await Task.yield() }
++        let duplicate = try await delayed.log("10", formatting: formatting, now: now)
++        try await delayed.load()
++        try expect(!duplicate && addCalls == 1 && fetchCalls == 0, "Concurrent actions duplicated or raced a save")
++        try expect(delayed.expenses.isEmpty, "Unconfirmed save appeared in list")
++        releaseSave?.resume()
++        let firstSucceeded = try await first.value
++        try expect(firstSucceeded && delayed.expenses.count == 1 && !delayed.isSaving, "Completed save did not publish once")
++    }
++}
++
++private struct CheckFailure: Error {
++    let message: String
++}
+diff --git a/Tests/README.md b/Tests/README.md
+new file mode 100644
+index 0000000..a678342
+--- /dev/null
++++ b/Tests/README.md
+@@ -0,0 +1,19 @@
++# Expense feature checks
++
++Run these Foundation/Observation checks from the repository root without changing the Xcode project:
++
++```sh
++xcrun swiftc -parse-as-library -swift-version 5 -default-isolation MainActor \
++  Sprout/Models/Expense.swift Sprout/Models/ExpenseFormatting.swift \
++  Sprout/Services/ExpenseAPI.swift Sprout/Services/ExpenseStore.swift \
++  Tests/ExpenseFeatureChecks.swift -o /tmp/sprout-expense-checks
++/tmp/sprout-expense-checks
++```
++
++The checks cover US/German/French decimal input and currency output, French grouping spaces, invalid full-string input, exact decimal sums, localized date labels, local-noon date parsing, DST dates, month/year boundaries, API success/failure, and duplicate submission prevention.
++
++The required app build remains:
++
++```sh
++xcodebuild -scheme Sprout -destination 'generic/platform=iOS Simulator' build
++```

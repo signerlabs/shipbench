@@ -1,0 +1,3107 @@
+ .gitignore                 |    3 +
+ README.md                  |   83 ++++
+ migrations/0001_init.sql   |   86 ++++
+ package-lock.json          |   47 +-
+ package.json               |   15 +-
+ src/crypto.ts              |  103 +++++
+ src/cursor.ts              |   89 ++++
+ src/dates.ts               |  126 ++++++
+ src/db.ts                  |   17 +
+ src/handlers/auth.ts       |   94 ++++
+ src/handlers/households.ts |  167 +++++++
+ src/handlers/items.ts      |  233 ++++++++++
+ src/handlers/locations.ts  |  103 +++++
+ src/handlers/reminders.ts  |   24 +
+ src/http.ts                |   83 ++++
+ src/index.ts               |  107 +++++
+ src/scheduled.ts           |   52 +++
+ src/types.ts               |   28 ++
+ src/validate.ts            |   62 +++
+ test/api.test.ts           | 1042 ++++++++++++++++++++++++++++++++++++++++++++
+ test/server.ts             |   90 ++++
+ test/tsconfig.json         |    8 +
+ test/unit.test.ts          |  179 ++++++++
+ tsconfig.json              |   22 +
+ wrangler.jsonc             |   20 +
+ 25 files changed, 2880 insertions(+), 3 deletions(-)
+diff --git a/.gitignore b/.gitignore
+index db3dd13..18f395d 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -6,3 +6,6 @@ build/
+ *.xcuserstate
+ xcuserdata/
+ .swiftpm/
++.dev.vars
++.dev.vars.*
++.test-state-*/
+diff --git a/README.md b/README.md
+new file mode 100644
+index 0000000..a4d0118
+--- /dev/null
++++ b/README.md
+@@ -0,0 +1,83 @@
++# 家庭物品与过期提醒服务
++
++Cloudflare Workers（TypeScript）+ D1。纯本地开发，不需要登录 Cloudflare 账号。
++
++## 快速开始
++
++```bash
++npm install
++npx wrangler d1 migrations apply DB --local   # 建表（本地 D1）
++npx wrangler dev --local                      # 启动，默认 http://localhost:8787
++```
++
++手动触发定时任务（`time` 会成为 `event.scheduledTime`）：
++
++```bash
++curl "http://localhost:8787/cdn-cgi/handler/scheduled?cron=0+*+*+*+*&time=$(date +%s000)"
++```
++
++## 测试
++
++```bash
++npm test            # 类型检查 + 单元测试 + 端到端测试
++npm run test:unit   # 纯函数：日期/时区/游标/编码/密码哈希
++npm run test:api    # 端到端：起一个真实的 wrangler dev --local（独立临时数据库），逐条验证接口约定
++```
++
++端到端测试用一个临时目录（`.test-state-*`，跑完自动删除）作为 D1 存储，不会碰 `.wrangler/state` 里的开发数据。并发场景（同邮箱同时注册、多人同时用一个邀请码、定时任务同时多次触发、边建子位置边删父位置、并发建物品后翻页）都有覆盖。
++
++部分测试按测试机当前时间算「今天」，所以在家庭时区刚好跨午夜的那一瞬间跑，有极小概率出现不稳定。
++
++## 目录
++
++```
++wrangler.jsonc          D1 绑定 DB、cron "0 * * * *"
++migrations/             D1 迁移
++src/index.ts            路由、fetch / scheduled 入口
++src/handlers/           各组接口
++src/scheduled.ts        生成提醒
++src/dates.ts            日期校验、按时区取「今天」、天数计算
++src/cursor.ts           翻页游标
++src/crypto.ts           ID / 邀请码 / 令牌 / PBKDF2 密码哈希
++src/http.ts             错误、JSON 响应、限长读请求体
++src/validate.ts         字段校验
++test/                   单元测试和端到端测试
++```
++
++## 设计要点
++
++**令牌与密码。** 令牌是 32 字节随机串，库里只存它的 SHA-256，有效期 30 天。随机令牌不需要签名密钥，所以服务不需要任何密钥（不读 `TOKEN_SECRET`，也不需要 `.dev.vars`；以后真要加密钥，按约定放 `.dev.vars`，已加入 `.gitignore`）。密码用 PBKDF2-SHA256（10 万次迭代，这是 Workers 允许的上限）加随机盐。登录时邮箱不存在也会算一遍哈希，免得能靠响应时间判断某个邮箱注册过没有。
++
++**并发正确性。** D1 不支持交互式事务，所以每个「先查后改」都写成一条带条件的 SQL，或者放进一个 `batch`（一个 SQLite 事务）：
++
++- 注册：`users.email UNIQUE` 加 `ON CONFLICT DO NOTHING`，看影响行数，同一邮箱同时注册只有一个能成功。
++- 接受邀请：在同一个 batch 里，先用 `UPDATE … WHERE used_by IS NULL AND 未过期 AND 我还不是成员` 抢占邀请码，同时写入本次请求独有的 `claim` 随机值；接下来的 `INSERT` 只在 `claim` 等于自己写入的值时才插入成员。所以只有抢占成功的那个请求会插入成员。抢不到的请求再查一次，决定返回 404、410 还是 409。
++- 位置：建子位置时在 `INSERT … SELECT … WHERE EXISTS(父位置)` 里重新检查父位置；删位置是一条 `DELETE … WHERE NOT EXISTS(子位置) AND NOT EXISTS(物品)`。外键作为最后一道保险。
++- 提醒：`UNIQUE (item_id, remind_on)` 加 `ON CONFLICT DO NOTHING`，重复触发、同时触发都不会重复生成。
++
++**数据隔离。** 每个家庭下的接口都先用（家庭 id，当前用户）查成员关系，查不到就一律 404；后面的 SQL 也都带上 `household_id` 条件。
++
++**时区与「今天」。** `Intl.DateTimeFormat` 能识别、而且形状像 IANA 名称的时区才接受（`+08:00`、`UTC+8` 会被拒）。大小写不对的名称会存成规范写法。「今天」是给定时刻在家庭时区里的日历日期。日期运算用纯整数的公历算法，不受 DST 影响。
++
++**翻页。** 用键集翻页（keyset）：物品有一个只增不减的 `seq`（AUTOINCREMENT）。不带过滤时按 `seq` 排序；带过滤时按 `(expires_on, seq)` 排序。游标记的是上一页最后一行的排序键，不是行本身，所以删掉任何已返回的行（包括游标指向的那一行）都不影响后面的页。游标还记录了过滤条件，以及算窗口时用的那个「今天」，翻页途中跨过家庭时区的午夜，窗口也不会跟着漂移。
++
++**定时任务。** 按不同的时区分组，每个时区一条 `INSERT … SELECT`，用 `event.scheduledTime` 算各时区的「今天」。直接 `await`（不用 `waitUntil`），所以触发接口返回时提醒已经写好了。
++
++## 约定里没写死的地方，这里的选择
++
++| 情况 | 行为 |
++| --- | --- |
++| 接受邀请同时满足多个错误条件 | 按 404 → 410 → 409 的顺序判断（例如已经用过的码，就算我已是成员也返回 410） |
++| 登录：字段缺失或不是字符串 | 400；格式对但账号或密码不对（包括密码不足 8 位、邮箱不含 `@`）返回 401 |
++| `quantity: null` | 新建和 PATCH 都是 400（数量是非负整数，不可为空；新建时不填才默认 1） |
++| `name` 前后空白 | 存去掉首尾空白后的值；全是空白算空，400 |
++| `expired=false` | 等同于不带这个参数；`expired=true` 和 `expiring_within_days` 一起用返回 400 |
++| 带游标时又带了过滤参数 | 必须和游标里的过滤条件一致，否则 400；不带则沿用游标里的过滤条件。别的家庭的游标返回 400 |
++| 普通成员删一个不是成员的人 | 403（先判断有没有权限） |
++| 提醒里的 `item_name` / `expires_on` | `item_name` 取物品当前的名字（改名后跟着变）；`expires_on` 是生成提醒那一刻的过期日。删掉物品，它的提醒也一起删 |
++| 64 KB | 65536 字节；正好 65536 字节可以，多 1 字节就 413。没带 `Content-Length` 的分块请求体也按实际字节数限制 |
++| 未知路径 / 方法不对 | 404 / 405，响应体同样是 `{"error": …}` |
++
++## 部署前
++
++`wrangler.jsonc` 里的 `database_id` 是本地占位值，部署前要换成 `wrangler d1 create` 拿到的真实 id。
+diff --git a/migrations/0001_init.sql b/migrations/0001_init.sql
+new file mode 100644
+index 0000000..c43f32a
+--- /dev/null
++++ b/migrations/0001_init.sql
+@@ -0,0 +1,86 @@
++-- Household items & expiry reminders: initial schema.
++-- All timestamps are Unix epoch milliseconds; all calendar dates are 'YYYY-MM-DD' text
++-- (lexicographic order == chronological order for 4-digit years).
++
++CREATE TABLE users (
++  id            TEXT    PRIMARY KEY,
++  email         TEXT    NOT NULL UNIQUE,          -- always stored lower-case
++  password_hash TEXT    NOT NULL,                 -- pbkdf2_sha256$iterations$salt$hash
++  created_at_ms INTEGER NOT NULL
++);
++
++-- Opaque bearer tokens; only the SHA-256 of the token is stored.
++CREATE TABLE sessions (
++  token_hash    TEXT    PRIMARY KEY,
++  user_id       TEXT    NOT NULL REFERENCES users(id) ON DELETE CASCADE,
++  created_at_ms INTEGER NOT NULL,
++  expires_at_ms INTEGER NOT NULL
++);
++CREATE INDEX sessions_user ON sessions(user_id);
++
++CREATE TABLE households (
++  id            TEXT    PRIMARY KEY,
++  name          TEXT    NOT NULL,
++  timezone      TEXT    NOT NULL,                    -- IANA time zone name
++  created_at_ms INTEGER NOT NULL
++);
++CREATE INDEX households_timezone ON households(timezone);
++
++CREATE TABLE memberships (
++  household_id  TEXT    NOT NULL REFERENCES households(id) ON DELETE CASCADE,
++  user_id       TEXT    NOT NULL REFERENCES users(id) ON DELETE CASCADE,
++  role          TEXT    NOT NULL CHECK (role IN ('owner', 'member')),
++  created_at_ms INTEGER NOT NULL,
++  PRIMARY KEY (household_id, user_id)
++);
++CREATE INDEX memberships_user ON memberships(user_id);
++
++CREATE TABLE invites (
++  code          TEXT    PRIMARY KEY,
++  household_id  TEXT    NOT NULL REFERENCES households(id) ON DELETE CASCADE,
++  created_by    TEXT    NOT NULL REFERENCES users(id),
++  created_at_ms INTEGER NOT NULL,
++  expires_at_ms INTEGER NOT NULL,
++  used_by       TEXT    REFERENCES users(id),
++  used_at_ms    INTEGER,
++  claim         TEXT                                -- per-request nonce set by the winning accept
++);
++CREATE INDEX invites_household ON invites(household_id);
++
++CREATE TABLE locations (
++  seq           INTEGER PRIMARY KEY AUTOINCREMENT,  -- creation order
++  id            TEXT    NOT NULL UNIQUE,
++  household_id  TEXT    NOT NULL REFERENCES households(id) ON DELETE CASCADE,
++  parent_id     TEXT    REFERENCES locations(id),
++  name          TEXT    NOT NULL,
++  depth         INTEGER NOT NULL CHECK (depth BETWEEN 1 AND 3),
++  created_at_ms INTEGER NOT NULL
++);
++CREATE INDEX locations_household ON locations(household_id, seq);
++CREATE INDEX locations_parent ON locations(parent_id);
++
++CREATE TABLE items (
++  seq           INTEGER PRIMARY KEY AUTOINCREMENT,  -- creation order, never reused; pagination key
++  id            TEXT    NOT NULL UNIQUE,
++  household_id  TEXT    NOT NULL REFERENCES households(id) ON DELETE CASCADE,
++  location_id   TEXT    REFERENCES locations(id),
++  name          TEXT    NOT NULL,
++  quantity      INTEGER NOT NULL CHECK (quantity >= 0),
++  expires_on    TEXT,
++  created_at_ms INTEGER NOT NULL,
++  updated_at_ms INTEGER NOT NULL
++);
++CREATE INDEX items_household_seq ON items(household_id, seq);
++CREATE INDEX items_household_expiry ON items(household_id, expires_on, seq);
++CREATE INDEX items_location ON items(location_id);
++
++CREATE TABLE reminders (
++  id            TEXT    PRIMARY KEY,
++  household_id  TEXT    NOT NULL REFERENCES households(id) ON DELETE CASCADE,
++  item_id       TEXT    NOT NULL REFERENCES items(id) ON DELETE CASCADE,
++  remind_on     TEXT    NOT NULL,
++  expires_on    TEXT    NOT NULL,                   -- the expiry date that triggered the reminder
++  created_at_ms INTEGER NOT NULL,
++  UNIQUE (item_id, remind_on)
++);
++CREATE INDEX reminders_household ON reminders(household_id, remind_on, expires_on);
+diff --git a/package-lock.json b/package-lock.json
+index b898c45..8b988ea 100644
+--- a/package-lock.json
++++ b/package-lock.json
+@@ -1,11 +1,14 @@
+ {
+-  "name": "subscription-service",
++  "name": "household-items-service",
+   "lockfileVersion": 3,
+   "requires": true,
+   "packages": {
+     "": {
+-      "name": "subscription-service",
++      "name": "household-items-service",
+       "devDependencies": {
++        "@cloudflare/workers-types": "^5.20261108.1",
++        "@types/node": "^24.19.2",
++        "typescript": "^5.9.3",
+         "wrangler": "4.158.0"
+       }
+     },
+@@ -120,6 +123,14 @@
+         "node": ">=16"
+       }
+     },
++    "node_modules/@cloudflare/workers-types": {
++      "version": "5.20261108.1",
++      "resolved": "https://registry.npmjs.org/@cloudflare/workers-types/-/workers-types-5.20261108.1.tgz",
++      "integrity": "sha512-lCGPhVOCy4sepGLuuy6KGxlxt8pVD8kbAt+mkdPcdr29fi5YLtihOLGKeNtInnmgdkSGiKhPCkRv/iq5tXC1/w==",
++      "dev": true,
++      "license": "MIT OR Apache-2.0",
++      "peer": true
++    },
+     "node_modules/@cspotcode/source-map-support": {
+       "version": "0.8.1",
+       "resolved": "https://registry.npmjs.org/@cspotcode/source-map-support/-/source-map-support-0.8.1.tgz",
+@@ -1190,6 +1201,16 @@
+       "dev": true,
+       "license": "CC0-1.0"
+     },
++    "node_modules/@types/node": {
++      "version": "24.19.2",
++      "resolved": "https://registry.npmjs.org/@types/node/-/node-24.19.2.tgz",
++      "integrity": "sha512-93d49wCWJkCyN87MxLpNN6KXPCwFw7bVUg79mGUV1OS40JGWwVCr8n61DXCSqz7CV6/VfPkb7xec7uP2M+QHWQ==",
++      "dev": true,
++      "license": "MIT",
++      "dependencies": {
++        "undici-types": ">=7.24.0 <7.24.7"
++      }
++    },
+     "node_modules/blake3-wasm": {
+       "version": "2.1.5",
+       "resolved": "https://registry.npmjs.org/blake3-wasm/-/blake3-wasm-2.1.5.tgz",
+@@ -1414,6 +1435,20 @@
+       "license": "0BSD",
+       "optional": true
+     },
++    "node_modules/typescript": {
++      "version": "5.9.3",
++      "resolved": "https://registry.npmjs.org/typescript/-/typescript-5.9.3.tgz",
++      "integrity": "sha512-jl1vZzPDinLr9eUt3J/t7V6FgNEw9QjvBPdysz9KfQDD41fQrC2Y4vKQdiaUpFT4bXlb1RHhLpp8wtm6M5TgSw==",
++      "dev": true,
++      "license": "Apache-2.0",
++      "bin": {
++        "tsc": "bin/tsc",
++        "tsserver": "bin/tsserver"
++      },
++      "engines": {
++        "node": ">=14.17"
++      }
++    },
+     "node_modules/undici": {
+       "version": "7.30.1",
+       "resolved": "https://registry.npmjs.org/undici/-/undici-7.30.1.tgz",
+@@ -1424,6 +1459,13 @@
+         "node": ">=20.18.1"
+       }
+     },
++    "node_modules/undici-types": {
++      "version": "7.24.6",
++      "resolved": "https://registry.npmjs.org/undici-types/-/undici-types-7.24.6.tgz",
++      "integrity": "sha512-WRNW+sJgj5OBN4/0JpHFqtqzhpbnV0GuB+OozA9gCL7a993SmU+1JBZCzLNxYsbMfIeDL+lTsphD5jN5N+n0zg==",
++      "dev": true,
++      "license": "MIT"
++    },
+     "node_modules/unenv": {
+       "version": "2.0.0-rc.24",
+       "resolved": "https://registry.npmjs.org/unenv/-/unenv-2.0.0-rc.24.tgz",
+@@ -1442,6 +1484,7 @@
+       "dev": true,
+       "hasInstallScript": true,
+       "license": "Apache-2.0",
++      "peer": true,
+       "bin": {
+         "workerd": "bin/workerd"
+       },
+diff --git a/package.json b/package.json
+index 0096041..632b522 100644
+--- a/package.json
++++ b/package.json
+@@ -2,5 +2,18 @@
+   "name": "household-items-service",
+   "private": true,
+   "type": "module",
+-  "devDependencies": { "wrangler": "4.158.0" }
++  "scripts": {
++    "dev": "wrangler dev --local",
++    "db:migrate": "wrangler d1 migrations apply DB --local",
++    "typecheck": "tsc -p tsconfig.json && tsc -p test/tsconfig.json",
++    "test:unit": "node --test test/unit.test.ts",
++    "test:api": "node --test --test-concurrency=1 test/api.test.ts",
++    "test": "npm run typecheck && npm run test:unit && npm run test:api"
++  },
++  "devDependencies": {
++    "@cloudflare/workers-types": "^5.20261108.1",
++    "@types/node": "^24.19.2",
++    "typescript": "^5.9.3",
++    "wrangler": "4.158.0"
++  }
+ }
+diff --git a/src/crypto.ts b/src/crypto.ts
+new file mode 100644
+index 0000000..604c476
+--- /dev/null
++++ b/src/crypto.ts
+@@ -0,0 +1,103 @@
++// Randomness, encodings, password hashing and token hashing (WebCrypto only).
++
++const encoder = new TextEncoder();
++
++export function randomBytes(n: number): Uint8Array<ArrayBuffer> {
++  const bytes = new Uint8Array(n);
++  crypto.getRandomValues(bytes);
++  return bytes;
++}
++
++export function toHex(bytes: Uint8Array): string {
++  let out = '';
++  for (const b of bytes) out += b.toString(16).padStart(2, '0');
++  return out;
++}
++
++export function base64UrlEncode(bytes: Uint8Array): string {
++  let bin = '';
++  for (const b of bytes) bin += String.fromCharCode(b);
++  return btoa(bin).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
++}
++
++/** Returns null for anything that is not canonical unpadded base64url. */
++export function base64UrlDecode(s: string): Uint8Array<ArrayBuffer> | null {
++  if (!/^[A-Za-z0-9_-]*$/.test(s) || s.length % 4 === 1) return null;
++  let bin: string;
++  try {
++    bin = atob(s.replace(/-/g, '+').replace(/_/g, '/') + '='.repeat((4 - (s.length % 4)) % 4));
++  } catch {
++    return null;
++  }
++  const bytes = new Uint8Array(bin.length);
++  for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
++  // Reject non-canonical encodings (stray low bits) so one cursor has exactly one spelling.
++  if (base64UrlEncode(bytes) !== s) return null;
++  return bytes;
++}
++
++/** Random opaque id such as "itm_5f0c...". */
++export function newId(prefix: string): string {
++  return `${prefix}_${toHex(randomBytes(12))}`;
++}
++
++// Crockford base32 without I, L, O, U: easy to read aloud and type.
++const CODE_ALPHABET = '0123456789ABCDEFGHJKMNPQRSTVWXYZ';
++export const INVITE_CODE_LENGTH = 12; // 60 bits
++export const INVITE_CODE_RE = /^[0-9A-HJKMNP-TV-Z]{12}$/;
++
++export function newInviteCode(): string {
++  let code = '';
++  for (const b of randomBytes(INVITE_CODE_LENGTH)) code += CODE_ALPHABET[b & 31];
++  return code;
++}
++
++export function newToken(): string {
++  return base64UrlEncode(randomBytes(32));
++}
++
++export const TOKEN_RE = /^[A-Za-z0-9_-]{43}$/;
++
++export async function sha256Hex(s: string): Promise<string> {
++  return toHex(new Uint8Array(await crypto.subtle.digest('SHA-256', encoder.encode(s))));
++}
++
++// Cloudflare Workers caps PBKDF2 at 100k iterations.
++const PBKDF2_ITERATIONS = 100_000;
++const SCHEME = 'pbkdf2_sha256';
++
++async function pbkdf2(password: string, salt: Uint8Array<ArrayBuffer>, iterations: number): Promise<Uint8Array> {
++  const key = await crypto.subtle.importKey('raw', encoder.encode(password.normalize('NFC')), 'PBKDF2', false, [
++    'deriveBits',
++  ]);
++  const bits = await crypto.subtle.deriveBits({ name: 'PBKDF2', hash: 'SHA-256', salt, iterations }, key, 256);
++  return new Uint8Array(bits);
++}
++
++export async function hashPassword(password: string): Promise<string> {
++  const salt = randomBytes(16);
++  const hash = await pbkdf2(password, salt, PBKDF2_ITERATIONS);
++  return `${SCHEME}$${PBKDF2_ITERATIONS}$${base64UrlEncode(salt)}$${base64UrlEncode(hash)}`;
++}
++
++export async function verifyPassword(password: string, stored: string): Promise<boolean> {
++  const [scheme, iter, saltB64, hashB64] = stored.split('$');
++  const iterations = Number(iter);
++  const salt = saltB64 === undefined ? null : base64UrlDecode(saltB64);
++  const expected = hashB64 === undefined ? null : base64UrlDecode(hashB64);
++  if (scheme !== SCHEME || !Number.isSafeInteger(iterations) || iterations < 1 || !salt || !expected) return false;
++  const actual = await pbkdf2(password, salt, iterations);
++  return constantTimeEqual(actual, expected);
++}
++
++/** Burns the same CPU as a real verification, so unknown emails are not distinguishable by timing. */
++export async function fakePasswordCheck(password: string): Promise<void> {
++  await pbkdf2(password, randomBytes(16), PBKDF2_ITERATIONS);
++}
++
++function constantTimeEqual(a: Uint8Array, b: Uint8Array): boolean {
++  if (a.length !== b.length) return false;
++  let diff = 0;
++  for (let i = 0; i < a.length; i++) diff |= a[i]! ^ b[i]!;
++  return diff === 0;
++}
+diff --git a/src/cursor.ts b/src/cursor.ts
+new file mode 100644
+index 0000000..7800af9
+--- /dev/null
++++ b/src/cursor.ts
+@@ -0,0 +1,89 @@
++// Keyset-pagination cursors for the item list.
++//
++// A cursor records the sort key of the last row returned (not its id), so deleting that row
++// or any earlier row cannot shift later pages. It also pins the filter and the "today" that
++// the filter window was computed from, so a listing that spans local midnight stays consistent.
++
++import { isValidDate } from './dates.ts';
++import { base64UrlDecode, base64UrlEncode } from './crypto.ts';
++
++export type ItemFilter =
++  | { kind: 'all' }
++  | { kind: 'expiring'; days: number; today: string }
++  | { kind: 'expired'; today: string };
++
++export interface ItemCursor {
++  householdId: string;
++  filter: ItemFilter;
++  /** Creation sequence of the last row returned. */
++  seq: number;
++  /** expires_on of the last row returned (filtered listings only). */
++  expiresOn: string | null;
++}
++
++interface Wire {
++  v: 1;
++  h: string;
++  k: 'a' | 'e' | 'x';
++  s: number;
++  d?: string; // last expires_on
++  t?: string; // window anchor ("today")
++  n?: number; // expiring_within_days
++}
++
++const MAX_CURSOR_LENGTH = 512;
++
++export function encodeCursor(c: ItemCursor): string {
++  const wire: Wire = { v: 1, h: c.householdId, k: 'a', s: c.seq };
++  if (c.filter.kind === 'expiring') {
++    wire.k = 'e';
++    wire.n = c.filter.days;
++    wire.t = c.filter.today;
++    wire.d = c.expiresOn ?? undefined;
++  } else if (c.filter.kind === 'expired') {
++    wire.k = 'x';
++    wire.t = c.filter.today;
++    wire.d = c.expiresOn ?? undefined;
++  }
++  return base64UrlEncode(new TextEncoder().encode(JSON.stringify(wire)));
++}
++
++function exactKeys(o: Record<string, unknown>, keys: string[]): boolean {
++  const actual = Object.keys(o).sort();
++  const expected = [...keys].sort();
++  return actual.length === expected.length && actual.every((k, i) => k === expected[i]);
++}
++
++/** Returns null for anything this server did not produce. */
++export function decodeCursor(raw: string): ItemCursor | null {
++  if (raw.length === 0 || raw.length > MAX_CURSOR_LENGTH) return null;
++  const bytes = base64UrlDecode(raw);
++  if (!bytes) return null;
++  let o: unknown;
++  try {
++    o = JSON.parse(new TextDecoder('utf-8', { fatal: true, ignoreBOM: false }).decode(bytes));
++  } catch {
++    return null;
++  }
++  if (typeof o !== 'object' || o === null || Array.isArray(o)) return null;
++  const w = o as Record<string, unknown>;
++  if (w.v !== 1 || typeof w.h !== 'string' || w.h.length === 0) return null;
++  if (typeof w.s !== 'number' || !Number.isSafeInteger(w.s) || w.s < 1) return null;
++  const base = { householdId: w.h, seq: w.s };
++  switch (w.k) {
++    case 'a':
++      if (!exactKeys(w, ['v', 'h', 'k', 's'])) return null;
++      return { ...base, filter: { kind: 'all' }, expiresOn: null };
++    case 'e':
++      if (!exactKeys(w, ['v', 'h', 'k', 's', 'd', 't', 'n'])) return null;
++      if (!isValidDate(w.d) || !isValidDate(w.t)) return null;
++      if (typeof w.n !== 'number' || !Number.isInteger(w.n) || w.n < 0 || w.n > 365) return null;
++      return { ...base, filter: { kind: 'expiring', days: w.n, today: w.t }, expiresOn: w.d };
++    case 'x':
++      if (!exactKeys(w, ['v', 'h', 'k', 's', 'd', 't'])) return null;
++      if (!isValidDate(w.d) || !isValidDate(w.t)) return null;
++      return { ...base, filter: { kind: 'expired', today: w.t }, expiresOn: w.d };
++    default:
++      return null;
++  }
++}
+diff --git a/src/dates.ts b/src/dates.ts
+new file mode 100644
+index 0000000..f0da2c7
+--- /dev/null
++++ b/src/dates.ts
+@@ -0,0 +1,126 @@
++// Calendar-date and time-zone helpers. Pure functions, no Workers APIs, so they are
++// unit-testable under plain Node as well.
++
++const DATE_RE = /^(\d{4})-(\d{2})-(\d{2})$/;
++const MAX_DATE = '9999-12-31';
++const MIN_DATE = '0001-01-01';
++
++function isLeapYear(y: number): boolean {
++  return (y % 4 === 0 && y % 100 !== 0) || y % 400 === 0;
++}
++
++function daysInMonth(y: number, m: number): number {
++  if (m === 2) return isLeapYear(y) ? 29 : 28;
++  return m === 4 || m === 6 || m === 9 || m === 11 ? 30 : 31;
++}
++
++function parts(s: string): [number, number, number] | null {
++  const match = DATE_RE.exec(s);
++  if (!match) return null;
++  const y = Number(match[1]);
++  const m = Number(match[2]);
++  const d = Number(match[3]);
++  if (y < 1 || m < 1 || m > 12 || d < 1 || d > daysInMonth(y, m)) return null;
++  return [y, m, d];
++}
++
++/** True for a real Gregorian calendar date written exactly as YYYY-MM-DD (years 0001-9999). */
++export function isValidDate(value: unknown): value is string {
++  return typeof value === 'string' && parts(value) !== null;
++}
++
++/** Days since 1970-01-01 (proleptic Gregorian). Howard Hinnant's days_from_civil. */
++export function dayNumber(date: string): number {
++  const p = parts(date);
++  if (!p) throw new RangeError(`invalid date: ${date}`);
++  let [y] = p;
++  const [, m, d] = p;
++  if (m <= 2) y -= 1;
++  const era = Math.floor(y / 400);
++  const yoe = y - era * 400;
++  const mp = (m + 9) % 12;
++  const doy = Math.floor((153 * mp + 2) / 5) + d - 1;
++  const doe = yoe * 365 + Math.floor(yoe / 4) - Math.floor(yoe / 100) + doy;
++  return era * 146097 + doe - 719468;
++}
++
++/** Inverse of dayNumber. */
++export function fromDayNumber(n: number): string {
++  const z = n + 719468;
++  const era = Math.floor(z / 146097);
++  const doe = z - era * 146097;
++  const yoe = Math.floor((doe - Math.floor(doe / 1460) + Math.floor(doe / 36524) - Math.floor(doe / 146096)) / 365);
++  const doy = doe - (365 * yoe + Math.floor(yoe / 4) - Math.floor(yoe / 100));
++  const mp = Math.floor((5 * doy + 2) / 153);
++  const d = doy - Math.floor((153 * mp + 2) / 5) + 1;
++  const m = mp < 10 ? mp + 3 : mp - 9;
++  const y = yoe + era * 400 + (m <= 2 ? 1 : 0);
++  return `${String(y).padStart(4, '0')}-${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
++}
++
++/** date + n days, clamped to the representable YYYY-MM-DD range. */
++export function addDays(date: string, n: number): string {
++  const result = dayNumber(date) + n;
++  if (result > dayNumber(MAX_DATE)) return MAX_DATE;
++  if (result < dayNumber(MIN_DATE)) return MIN_DATE;
++  return fromDayNumber(result);
++}
++
++/** a - b in whole days. */
++export function diffDays(a: string, b: string): number {
++  return dayNumber(a) - dayNumber(b);
++}
++
++const formatters = new Map<string, Intl.DateTimeFormat>();
++
++function formatterFor(timeZone: string): Intl.DateTimeFormat {
++  let f = formatters.get(timeZone);
++  if (!f) {
++    f = new Intl.DateTimeFormat('en-US', {
++      timeZone,
++      calendar: 'gregory',
++      numberingSystem: 'latn',
++      year: 'numeric',
++      month: '2-digit',
++      day: '2-digit',
++    });
++    formatters.set(timeZone, f);
++  }
++  return f;
++}
++
++/** The calendar date (YYYY-MM-DD) of instant `epochMs` as observed in `timeZone`. */
++export function dateInTimeZone(epochMs: number, timeZone: string): string {
++  let y = '';
++  let m = '';
++  let d = '';
++  for (const p of formatterFor(timeZone).formatToParts(new Date(epochMs))) {
++    if (p.type === 'year') y = p.value;
++    else if (p.type === 'month') m = p.value;
++    else if (p.type === 'day') d = p.value;
++  }
++  const date = `${y.padStart(4, '0')}-${m.padStart(2, '0')}-${d.padStart(2, '0')}`;
++  if (!isValidDate(date)) throw new RangeError(`cannot represent instant ${epochMs} in ${timeZone}`);
++  return date;
++}
++
++// IANA names look like "UTC", "Asia/Singapore", "America/Argentina/Buenos_Aires", "Etc/GMT+8".
++// This excludes things Intl would also accept that are not IANA names, e.g. "+08:00".
++const TZ_NAME_RE = /^[A-Za-z][A-Za-z0-9_+-]*(?:\/[A-Za-z0-9_+-]+)*$/;
++
++/**
++ * Validates an IANA time zone name. Returns the name to store (with canonical casing when
++ * the input differs only by case), or null if it is not a time zone the runtime knows.
++ */
++export function normalizeTimeZone(value: unknown): string | null {
++  if (typeof value !== 'string' || value.length === 0 || value.length > 64 || !TZ_NAME_RE.test(value)) {
++    return null;
++  }
++  let resolved: string;
++  try {
++    resolved = new Intl.DateTimeFormat('en-US', { timeZone: value }).resolvedOptions().timeZone;
++  } catch {
++    return null;
++  }
++  return resolved.toLowerCase() === value.toLowerCase() ? resolved : value;
++}
+diff --git a/src/db.ts b/src/db.ts
+new file mode 100644
+index 0000000..294a877
+--- /dev/null
++++ b/src/db.ts
+@@ -0,0 +1,17 @@
++// Small helpers around D1 results and errors.
++
++function message(e: unknown): string {
++  return e instanceof Error ? e.message : String(e);
++}
++
++export function isUniqueViolation(e: unknown): boolean {
++  return /UNIQUE constraint failed|SQLITE_CONSTRAINT_(PRIMARYKEY|UNIQUE)/.test(message(e));
++}
++
++export function isForeignKeyViolation(e: unknown): boolean {
++  return /FOREIGN KEY constraint failed|SQLITE_CONSTRAINT_FOREIGNKEY/.test(message(e));
++}
++
++export function changes(result: D1Result): number {
++  return result.meta.changes ?? 0;
++}
+diff --git a/src/handlers/auth.ts b/src/handlers/auth.ts
+new file mode 100644
+index 0000000..9474e94
+--- /dev/null
++++ b/src/handlers/auth.ts
+@@ -0,0 +1,94 @@
++import { fakePasswordCheck, hashPassword, newId, newToken, sha256Hex, TOKEN_RE, verifyPassword } from '../crypto.ts';
++import { changes } from '../db.ts';
++import { badRequest, HttpError, json, readJsonObject } from '../http.ts';
++import type { AuthedContext, Env, RequestContext, User } from '../types.ts';
++import { normalizeEmail, passwordLength } from '../validate.ts';
++
++const SESSION_TTL_MS = 30 * 24 * 60 * 60 * 1000;
++const MIN_PASSWORD_LENGTH = 8;
++
++const unauthorized = (message = 'missing or invalid bearer token'): HttpError => new HttpError(401, message);
++
++/** Resolves the bearer token to a user, or throws 401. */
++export async function authenticate(request: Request, env: Env): Promise<User> {
++  const header = request.headers.get('authorization');
++  if (header === null) throw unauthorized();
++  const match = /^Bearer +(\S+) *$/i.exec(header);
++  const token = match?.[1];
++  if (token === undefined || !TOKEN_RE.test(token)) throw unauthorized();
++  const user = await env.DB.prepare(
++    `SELECT u.id, u.email FROM sessions s JOIN users u ON u.id = s.user_id
++      WHERE s.token_hash = ?1 AND s.expires_at_ms > ?2`,
++  )
++    .bind(await sha256Hex(token), Date.now())
++    .first<User>();
++  if (!user) throw unauthorized();
++  return user;
++}
++
++async function createSession(env: Env, userId: string): Promise<string> {
++  const token = newToken();
++  const now = Date.now();
++  await env.DB.prepare('INSERT INTO sessions (token_hash, user_id, created_at_ms, expires_at_ms) VALUES (?1, ?2, ?3, ?4)')
++    .bind(await sha256Hex(token), userId, now, now + SESSION_TTL_MS)
++    .run();
++  return token;
++}
++
++async function readCredentials(request: Request): Promise<{ email: string; password: string }> {
++  const body = await readJsonObject(request);
++  if (typeof body.email !== 'string') throw badRequest('email is required and must be a string');
++  if (typeof body.password !== 'string') throw badRequest('password is required and must be a string');
++  return { email: body.email, password: body.password };
++}
++
++export async function register({ request, env }: RequestContext): Promise<Response> {
++  const creds = await readCredentials(request);
++  const email = normalizeEmail(creds.email);
++  if (email === null) throw badRequest('email must be a valid address containing "@"');
++  const password = creds.password;
++  if (passwordLength(password) < MIN_PASSWORD_LENGTH) {
++    throw badRequest(`password must be at least ${MIN_PASSWORD_LENGTH} characters`);
++  }
++
++  // Cheap early exit; the UNIQUE constraint below is what actually guarantees one winner.
++  const existing = await env.DB.prepare('SELECT 1 FROM users WHERE email = ?1').bind(email).first();
++  if (existing) throw new HttpError(409, 'email is already registered');
++
++  const id = newId('usr');
++  const passwordHash = await hashPassword(password);
++  const result = await env.DB.prepare(
++    `INSERT INTO users (id, email, password_hash, created_at_ms) VALUES (?1, ?2, ?3, ?4)
++     ON CONFLICT (email) DO NOTHING`,
++  )
++    .bind(id, email, passwordHash, Date.now())
++    .run();
++  if (changes(result) !== 1) throw new HttpError(409, 'email is already registered');
++
++  const token = await createSession(env, id);
++  return json({ user: { id, email }, token }, 201);
++}
++
++export async function login({ request, env }: RequestContext): Promise<Response> {
++  const creds = await readCredentials(request);
++  const password = creds.password;
++  const email = normalizeEmail(creds.email);
++  const row =
++    email === null
++      ? null
++      : await env.DB.prepare('SELECT id, email, password_hash FROM users WHERE email = ?1')
++          .bind(email)
++          .first<{ id: string; email: string; password_hash: string }>();
++  if (!row) {
++    await fakePasswordCheck(password);
++    throw unauthorized('invalid email or password');
++  }
++  if (!(await verifyPassword(password, row.password_hash))) throw unauthorized('invalid email or password');
++
++  const token = await createSession(env, row.id);
++  return json({ user: { id: row.id, email: row.email }, token });
++}
++
++export async function me({ user }: AuthedContext): Promise<Response> {
++  return json({ id: user.id, email: user.email });
++}
+diff --git a/src/handlers/households.ts b/src/handlers/households.ts
+new file mode 100644
+index 0000000..342e29c
+--- /dev/null
++++ b/src/handlers/households.ts
+@@ -0,0 +1,167 @@
++import { INVITE_CODE_RE, newId, newInviteCode } from '../crypto.ts';
++import { normalizeTimeZone } from '../dates.ts';
++import { changes, isUniqueViolation } from '../db.ts';
++import { badRequest, HttpError, json, noContent, notFound, readJsonObject } from '../http.ts';
++import type { AuthedContext, Env, Household } from '../types.ts';
++import { requiredName } from '../validate.ts';
++
++const INVITE_TTL_MS = 24 * 60 * 60 * 1000;
++
++/**
++ * The household as seen by `userId`. Throws 404 both when it does not exist and when the user
++ * is not a member, so callers cannot probe for other households.
++ */
++export async function loadHousehold(env: Env, householdId: string, userId: string): Promise<Household> {
++  const row = await env.DB.prepare(
++    `SELECT h.id, h.name, h.timezone, m.role FROM memberships m JOIN households h ON h.id = m.household_id
++      WHERE m.household_id = ?1 AND m.user_id = ?2`,
++  )
++    .bind(householdId, userId)
++    .first<Household>();
++  if (!row) throw notFound('household not found');
++  return row;
++}
++
++function view(h: Household): Household {
++  return { id: h.id, name: h.name, timezone: h.timezone, role: h.role };
++}
++
++export async function createHousehold({ request, env, user }: AuthedContext): Promise<Response> {
++  const body = await readJsonObject(request);
++  const name = requiredName(body, 'name');
++  const timezone = normalizeTimeZone(body.timezone);
++  if (timezone === null) throw badRequest('timezone must be a valid IANA time zone name, e.g. "Asia/Singapore"');
++
++  const id = newId('hh');
++  const now = Date.now();
++  await env.DB.batch([
++    env.DB.prepare('INSERT INTO households (id, name, timezone, created_at_ms) VALUES (?1, ?2, ?3, ?4)').bind(
++      id,
++      name,
++      timezone,
++      now,
++    ),
++    env.DB.prepare(
++      "INSERT INTO memberships (household_id, user_id, role, created_at_ms) VALUES (?1, ?2, 'owner', ?3)",
++    ).bind(id, user.id, now),
++  ]);
++  return json(view({ id, name, timezone, role: 'owner' }), 201);
++}
++
++export async function listHouseholds({ env, user }: AuthedContext): Promise<Response> {
++  const { results } = await env.DB.prepare(
++    `SELECT h.id, h.name, h.timezone, m.role FROM memberships m JOIN households h ON h.id = m.household_id
++      WHERE m.user_id = ?1 ORDER BY m.created_at_ms, h.created_at_ms, h.id`,
++  )
++    .bind(user.id)
++    .all<Household>();
++  return json({ households: results.map(view) });
++}
++
++export async function getHousehold({ env, user, params }: AuthedContext): Promise<Response> {
++  return json(view(await loadHousehold(env, params.household_id!, user.id)));
++}
++
++export async function createInvite({ env, user, params }: AuthedContext): Promise<Response> {
++  const household = await loadHousehold(env, params.household_id!, user.id);
++  if (household.role !== 'owner') throw new HttpError(403, 'only the owner can create invites');
++
++  for (let attempt = 0; attempt < 5; attempt++) {
++    const code = newInviteCode();
++    const now = Date.now();
++    const expiresAt = now + INVITE_TTL_MS;
++    try {
++      await env.DB.prepare(
++        'INSERT INTO invites (code, household_id, created_by, created_at_ms, expires_at_ms) VALUES (?1, ?2, ?3, ?4, ?5)',
++      )
++        .bind(code, household.id, user.id, now, expiresAt)
++        .run();
++      return json({ code, expires_at_ms: expiresAt }, 201);
++    } catch (e) {
++      if (!isUniqueViolation(e)) throw e; // astronomically unlikely code collision: try another
++    }
++  }
++  throw new HttpError(503, 'could not allocate an invite code, try again');
++}
++
++interface InviteRow {
++  household_id: string;
++  used_by: string | null;
++  expires_at_ms: number;
++}
++
++export async function acceptInvite({ env, user, params }: AuthedContext): Promise<Response> {
++  const code = params.code!.toUpperCase();
++  if (!INVITE_CODE_RE.test(code)) throw notFound('invite not found');
++
++  // The claim and the membership insert run in one D1 batch (a single SQLite transaction).
++  // Only the request whose UPDATE flips used_by from NULL wins; its unique `claim` nonce gates
++  // the INSERT, so concurrent accepts of one code produce exactly one new member.
++  for (let attempt = 0; attempt < 3; attempt++) {
++    const now = Date.now();
++    const claim = newId('clm');
++    const [claimed, , household] = await env.DB.batch([
++      env.DB.prepare(
++        `UPDATE invites SET used_by = ?1, used_at_ms = ?2, claim = ?3
++          WHERE code = ?4 AND used_by IS NULL AND expires_at_ms > ?2
++            AND NOT EXISTS (SELECT 1 FROM memberships m WHERE m.household_id = invites.household_id AND m.user_id = ?1)`,
++      ).bind(user.id, now, claim, code),
++      env.DB.prepare(
++        `INSERT INTO memberships (household_id, user_id, role, created_at_ms)
++         SELECT household_id, ?1, 'member', ?2 FROM invites WHERE code = ?3 AND claim = ?4`,
++      ).bind(user.id, now, code, claim),
++      env.DB.prepare(
++        `SELECT h.id, h.name, h.timezone FROM invites i JOIN households h ON h.id = i.household_id WHERE i.code = ?1`,
++      ).bind(code),
++    ]);
++    if (changes(claimed!) === 1) {
++      const h = household!.results[0] as Omit<Household, 'role'>;
++      return json({ household: view({ ...h, role: 'member' }) });
++    }
++
++    // Lost or not eligible: explain why, in the order 404 > 410 > 409.
++    const invite = await env.DB.prepare('SELECT household_id, used_by, expires_at_ms FROM invites WHERE code = ?1')
++      .bind(code)
++      .first<InviteRow>();
++    if (!invite) throw notFound('invite not found');
++    if (invite.used_by !== null) throw new HttpError(410, 'invite has already been used');
++    if (invite.expires_at_ms <= now) throw new HttpError(410, 'invite has expired');
++    const member = await env.DB.prepare('SELECT 1 FROM memberships WHERE household_id = ?1 AND user_id = ?2')
++      .bind(invite.household_id, user.id)
++      .first();
++    if (member) throw new HttpError(409, 'you are already a member of this household');
++    // State changed between the batch and the diagnosis (e.g. we were just removed); retry.
++  }
++  throw new HttpError(409, 'could not accept invite, try again');
++}
++
++export async function listMembers({ env, user, params }: AuthedContext): Promise<Response> {
++  const household = await loadHousehold(env, params.household_id!, user.id);
++  const { results } = await env.DB.prepare(
++    `SELECT m.user_id, u.email, m.role FROM memberships m JOIN users u ON u.id = m.user_id
++      WHERE m.household_id = ?1 ORDER BY m.role = 'owner' DESC, m.created_at_ms, m.user_id`,
++  )
++    .bind(household.id)
++    .all<{ user_id: string; email: string; role: string }>();
++  return json({ members: results.map((m) => ({ user_id: m.user_id, email: m.email, role: m.role })) });
++}
++
++export async function removeMember({ env, user, params }: AuthedContext): Promise<Response> {
++  const household = await loadHousehold(env, params.household_id!, user.id);
++  const targetId = params.user_id!;
++
++  if (targetId === user.id) {
++    if (household.role === 'owner') throw badRequest('the owner cannot leave the household');
++  } else if (household.role !== 'owner') {
++    throw new HttpError(403, 'only the owner can remove other members');
++  }
++
++  // role = 'member' makes it impossible to remove the owner by any path.
++  const result = await env.DB.prepare(
++    "DELETE FROM memberships WHERE household_id = ?1 AND user_id = ?2 AND role = 'member'",
++  )
++    .bind(household.id, targetId)
++    .run();
++  if (changes(result) === 0) throw notFound('member not found');
++  return noContent();
++}
+diff --git a/src/handlers/items.ts b/src/handlers/items.ts
+new file mode 100644
+index 0000000..7e839bd
+--- /dev/null
++++ b/src/handlers/items.ts
+@@ -0,0 +1,233 @@
++import { newId } from '../crypto.ts';
++import { decodeCursor, encodeCursor, type ItemFilter } from '../cursor.ts';
++import { addDays, dateInTimeZone, diffDays } from '../dates.ts';
++import { changes, isForeignKeyViolation } from '../db.ts';
++import { badRequest, json, noContent, notFound, readJsonObject } from '../http.ts';
++import type { AuthedContext, Env, Household } from '../types.ts';
++import { has, optionalDate, optionalId, parseIntParam, quantity, requiredName } from '../validate.ts';
++import { loadHousehold } from './households.ts';
++
++interface ItemRow {
++  seq: number;
++  id: string;
++  name: string;
++  quantity: number;
++  location_id: string | null;
++  expires_on: string | null;
++}
++
++const ITEM_COLUMNS = 'seq, id, name, quantity, location_id, expires_on';
++
++function today(household: Household): string {
++  return dateInTimeZone(Date.now(), household.timezone);
++}
++
++function view(row: ItemRow, todayDate: string) {
++  return {
++    id: row.id,
++    name: row.name,
++    quantity: row.quantity,
++    location_id: row.location_id,
++    expires_on: row.expires_on,
++    days_left: row.expires_on === null ? null : diffDays(row.expires_on, todayDate),
++  };
++}
++
++const badLocation = () => badRequest('location_id does not refer to a location in this household');
++
++export async function createItem({ request, env, user, params }: AuthedContext): Promise<Response> {
++  const household = await loadHousehold(env, params.household_id!, user.id);
++  const body = await readJsonObject(request);
++  const name = requiredName(body, 'name');
++  const qty = body.quantity === undefined ? 1 : quantity(body, 'quantity');
++  const locationId = optionalId(body, 'location_id');
++  const expiresOn = optionalDate(body, 'expires_on');
++
++  const now = Date.now();
++  let row: ItemRow | null;
++  try {
++    // The location check lives in the INSERT itself, so it cannot race with a location delete.
++    row = await env.DB.prepare(
++      `INSERT INTO items (id, household_id, location_id, name, quantity, expires_on, created_at_ms, updated_at_ms)
++       SELECT ?1, ?2, ?3, ?4, ?5, ?6, ?7, ?7
++        WHERE ?3 IS NULL OR EXISTS (SELECT 1 FROM locations WHERE id = ?3 AND household_id = ?2)
++       RETURNING ${ITEM_COLUMNS}`,
++    )
++      .bind(newId('itm'), household.id, locationId, name, qty, expiresOn, now)
++      .first<ItemRow>();
++  } catch (e) {
++    if (!isForeignKeyViolation(e)) throw e;
++    row = null;
++  }
++  if (!row) throw badLocation();
++  return json(view(row, today(household)), 201);
++}
++
++async function loadItem(env: Env, householdId: string, itemId: string): Promise<ItemRow> {
++  const row = await env.DB.prepare(`SELECT ${ITEM_COLUMNS} FROM items WHERE id = ?1 AND household_id = ?2`)
++    .bind(itemId, householdId)
++    .first<ItemRow>();
++  if (!row) throw notFound('item not found');
++  return row;
++}
++
++export async function getItem({ env, user, params }: AuthedContext): Promise<Response> {
++  const household = await loadHousehold(env, params.household_id!, user.id);
++  const row = await loadItem(env, household.id, params.item_id!);
++  return json(view(row, today(household)));
++}
++
++export async function updateItem({ request, env, user, params }: AuthedContext): Promise<Response> {
++  const household = await loadHousehold(env, params.household_id!, user.id);
++  const itemId = params.item_id!;
++  const current = await loadItem(env, household.id, itemId);
++  const body = await readJsonObject(request);
++
++  const sets: string[] = [];
++  const values: unknown[] = [];
++  const set = (column: string, value: unknown) => {
++    values.push(value);
++    sets.push(`${column} = ?${values.length}`);
++  };
++  if (has(body, 'name')) set('name', requiredName(body, 'name'));
++  if (has(body, 'quantity')) set('quantity', quantity(body, 'quantity'));
++  if (has(body, 'expires_on')) set('expires_on', optionalDate(body, 'expires_on'));
++  let locationId: string | null = null;
++  if (has(body, 'location_id')) {
++    locationId = optionalId(body, 'location_id');
++    set('location_id', locationId);
++  }
++  if (sets.length === 0) return json(view(current, today(household)));
++
++  set('updated_at_ms', Date.now());
++  values.push(itemId, household.id);
++  const idParam = values.length - 1;
++  const householdParam = values.length;
++  let where = `id = ?${idParam} AND household_id = ?${householdParam}`;
++  if (locationId !== null) {
++    values.push(locationId);
++    where += ` AND EXISTS (SELECT 1 FROM locations WHERE id = ?${values.length} AND household_id = ?${householdParam})`;
++  }
++
++  let row: ItemRow | null;
++  try {
++    row = await env.DB.prepare(`UPDATE items SET ${sets.join(', ')} WHERE ${where} RETURNING ${ITEM_COLUMNS}`)
++      .bind(...values)
++      .first<ItemRow>();
++  } catch (e) {
++    if (!isForeignKeyViolation(e)) throw e;
++    throw badLocation();
++  }
++  if (!row) {
++    // Either the item vanished concurrently or the location is not ours.
++    await loadItem(env, household.id, itemId);
++    throw badLocation();
++  }
++  return json(view(row, today(household)));
++}
++
++export async function deleteItem({ env, user, params }: AuthedContext): Promise<Response> {
++  const household = await loadHousehold(env, params.household_id!, user.id);
++  const result = await env.DB.prepare('DELETE FROM items WHERE id = ?1 AND household_id = ?2')
++    .bind(params.item_id!, household.id)
++    .run();
++  if (changes(result) === 0) throw notFound('item not found');
++  return noContent();
++}
++
++const DEFAULT_LIMIT = 20;
++const MAX_LIMIT = 100;
++const MAX_WINDOW_DAYS = 365;
++
++/** Same filter, ignoring the "today" anchor. */
++function sameFilterShape(a: ItemFilter, b: ItemFilter): boolean {
++  if (a.kind === 'expiring' && b.kind === 'expiring') return a.days === b.days;
++  return a.kind === b.kind;
++}
++
++export async function listItems({ env, user, params, url }: AuthedContext): Promise<Response> {
++  const household = await loadHousehold(env, params.household_id!, user.id);
++  const q = url.searchParams;
++  const todayDate = today(household);
++
++  let limit = DEFAULT_LIMIT;
++  const rawLimit = q.get('limit');
++  if (rawLimit !== null) {
++    const n = parseIntParam(rawLimit);
++    if (n === null || n < 1 || n > MAX_LIMIT) throw badRequest(`limit must be an integer between 1 and ${MAX_LIMIT}`);
++    limit = n;
++  }
++
++  let requested: ItemFilter | null = null;
++  const rawWithin = q.get('expiring_within_days');
++  if (rawWithin !== null) {
++    const n = parseIntParam(rawWithin);
++    if (n === null || n > MAX_WINDOW_DAYS) {
++      throw badRequest(`expiring_within_days must be an integer between 0 and ${MAX_WINDOW_DAYS}`);
++    }
++    requested = { kind: 'expiring', days: n, today: todayDate };
++  }
++  const rawExpired = q.get('expired');
++  if (rawExpired !== null) {
++    if (rawExpired !== 'true' && rawExpired !== 'false') throw badRequest('expired must be "true" or "false"');
++    if (rawExpired === 'true') {
++      if (requested !== null) throw badRequest('expired=true cannot be combined with expiring_within_days');
++      requested = { kind: 'expired', today: todayDate };
++    }
++  }
++
++  let filter: ItemFilter = requested ?? { kind: 'all' };
++  let after: { seq: number; expiresOn: string | null } | null = null;
++  const rawCursor = q.get('cursor');
++  if (rawCursor !== null) {
++    const cursor = decodeCursor(rawCursor);
++    if (cursor === null || cursor.householdId !== household.id) throw badRequest('cursor is not recognised');
++    // A cursor carries its own filter (and the "today" it was anchored to). If the caller repeats
++    // the filter parameters they must agree with it; if they omit them, the cursor's filter applies.
++    if (requested !== null && !sameFilterShape(requested, cursor.filter)) {
++      throw badRequest('cursor does not belong to this filter');
++    }
++    if (requested === null && rawExpired === 'false' && cursor.filter.kind !== 'all') {
++      throw badRequest('cursor does not belong to this filter');
++    }
++    filter = cursor.filter;
++    after = { seq: cursor.seq, expiresOn: cursor.expiresOn };
++  }
++
++  const where: string[] = ['household_id = ?1'];
++  const binds: unknown[] = [household.id];
++  const bind = (v: unknown) => {
++    binds.push(v);
++    return `?${binds.length}`;
++  };
++  let order: string;
++  if (filter.kind === 'all') {
++    order = 'seq';
++    if (after) where.push(`seq > ${bind(after.seq)}`);
++  } else {
++    order = 'expires_on, seq';
++    if (filter.kind === 'expiring') {
++      where.push(`expires_on >= ${bind(filter.today)}`, `expires_on <= ${bind(addDays(filter.today, filter.days))}`);
++    } else {
++      where.push(`expires_on < ${bind(filter.today)}`);
++    }
++    if (after) {
++      const e = bind(after.expiresOn);
++      where.push(`(expires_on > ${e} OR (expires_on = ${e} AND seq > ${bind(after.seq)}))`);
++    }
++  }
++
++  const { results } = await env.DB.prepare(
++    `SELECT ${ITEM_COLUMNS} FROM items WHERE ${where.join(' AND ')} ORDER BY ${order} LIMIT ${bind(limit + 1)}`,
++  )
++    .bind(...binds)
++    .all<ItemRow>();
++
++  const page = results.slice(0, limit);
++  const last = page[page.length - 1];
++  const nextCursor =
++    results.length > limit && last
++      ? encodeCursor({ householdId: household.id, filter, seq: last.seq, expiresOn: last.expires_on })
++      : null;
++  return json({ items: page.map((r) => view(r, todayDate)), next_cursor: nextCursor });
++}
+diff --git a/src/handlers/locations.ts b/src/handlers/locations.ts
+new file mode 100644
+index 0000000..f3959e0
+--- /dev/null
++++ b/src/handlers/locations.ts
+@@ -0,0 +1,103 @@
++import { newId } from '../crypto.ts';
++import { changes, isForeignKeyViolation } from '../db.ts';
++import { badRequest, HttpError, json, noContent, notFound, readJsonObject } from '../http.ts';
++import type { AuthedContext } from '../types.ts';
++import { optionalId, requiredName } from '../validate.ts';
++import { loadHousehold } from './households.ts';
++
++const MAX_DEPTH = 3; // room > cabinet > shelf
++
++interface LocationRow {
++  id: string;
++  name: string;
++  parent_id: string | null;
++}
++
++interface LocationNode extends LocationRow {
++  children: LocationNode[];
++}
++
++export async function createLocation({ request, env, user, params }: AuthedContext): Promise<Response> {
++  const household = await loadHousehold(env, params.household_id!, user.id);
++  const body = await readJsonObject(request);
++  const name = requiredName(body, 'name');
++  const parentId = optionalId(body, 'parent_id');
++
++  let depth = 1;
++  if (parentId !== null) {
++    const parent = await env.DB.prepare('SELECT depth FROM locations WHERE id = ?1 AND household_id = ?2')
++      .bind(parentId, household.id)
++      .first<{ depth: number }>();
++    if (!parent) throw badRequest('parent_id does not refer to a location in this household');
++    if (parent.depth >= MAX_DEPTH) throw badRequest(`locations can be nested at most ${MAX_DEPTH} levels deep`);
++    depth = parent.depth + 1;
++  }
++
++  // Re-checks the parent inside the INSERT so a concurrent delete of the parent cannot leave an orphan.
++  const id = newId('loc');
++  let inserted: number;
++  try {
++    const result = await env.DB.prepare(
++      `INSERT INTO locations (id, household_id, parent_id, name, depth, created_at_ms)
++       SELECT ?1, ?2, ?3, ?4, ?5, ?6
++        WHERE ?3 IS NULL OR EXISTS (SELECT 1 FROM locations WHERE id = ?3 AND household_id = ?2 AND depth = ?5 - 1)`,
++    )
++      .bind(id, household.id, parentId, name, depth, Date.now())
++      .run();
++    inserted = changes(result);
++  } catch (e) {
++    if (!isForeignKeyViolation(e)) throw e;
++    inserted = 0;
++  }
++  if (inserted !== 1) throw badRequest('parent_id does not refer to a location in this household');
++  return json({ id, name, parent_id: parentId }, 201);
++}
++
++export async function listLocations({ env, user, params }: AuthedContext): Promise<Response> {
++  const household = await loadHousehold(env, params.household_id!, user.id);
++  const { results } = await env.DB.prepare(
++    'SELECT id, name, parent_id FROM locations WHERE household_id = ?1 ORDER BY depth, seq',
++  )
++    .bind(household.id)
++    .all<LocationRow>();
++
++  // Parents always sort before their children (ORDER BY depth), so one pass builds the tree.
++  const nodes = new Map<string, LocationNode>();
++  const roots: LocationNode[] = [];
++  for (const row of results) {
++    const node: LocationNode = { id: row.id, name: row.name, parent_id: row.parent_id, children: [] };
++    nodes.set(node.id, node);
++    const parent = row.parent_id === null ? undefined : nodes.get(row.parent_id);
++    if (parent) parent.children.push(node);
++    else roots.push(node);
++  }
++  return json({ locations: roots });
++}
++
++export async function deleteLocation({ env, user, params }: AuthedContext): Promise<Response> {
++  const household = await loadHousehold(env, params.household_id!, user.id);
++  const locationId = params.location_id!;
++
++  // Single statement: the emptiness check and the delete cannot be interleaved with an insert.
++  let deleted: number;
++  try {
++    const result = await env.DB.prepare(
++      `DELETE FROM locations WHERE id = ?1 AND household_id = ?2
++          AND NOT EXISTS (SELECT 1 FROM locations c WHERE c.parent_id = ?1)
++          AND NOT EXISTS (SELECT 1 FROM items i WHERE i.location_id = ?1)`,
++    )
++      .bind(locationId, household.id)
++      .run();
++    deleted = changes(result);
++  } catch (e) {
++    if (!isForeignKeyViolation(e)) throw e;
++    deleted = 0;
++  }
++  if (deleted === 1) return noContent();
++
++  const exists = await env.DB.prepare('SELECT 1 FROM locations WHERE id = ?1 AND household_id = ?2')
++    .bind(locationId, household.id)
++    .first();
++  if (!exists) throw notFound('location not found');
++  throw new HttpError(409, 'location still contains sub-locations or items');
++}
+diff --git a/src/handlers/reminders.ts b/src/handlers/reminders.ts
+new file mode 100644
+index 0000000..467ec7d
+--- /dev/null
++++ b/src/handlers/reminders.ts
+@@ -0,0 +1,24 @@
++import { json } from '../http.ts';
++import type { AuthedContext } from '../types.ts';
++import { loadHousehold } from './households.ts';
++
++export async function listReminders({ env, user, params }: AuthedContext): Promise<Response> {
++  const household = await loadHousehold(env, params.household_id!, user.id);
++  const { results } = await env.DB.prepare(
++    `SELECT r.id, r.item_id, i.name AS item_name, r.expires_on, r.remind_on
++       FROM reminders r JOIN items i ON i.id = r.item_id
++      WHERE r.household_id = ?1
++      ORDER BY r.remind_on, r.expires_on, i.seq`,
++  )
++    .bind(household.id)
++    .all<{ id: string; item_id: string; item_name: string; expires_on: string; remind_on: string }>();
++  return json({
++    reminders: results.map((r) => ({
++      id: r.id,
++      item_id: r.item_id,
++      item_name: r.item_name,
++      expires_on: r.expires_on,
++      remind_on: r.remind_on,
++    })),
++  });
++}
+diff --git a/src/http.ts b/src/http.ts
+new file mode 100644
+index 0000000..51e3ea7
+--- /dev/null
++++ b/src/http.ts
+@@ -0,0 +1,83 @@
++// HTTP plumbing: errors, JSON responses, bounded body reading.
++
++export class HttpError extends Error {
++  readonly status: number;
++  constructor(status: number, message: string) {
++    super(message);
++    this.status = status;
++  }
++}
++
++export const badRequest = (message: string): HttpError => new HttpError(400, message);
++export const notFound = (message = 'not found'): HttpError => new HttpError(404, message);
++
++const JSON_HEADERS = {
++  'content-type': 'application/json; charset=utf-8',
++  'cache-control': 'no-store',
++};
++
++export function json(data: unknown, status = 200): Response {
++  return new Response(JSON.stringify(data), { status, headers: JSON_HEADERS });
++}
++
++export function noContent(): Response {
++  return new Response(null, { status: 204, headers: { 'cache-control': 'no-store' } });
++}
++
++export function errorResponse(status: number, message: string, headers?: Record<string, string>): Response {
++  return new Response(JSON.stringify({ error: message }), { status, headers: { ...JSON_HEADERS, ...headers } });
++}
++
++export const MAX_BODY_BYTES = 64 * 1024;
++
++/** Reads at most MAX_BODY_BYTES; anything larger is a 413 whether or not Content-Length was sent. */
++async function readBodyBytes(request: Request): Promise<Uint8Array> {
++  const declared = request.headers.get('content-length');
++  if (declared !== null && /^\d+$/.test(declared.trim()) && Number(declared.trim()) > MAX_BODY_BYTES) {
++    throw new HttpError(413, `request body must not exceed ${MAX_BODY_BYTES} bytes`);
++  }
++  if (request.body === null) return new Uint8Array(0);
++  const reader = request.body.getReader();
++  const chunks: Uint8Array[] = [];
++  let total = 0;
++  for (;;) {
++    const { done, value } = await reader.read();
++    if (done) break;
++    total += value.byteLength;
++    if (total > MAX_BODY_BYTES) {
++      await reader.cancel().catch(() => {});
++      throw new HttpError(413, `request body must not exceed ${MAX_BODY_BYTES} bytes`);
++    }
++    chunks.push(value);
++  }
++  const bytes = new Uint8Array(total);
++  let offset = 0;
++  for (const c of chunks) {
++    bytes.set(c, offset);
++    offset += c.byteLength;
++  }
++  return bytes;
++}
++
++export type JsonObject = Record<string, unknown>;
++
++/** Parses the request body as a JSON object; 400 for anything else, 413 if too large. */
++export async function readJsonObject(request: Request): Promise<JsonObject> {
++  const bytes = await readBodyBytes(request);
++  let text: string;
++  try {
++    text = new TextDecoder('utf-8', { fatal: true, ignoreBOM: false }).decode(bytes);
++  } catch {
++    throw badRequest('request body is not valid UTF-8');
++  }
++  let value: unknown;
++  try {
++    value = JSON.parse(text);
++  } catch {
++    throw badRequest('request body is not valid JSON');
++  }
++  if (typeof value !== 'object' || value === null || Array.isArray(value)) {
++    throw badRequest('request body must be a JSON object');
++  }
++  return value as JsonObject;
++}
+diff --git a/src/index.ts b/src/index.ts
+new file mode 100644
+index 0000000..1f2f83b
+--- /dev/null
++++ b/src/index.ts
+@@ -0,0 +1,107 @@
++import { authenticate, login, me, register } from './handlers/auth.ts';
++import {
++  acceptInvite,
++  createHousehold,
++  createInvite,
++  getHousehold,
++  listHouseholds,
++  listMembers,
++  removeMember,
++} from './handlers/households.ts';
++import { createItem, deleteItem, getItem, listItems, updateItem } from './handlers/items.ts';
++import { createLocation, deleteLocation, listLocations } from './handlers/locations.ts';
++import { listReminders } from './handlers/reminders.ts';
++import { errorResponse, HttpError } from './http.ts';
++import { generateReminders } from './scheduled.ts';
++import type { AuthedContext, Env, RequestContext } from './types.ts';
++
++type PublicHandler = (ctx: RequestContext) => Promise<Response>;
++type AuthedHandler = (ctx: AuthedContext) => Promise<Response>;
++
++type Route =
++  | { method: string; pattern: string[]; auth: false; handler: PublicHandler }
++  | { method: string; pattern: string[]; auth: true; handler: AuthedHandler };
++
++const routes: Route[] = [];
++const pub = (method: string, path: string, handler: PublicHandler) =>
++  routes.push({ method, pattern: path.split('/').filter(Boolean), auth: false, handler });
++const authed = (method: string, path: string, handler: AuthedHandler) =>
++  routes.push({ method, pattern: path.split('/').filter(Boolean), auth: true, handler });
++
++pub('POST', '/v1/auth/register', register);
++pub('POST', '/v1/auth/login', login);
++authed('GET', '/v1/me', me);
++authed('POST', '/v1/households', createHousehold);
++authed('GET', '/v1/households', listHouseholds);
++authed('GET', '/v1/households/:household_id', getHousehold);
++authed('POST', '/v1/households/:household_id/invites', createInvite);
++authed('POST', '/v1/invites/:code/accept', acceptInvite);
++authed('GET', '/v1/households/:household_id/members', listMembers);
++authed('DELETE', '/v1/households/:household_id/members/:user_id', removeMember);
++authed('POST', '/v1/households/:household_id/locations', createLocation);
++authed('GET', '/v1/households/:household_id/locations', listLocations);
++authed('DELETE', '/v1/households/:household_id/locations/:location_id', deleteLocation);
++authed('POST', '/v1/households/:household_id/items', createItem);
++authed('GET', '/v1/households/:household_id/items', listItems);
++authed('GET', '/v1/households/:household_id/items/:item_id', getItem);
++authed('PATCH', '/v1/households/:household_id/items/:item_id', updateItem);
++authed('DELETE', '/v1/households/:household_id/items/:item_id', deleteItem);
++authed('GET', '/v1/households/:household_id/reminders', listReminders);
++
++function match(pattern: string[], segments: string[]): Record<string, string> | null {
++  if (pattern.length !== segments.length) return null;
++  const params: Record<string, string> = {};
++  for (let i = 0; i < pattern.length; i++) {
++    const p = pattern[i]!;
++    const s = segments[i]!;
++    if (p.startsWith(':')) params[p.slice(1)] = s;
++    else if (p !== s) return null;
++  }
++  return params;
++}
++
++async function route(request: Request, env: Env): Promise<Response> {
++  const url = new URL(request.url);
++  let segments: string[];
++  try {
++    segments = url.pathname.split('/').filter(Boolean).map(decodeURIComponent);
++  } catch {
++    throw new HttpError(404, 'not found');
++  }
++
++  const allowed: string[] = [];
++  for (const r of routes) {
++    const params = match(r.pattern, segments);
++    if (params === null) continue;
++    if (r.method !== request.method) {
++      allowed.push(r.method);
++      continue;
++    }
++    const ctx: RequestContext = { request, env, url, params };
++    if (!r.auth) return r.handler(ctx);
++    const user = await authenticate(request, env);
++    return r.handler({ ...ctx, user });
++  }
++  if (allowed.length > 0) {
++    return errorResponse(405, 'method not allowed', { allow: allowed.join(', ') });
++  }
++  throw new HttpError(404, 'not found');
++}
++
++export default {
++  async fetch(request, env): Promise<Response> {
++    try {
++      return await route(request, env);
++    } catch (e) {
++      if (e instanceof HttpError) return errorResponse(e.status, e.message);
++      console.error('unhandled error', request.method, new URL(request.url).pathname, e);
++      return errorResponse(500, 'internal server error');
++    }
++  },
++
++  async scheduled(event, env): Promise<void> {
++    // Awaited (not waitUntil) so the run is complete when the trigger returns.
++    const created = await generateReminders(env, event.scheduledTime);
++    console.log(`reminders: ${created} created for scheduledTime=${new Date(event.scheduledTime).toISOString()}`);
++  },
++} satisfies ExportedHandler<Env>;
+diff --git a/src/scheduled.ts b/src/scheduled.ts
+new file mode 100644
+index 0000000..0475c0f
+--- /dev/null
++++ b/src/scheduled.ts
+@@ -0,0 +1,52 @@
++// Hourly reminder generation.
++
++import { addDays, dateInTimeZone } from './dates.ts';
++import type { Env } from './types.ts';
++
++export const REMINDER_WINDOW_DAYS = 3;
++const BATCH_SIZE = 50;
++
++/**
++ * For every household, creates one reminder per item whose expires_on lies in
++ * [today, today + 3], where "today" is the date of `scheduledTime` in the household's time zone.
++ *
++ * Idempotent: UNIQUE (item_id, remind_on) plus ON CONFLICT DO NOTHING means repeated or
++ * concurrent runs for the same local day never duplicate a reminder.
++ */
++export async function generateReminders(env: Env, scheduledTime: number): Promise<number> {
++  const { results: zones } = await env.DB.prepare('SELECT DISTINCT timezone FROM households').all<{
++    timezone: string;
++  }>();
++
++  const now = Date.now();
++  const statements: D1PreparedStatement[] = [];
++  for (const { timezone } of zones) {
++    let today: string;
++    try {
++      today = dateInTimeZone(scheduledTime, timezone);
++    } catch (e) {
++      console.error(`skipping households in unknown time zone ${timezone}`, e);
++      continue;
++    }
++    // One statement per distinct time zone covers every household in it.
++    statements.push(
++      env.DB.prepare(
++        `INSERT INTO reminders (id, household_id, item_id, remind_on, expires_on, created_at_ms)
++         SELECT 'rem_' || lower(hex(randomblob(12))), i.household_id, i.id, ?1, i.expires_on, ?2
++           FROM items i JOIN households h ON h.id = i.household_id
++          WHERE h.timezone = ?3 AND i.expires_on >= ?1 AND i.expires_on <= ?4
++         ON CONFLICT (item_id, remind_on) DO NOTHING`,
++      ).bind(today, now, timezone, addDays(today, REMINDER_WINDOW_DAYS)),
++    );
++  }
++
++  let created = 0;
++  for (let i = 0; i < statements.length; i += BATCH_SIZE) {
++    const results = await env.DB.batch(statements.slice(i, i + BATCH_SIZE));
++    for (const r of results) created += r.meta.changes ?? 0;
++  }
++
++  // Housekeeping: drop expired sessions (wall-clock based; unrelated to the reminder "today").
++  await env.DB.prepare('DELETE FROM sessions WHERE expires_at_ms <= ?1').bind(now).run();
++  return created;
++}
+diff --git a/src/types.ts b/src/types.ts
+new file mode 100644
+index 0000000..a1675ba
+--- /dev/null
++++ b/src/types.ts
+@@ -0,0 +1,28 @@
++export interface Env {
++  DB: D1Database;
++}
++
++export interface User {
++  id: string;
++  email: string;
++}
++
++export type Role = 'owner' | 'member';
++
++export interface Household {
++  id: string;
++  name: string;
++  timezone: string;
++  role: Role;
++}
++
++export interface RequestContext {
++  request: Request;
++  env: Env;
++  url: URL;
++  params: Record<string, string>;
++}
++
++export interface AuthedContext extends RequestContext {
++  user: User;
++}
+diff --git a/src/validate.ts b/src/validate.ts
+new file mode 100644
+index 0000000..21b2b04
+--- /dev/null
++++ b/src/validate.ts
+@@ -0,0 +1,62 @@
++// Request-field validation. Every failure is a 400.
++
++import { isValidDate } from './dates.ts';
++import { badRequest, type JsonObject } from './http.ts';
++
++export function has(body: JsonObject, key: string): boolean {
++  return Object.prototype.hasOwnProperty.call(body, key);
++}
++
++/** Required non-blank string; stored trimmed. */
++export function requiredName(body: JsonObject, key: string): string {
++  const value = body[key];
++  if (typeof value !== 'string') throw badRequest(`${key} must be a non-empty string`);
++  const trimmed = value.trim();
++  if (trimmed.length === 0) throw badRequest(`${key} must not be empty`);
++  return trimmed;
++}
++
++/** Absent or null -> null; otherwise must be a string. */
++export function optionalId(body: JsonObject, key: string): string | null {
++  const value = body[key];
++  if (value === undefined || value === null) return null;
++  if (typeof value !== 'string') throw badRequest(`${key} must be a string or null`);
++  return value;
++}
++
++export function quantity(body: JsonObject, key: string): number {
++  const value = body[key];
++  if (typeof value !== 'number' || !Number.isSafeInteger(value) || value < 0) {
++    throw badRequest(`${key} must be a non-negative integer`);
++  }
++  return value === 0 ? 0 : value; // normalise -0
++}
++
++/** Absent or null -> null; otherwise must be a real YYYY-MM-DD date. */
++export function optionalDate(body: JsonObject, key: string): string | null {
++  const value = body[key];
++  if (value === undefined || value === null) return null;
++  if (!isValidDate(value)) throw badRequest(`${key} must be a real date formatted YYYY-MM-DD, or null`);
++  return value;
++}
++
++export function normalizeEmail(value: unknown): string | null {
++  if (typeof value !== 'string') return null;
++  const email = value.trim().toLowerCase();
++  const at = email.lastIndexOf('@');
++  if (email.length > 254 || at <= 0 || at === email.length - 1 || /[\s\u0000-\u001f\u007f]/.test(email)) {
++    return null;
++  }
++  return email;
++}
++
++/** Password length in Unicode code points, so "8 characters" means what a user expects. */
++export function passwordLength(password: string): number {
++  return Array.from(password).length;
++}
++
++/** Strict decimal integer from a query string, or null if malformed. */
++export function parseIntParam(raw: string): number | null {
++  if (!/^\d{1,9}$/.test(raw)) return null;
++  return Number(raw);
++}
+diff --git a/test/api.test.ts b/test/api.test.ts
+new file mode 100644
+index 0000000..fb2eb7d
+--- /dev/null
++++ b/test/api.test.ts
+@@ -0,0 +1,1042 @@
++// End-to-end tests against a real `wrangler dev --local` + local D1.
++// Run with: npm run test:api
++
++import assert from 'node:assert/strict';
++import { after, before, describe, it } from 'node:test';
++import { startServer, type TestServer } from './server.ts';
++
++let server: TestServer;
++before(async () => {
++  server = await startServer();
++});
++after(async () => {
++  await server?.stop();
++});
++
++// ---------------------------------------------------------------------------------------------
++// helpers (deliberately independent of src/ so the service is checked against the spec)
++
++// eslint-disable-next-line @typescript-eslint/no-explicit-any
++type Json = any;
++interface Res {
++  status: number;
++  body: Json;
++  headers: Headers;
++}
++
++interface CallOptions {
++  token?: string;
++  body?: unknown;
++  raw?: BodyInit;
++  headers?: Record<string, string>;
++}
++
++async function api(method: string, path: string, opts: CallOptions = {}): Promise<Res> {
++  const headers: Record<string, string> = { ...opts.headers };
++  if (opts.token !== undefined) headers.authorization = `Bearer ${opts.token}`;
++  let body: BodyInit | undefined;
++  if (opts.raw !== undefined) body = opts.raw;
++  else if (opts.body !== undefined) {
++    body = JSON.stringify(opts.body);
++    headers['content-type'] = 'application/json';
++  }
++  const init: RequestInit & { duplex?: 'half' } = { method, headers, body };
++  if (body instanceof ReadableStream) init.duplex = 'half';
++  const res = await fetch(server.base + path, init);
++  const text = await res.text();
++  let parsed: Json = null;
++  if (text.length > 0) {
++    try {
++      parsed = JSON.parse(text);
++    } catch {
++      parsed = text;
++    }
++  }
++  return { status: res.status, body: parsed, headers: res.headers };
++}
++
++function expectError(res: Res, status: number): void {
++  assert.equal(res.status, status, `expected ${status}, got ${res.status}: ${JSON.stringify(res.body)}`);
++  assert.equal(typeof res.body?.error, 'string', `error body should be {"error": "..."}: ${JSON.stringify(res.body)}`);
++}
++
++function expectStatus(res: Res, status: number): void {
++  assert.equal(res.status, status, `expected ${status}, got ${res.status}: ${JSON.stringify(res.body)}`);
++}
++
++let seq = 0;
++const uniqueEmail = () => `u${Date.now().toString(36)}${(seq++).toString(36)}${Math.random().toString(36).slice(2, 6)}@example.com`;
++const PASSWORD = 'correct horse';
++
++interface TestUser {
++  id: string;
++  email: string;
++  token: string;
++}
++
++async function newUser(): Promise<TestUser> {
++  const email = uniqueEmail();
++  const r = await api('POST', '/v1/auth/register', { body: { email, password: PASSWORD } });
++  expectStatus(r, 201);
++  return { id: r.body.user.id, email, token: r.body.token };
++}
++
++async function newHousehold(user: TestUser, timezone = 'Asia/Singapore', name = '我家'): Promise<Json> {
++  const r = await api('POST', '/v1/households', { token: user.token, body: { name, timezone } });
++  expectStatus(r, 201);
++  return r.body;
++}
++
++async function invite(owner: TestUser, householdId: string): Promise<string> {
++  const r = await api('POST', `/v1/households/${householdId}/invites`, { token: owner.token });
++  expectStatus(r, 201);
++  return r.body.code;
++}
++
++async function join(owner: TestUser, householdId: string, user: TestUser): Promise<void> {
++  const code = await invite(owner, householdId);
++  expectStatus(await api('POST', `/v1/invites/${code}/accept`, { token: user.token }), 200);
++}
++
++async function newItem(user: TestUser, householdId: string, body: Record<string, unknown>): Promise<Json> {
++  const r = await api('POST', `/v1/households/${householdId}/items`, { token: user.token, body });
++  expectStatus(r, 201);
++  return r.body;
++}
++
++async function newLocation(user: TestUser, householdId: string, name: string, parentId: string | null = null) {
++  const r = await api('POST', `/v1/households/${householdId}/locations`, {
++    token: user.token,
++    body: { name, parent_id: parentId },
++  });
++  expectStatus(r, 201);
++  return r.body as { id: string; name: string; parent_id: string | null };
++}
++
++function todayIn(timeZone: string, at = Date.now()): string {
++  return new Intl.DateTimeFormat('en-CA', { timeZone, year: 'numeric', month: '2-digit', day: '2-digit' }).format(at);
++}
++
++function addDays(date: string, n: number): string {
++  const d = new Date(`${date}T00:00:00Z`);
++  d.setUTCDate(d.getUTCDate() + n);
++  return d.toISOString().slice(0, 10);
++}
++
++function daysBetween(a: string, b: string): number {
++  return Math.round((Date.parse(`${a}T00:00:00Z`) - Date.parse(`${b}T00:00:00Z`)) / 86_400_000);
++}
++
++async function triggerCron(timeMs: number): Promise<void> {
++  const res = await fetch(`${server.base}/cdn-cgi/handler/scheduled?cron=0+*+*+*+*&time=${timeMs}`);
++  const text = await res.text();
++  assert.equal(res.status, 200, `scheduled trigger failed: ${text}`);
++}
++
++async function listAll(user: TestUser, householdId: string, query: Record<string, string>, limit: number) {
++  const items: Json[] = [];
++  let cursor: string | null = null;
++  for (let page = 0; ; page++) {
++    assert.ok(page < 500, 'pagination does not terminate');
++    const q = new URLSearchParams({ ...query, limit: String(limit) });
++    if (cursor !== null) q.set('cursor', cursor);
++    const r = await api('GET', `/v1/households/${householdId}/items?${q}`, { token: user.token });
++    expectStatus(r, 200);
++    assert.ok(r.body.items.length <= limit);
++    items.push(...r.body.items);
++    cursor = r.body.next_cursor;
++    if (cursor === null) return items;
++    assert.equal(typeof cursor, 'string');
++  }
++}
++
++const names = (items: Json[]) => items.map((i) => i.name);
++
++// ---------------------------------------------------------------------------------------------
++
++describe('general', () => {
++  it('unknown routes are 404 and wrong methods 405, both with JSON errors', async () => {
++    expectError(await api('GET', '/v1/nope'), 404);
++    expectError(await api('PUT', '/v1/auth/register', { body: {} }), 405);
++  });
++
++  it('requires a valid bearer token on every non-auth endpoint', async () => {
++    const paths: [string, string][] = [
++      ['GET', '/v1/me'],
++      ['GET', '/v1/households'],
++      ['POST', '/v1/households'],
++      ['GET', '/v1/households/hh_x'],
++      ['POST', '/v1/invites/ABCDEFGHJKMN/accept'],
++      ['GET', '/v1/households/hh_x/items'],
++      ['GET', '/v1/households/hh_x/reminders'],
++    ];
++    for (const [method, path] of paths) {
++      expectError(await api(method, path), 401);
++      expectError(await api(method, path, { token: 'not-a-real-token' }), 401);
++      expectError(await api(method, path, { headers: { authorization: 'Basic abc' } }), 401);
++    }
++    expectError(await api('GET', '/v1/me', { token: 'A'.repeat(43) }), 401);
++  });
++});
++
++describe('auth', () => {
++  it('registers, lower-cases the email and returns a working token', async () => {
++    const email = uniqueEmail();
++    const r = await api('POST', '/v1/auth/register', { body: { email: email.toUpperCase(), password: '12345678' } });
++    expectStatus(r, 201);
++    assert.equal(r.body.user.email, email);
++    assert.equal(typeof r.body.user.id, 'string');
++    assert.equal(typeof r.body.token, 'string');
++    const me = await api('GET', '/v1/me', { token: r.body.token });
++    expectStatus(me, 200);
++    assert.deepEqual(me.body, { id: r.body.user.id, email });
++  });
++
++  it('rejects duplicate emails case-insensitively with 409', async () => {
++    const user = await newUser();
++    expectError(await api('POST', '/v1/auth/register', { body: { email: user.email, password: PASSWORD } }), 409);
++    expectError(
++      await api('POST', '/v1/auth/register', { body: { email: user.email.toUpperCase(), password: PASSWORD } }),
++      409,
++    );
++  });
++
++  it('validates the registration body', async () => {
++    const bad: unknown[] = [
++      { email: 'no-at-sign.example.com', password: PASSWORD },
++      { email: uniqueEmail(), password: '1234567' },
++      { email: uniqueEmail(), password: '' },
++      { email: uniqueEmail() },
++      { password: PASSWORD },
++      { email: 42, password: PASSWORD },
++      { email: uniqueEmail(), password: 12345678 },
++      [],
++      null,
++      'string',
++    ];
++    for (const body of bad) expectError(await api('POST', '/v1/auth/register', { body }), 400);
++    expectError(await api('POST', '/v1/auth/register', { raw: '{"email": ' }), 400);
++    expectError(await api('POST', '/v1/auth/register', { raw: '' }), 400);
++  });
++
++  it('counts password length in characters, not bytes', async () => {
++    expectError(await api('POST', '/v1/auth/register', { body: { email: uniqueEmail(), password: '密码密码密码密' } }), 400);
++    expectStatus(await api('POST', '/v1/auth/register', { body: { email: uniqueEmail(), password: '密码密码密码密码' } }), 201);
++  });
++
++  it('logs in with the right password only', async () => {
++    const user = await newUser();
++    const ok = await api('POST', '/v1/auth/login', { body: { email: user.email.toUpperCase(), password: PASSWORD } });
++    expectStatus(ok, 200);
++    assert.deepEqual(ok.body.user, { id: user.id, email: user.email });
++    expectStatus(await api('GET', '/v1/me', { token: ok.body.token }), 200);
++
++    expectError(await api('POST', '/v1/auth/login', { body: { email: user.email, password: 'wrong password' } }), 401);
++    expectError(await api('POST', '/v1/auth/login', { body: { email: uniqueEmail(), password: PASSWORD } }), 401);
++    expectError(await api('POST', '/v1/auth/login', { body: { email: user.email } }), 400);
++    expectError(await api('POST', '/v1/auth/login', { raw: 'nope' }), 400);
++  });
++
++  it('does not store passwords in plain text', async () => {
++    const user = await newUser();
++    const rows = await server.sql(`SELECT password_hash FROM users WHERE email = '${user.email}'`);
++    assert.equal(rows.length, 1);
++    const hash = String(rows[0]!.password_hash);
++    assert.ok(!hash.includes(PASSWORD));
++    assert.match(hash, /^pbkdf2_sha256\$\d+\$/);
++  });
++
++  it('gives exactly one winner when the same email registers concurrently', async () => {
++    const email = uniqueEmail();
++    const results = await Promise.all(
++      Array.from({ length: 12 }, () => api('POST', '/v1/auth/register', { body: { email, password: PASSWORD } })),
++    );
++    const statuses = results.map((r) => r.status).sort();
++    assert.equal(statuses.filter((s) => s === 201).length, 1, `statuses: ${statuses}`);
++    assert.equal(statuses.filter((s) => s === 409).length, 11, `statuses: ${statuses}`);
++    const rows = await server.sql(`SELECT COUNT(*) AS n FROM users WHERE email = '${email}'`);
++    assert.equal(rows[0]!.n, 1);
++  });
++});
++
++describe('request body limits', () => {
++  // Builds a JSON object body of exactly `size` bytes.
++  function bodyOfSize(size: number): string {
++    const skeleton = JSON.stringify({ name: 'big', pad: '' });
++    return JSON.stringify({ name: 'big', pad: 'x'.repeat(size - skeleton.length) });
++  }
++
++  it('accepts 64 KiB and rejects anything larger with 413', async () => {
++    const user = await newUser();
++    const h = await newHousehold(user);
++    const path = `/v1/households/${h.id}/items`;
++    const exact = bodyOfSize(64 * 1024);
++    assert.equal(Buffer.byteLength(exact), 65536);
++    expectStatus(await api('POST', path, { token: user.token, raw: exact }), 201);
++    expectError(await api('POST', path, { token: user.token, raw: bodyOfSize(64 * 1024 + 1) }), 413);
++    expectError(await api('POST', path, { token: user.token, raw: bodyOfSize(1024 * 1024) }), 413);
++    expectError(
++      await api('POST', '/v1/auth/register', { raw: JSON.stringify({ email: uniqueEmail(), password: 'p'.repeat(70_000) }) }),
++      413,
++    );
++  });
++
++  it('rejects oversized bodies sent without Content-Length (chunked)', async () => {
++    const user = await newUser();
++    const h = await newHousehold(user);
++    const chunk = new TextEncoder().encode('x'.repeat(16 * 1024));
++    let sent = 0;
++    const stream = new ReadableStream<Uint8Array>({
++      pull(controller) {
++        if (sent === 0) controller.enqueue(new TextEncoder().encode('{"name":"'));
++        if (sent < 5) controller.enqueue(chunk);
++        else {
++          controller.enqueue(new TextEncoder().encode('"}'));
++          controller.close();
++        }
++        sent++;
++      },
++    });
++    expectError(await api('POST', `/v1/households/${h.id}/items`, { token: user.token, raw: stream }), 413);
++  });
++});
++
++describe('households', () => {
++  it('creates and lists households with the caller role', async () => {
++    const user = await newUser();
++    const other = await newUser();
++    const h = await newHousehold(user, 'Asia/Singapore', '我家');
++    assert.deepEqual(Object.keys(h).sort(), ['id', 'name', 'role', 'timezone']);
++    assert.equal(h.name, '我家');
++    assert.equal(h.timezone, 'Asia/Singapore');
++    assert.equal(h.role, 'owner');
++    await newHousehold(other);
++
++    const list = await api('GET', '/v1/households', { token: user.token });
++    expectStatus(list, 200);
++    assert.deepEqual(list.body.households, [h]);
++
++    const got = await api('GET', `/v1/households/${h.id}`, { token: user.token });
++    expectStatus(got, 200);
++    assert.deepEqual(got.body, h);
++  });
++
++  it('validates name and timezone', async () => {
++    const user = await newUser();
++    const bad: unknown[] = [
++      { name: '家', timezone: 'Mars/Olympus_Mons' },
++      { name: '家', timezone: 'Asia/Singapur' },
++      { name: '家', timezone: '+08:00' },
++      { name: '家', timezone: 'UTC+8' },
++      { name: '家', timezone: '' },
++      { name: '家', timezone: 8 },
++      { name: '家' },
++      { name: '', timezone: 'UTC' },
++      { name: '   ', timezone: 'UTC' },
++      { name: null, timezone: 'UTC' },
++      { timezone: 'UTC' },
++    ];
++    for (const body of bad) expectError(await api('POST', '/v1/households', { token: user.token, body }), 400);
++    for (const tz of ['UTC', 'America/Argentina/Buenos_Aires', 'Etc/GMT-14', 'Pacific/Chatham']) {
++      const r = await api('POST', '/v1/households', { token: user.token, body: { name: 'ok', timezone: tz } });
++      expectStatus(r, 201);
++      assert.equal(r.body.timezone, tz);
++    }
++  });
++
++  it('hides households the caller does not belong to', async () => {
++    const owner = await newUser();
++    const outsider = await newUser();
++    const h = await newHousehold(owner);
++    for (const path of [
++      `/v1/households/${h.id}`,
++      `/v1/households/${h.id}/members`,
++      `/v1/households/${h.id}/locations`,
++      `/v1/households/${h.id}/items`,
++      `/v1/households/${h.id}/reminders`,
++      '/v1/households/hh_doesnotexist',
++    ]) {
++      expectError(await api('GET', path, { token: outsider.token }), 404);
++    }
++    expectError(await api('POST', `/v1/households/${h.id}/invites`, { token: outsider.token }), 404);
++    expectError(await api('POST', `/v1/households/${h.id}/items`, { token: outsider.token, body: { name: 'x' } }), 404);
++    expectError(
++      await api('POST', `/v1/households/${h.id}/locations`, { token: outsider.token, body: { name: 'x' } }),
++      404,
++    );
++    expectError(await api('DELETE', `/v1/households/${h.id}/members/${owner.id}`, { token: outsider.token }), 404);
++  });
++});
++
++describe('invites and members', () => {
++  it('lets the owner invite; a member joins once; the code is then spent', async () => {
++    const owner = await newUser();
++    const alice = await newUser();
++    const bob = await newUser();
++    const h = await newHousehold(owner);
++
++    const before = Date.now();
++    const inv = await api('POST', `/v1/households/${h.id}/invites`, { token: owner.token });
++    expectStatus(inv, 201);
++    assert.equal(typeof inv.body.code, 'string');
++    assert.ok(Math.abs(inv.body.expires_at_ms - (before + 86_400_000)) < 60_000);
++
++    const accepted = await api('POST', `/v1/invites/${inv.body.code}/accept`, { token: alice.token });
++    expectStatus(accepted, 200);
++    assert.deepEqual(accepted.body, { household: { id: h.id, name: h.name, timezone: h.timezone, role: 'member' } });
++
++    expectError(await api('POST', `/v1/invites/${inv.body.code}/accept`, { token: bob.token }), 410);
++    expectError(await api('POST', '/v1/invites/ZZZZZZZZZZZZ/accept', { token: bob.token }), 404);
++    expectError(await api('POST', '/v1/invites/not-a-code/accept', { token: bob.token }), 404);
++
++    const list = await api('GET', '/v1/households', { token: alice.token });
++    assert.deepEqual(list.body.households, [{ ...h, role: 'member' }]);
++
++    // members cannot create invites
++    expectError(await api('POST', `/v1/households/${h.id}/invites`, { token: alice.token }), 403);
++
++    const members = await api('GET', `/v1/households/${h.id}/members`, { token: alice.token });
++    expectStatus(members, 200);
++    assert.deepEqual(members.body.members, [
++      { user_id: owner.id, email: owner.email, role: 'owner' },
++      { user_id: alice.id, email: alice.email, role: 'member' },
++    ]);
++  });
++
++  it('answers 409 to an existing member without consuming the code', async () => {
++    const owner = await newUser();
++    const alice = await newUser();
++    const h = await newHousehold(owner);
++    const code = await invite(owner, h.id);
++    expectError(await api('POST', `/v1/invites/${code}/accept`, { token: owner.token }), 409);
++    expectStatus(await api('POST', `/v1/invites/${code}/accept`, { token: alice.token }), 200);
++  });
++
++  it('answers 410 for an expired code', async () => {
++    const owner = await newUser();
++    const alice = await newUser();
++    const h = await newHousehold(owner);
++    const code = await invite(owner, h.id);
++    await server.sql(`UPDATE invites SET expires_at_ms = ${Date.now() - 1} WHERE code = '${code}'`);
++    expectError(await api('POST', `/v1/invites/${code}/accept`, { token: alice.token }), 410);
++    expectError(await api('GET', `/v1/households/${h.id}`, { token: alice.token }), 404);
++  });
++
++  it('lets exactly one of many concurrent users claim a code', async () => {
++    const owner = await newUser();
++    const h = await newHousehold(owner);
++    const users = await Promise.all(Array.from({ length: 10 }, newUser));
++    const code = await invite(owner, h.id);
++    const results = await Promise.all(users.map((u) => api('POST', `/v1/invites/${code}/accept`, { token: u.token })));
++    const statuses = results.map((r) => r.status);
++    assert.equal(statuses.filter((s) => s === 200).length, 1, `statuses: ${statuses}`);
++    assert.equal(statuses.filter((s) => s === 410).length, 9, `statuses: ${statuses}`);
++    const members = await api('GET', `/v1/households/${h.id}/members`, { token: owner.token });
++    assert.equal(members.body.members.length, 2);
++  });
++
++  it('handles one user accepting the same code concurrently', async () => {
++    const owner = await newUser();
++    const alice = await newUser();
++    const h = await newHousehold(owner);
++    const code = await invite(owner, h.id);
++    const results = await Promise.all(
++      Array.from({ length: 6 }, () => api('POST', `/v1/invites/${code}/accept`, { token: alice.token })),
++    );
++    const statuses = results.map((r) => r.status);
++    assert.equal(statuses.filter((s) => s === 200).length, 1, `statuses: ${statuses}`);
++    assert.ok(statuses.every((s) => s === 200 || s === 409 || s === 410), `statuses: ${statuses}`);
++    const members = await api('GET', `/v1/households/${h.id}/members`, { token: owner.token });
++    assert.equal(members.body.members.length, 2);
++  });
++
++  it('enforces the member removal rules', async () => {
++    const owner = await newUser();
++    const alice = await newUser();
++    const bob = await newUser();
++    const stranger = await newUser();
++    const h = await newHousehold(owner);
++    await join(owner, h.id, alice);
++    await join(owner, h.id, bob);
++    const base = `/v1/households/${h.id}/members`;
++
++    expectError(await api('DELETE', `${base}/${owner.id}`, { token: owner.token }), 400);
++    expectError(await api('DELETE', `${base}/${bob.id}`, { token: alice.token }), 403);
++    expectError(await api('DELETE', `${base}/${owner.id}`, { token: alice.token }), 403);
++    expectError(await api('DELETE', `${base}/${stranger.id}`, { token: owner.token }), 404);
++    expectError(await api('DELETE', `${base}/usr_nobody`, { token: owner.token }), 404);
++
++    // alice leaves
++    const left = await api('DELETE', `${base}/${alice.id}`, { token: alice.token });
++    expectStatus(left, 204);
++    assert.equal(left.body, null);
++    // owner kicks bob
++    expectStatus(await api('DELETE', `${base}/${bob.id}`, { token: owner.token }), 204);
++    expectError(await api('DELETE', `${base}/${bob.id}`, { token: owner.token }), 404);
++
++    const members = await api('GET', base, { token: owner.token });
++    assert.deepEqual(members.body.members, [{ user_id: owner.id, email: owner.email, role: 'owner' }]);
++  });
++
++  it('cuts off all access after leaving or being kicked', async () => {
++    const owner = await newUser();
++    const alice = await newUser();
++    const h = await newHousehold(owner);
++    await join(owner, h.id, alice);
++    const loc = await newLocation(owner, h.id, '厨房');
++    const item = await newItem(owner, h.id, { name: '牛奶', location_id: loc.id });
++    expectStatus(await api('GET', `/v1/households/${h.id}/items/${item.id}`, { token: alice.token }), 200);
++
++    expectStatus(await api('DELETE', `/v1/households/${h.id}/members/${alice.id}`, { token: owner.token }), 204);
++
++    const t = alice.token;
++    const hp = `/v1/households/${h.id}`;
++    expectError(await api('GET', hp, { token: t }), 404);
++    expectError(await api('GET', `${hp}/members`, { token: t }), 404);
++    expectError(await api('GET', `${hp}/locations`, { token: t }), 404);
++    expectError(await api('DELETE', `${hp}/locations/${loc.id}`, { token: t }), 404);
++    expectError(await api('GET', `${hp}/items`, { token: t }), 404);
++    expectError(await api('GET', `${hp}/items/${item.id}`, { token: t }), 404);
++    expectError(await api('PATCH', `${hp}/items/${item.id}`, { token: t, body: { name: 'x' } }), 404);
++    expectError(await api('DELETE', `${hp}/items/${item.id}`, { token: t }), 404);
++    expectError(await api('GET', `${hp}/reminders`, { token: t }), 404);
++    expectError(await api('DELETE', `${hp}/members/${alice.id}`, { token: t }), 404);
++    const list = await api('GET', '/v1/households', { token: t });
++    assert.deepEqual(list.body.households, []);
++
++    // ...and can rejoin with a fresh invite
++    await join(owner, h.id, alice);
++    expectStatus(await api('GET', hp, { token: t }), 200);
++  });
++});
++
++describe('locations', () => {
++  it('builds a three-level tree and refuses a fourth level', async () => {
++    const user = await newUser();
++    const h = await newHousehold(user);
++    const room = await newLocation(user, h.id, '卧室');
++    assert.deepEqual(Object.keys(room).sort(), ['id', 'name', 'parent_id']);
++    assert.equal(room.parent_id, null);
++    const wardrobe = await newLocation(user, h.id, '衣柜', room.id);
++    assert.equal(wardrobe.parent_id, room.id);
++    const shelf = await newLocation(user, h.id, '第二格', wardrobe.id);
++    const kitchen = await newLocation(user, h.id, '厨房');
++    const body = { name: '太深了', parent_id: shelf.id };
++    expectError(await api('POST', `/v1/households/${h.id}/locations`, { token: user.token, body }), 400);
++
++    // parent_id omitted == null
++    const r = await api('POST', `/v1/households/${h.id}/locations`, { token: user.token, body: { name: '阳台' } });
++    expectStatus(r, 201);
++    assert.equal(r.body.parent_id, null);
++
++    const tree = await api('GET', `/v1/households/${h.id}/locations`, { token: user.token });
++    expectStatus(tree, 200);
++    assert.deepEqual(tree.body, {
++      locations: [
++        {
++          id: room.id,
++          name: '卧室',
++          parent_id: null,
++          children: [
++            {
++              id: wardrobe.id,
++              name: '衣柜',
++              parent_id: room.id,
++              children: [{ id: shelf.id, name: '第二格', parent_id: wardrobe.id, children: [] }],
++            },
++          ],
++        },
++        { id: kitchen.id, name: '厨房', parent_id: null, children: [] },
++        { id: r.body.id, name: '阳台', parent_id: null, children: [] },
++      ],
++    });
++  });
++
++  it('validates the body and the parent', async () => {
++    const user = await newUser();
++    const other = await newUser();
++    const h = await newHousehold(user);
++    const otherH = await newHousehold(other);
++    const foreign = await newLocation(other, otherH.id, '别人家的房间');
++    const path = `/v1/households/${h.id}/locations`;
++    for (const body of [
++      { name: '' },
++      { name: '  ' },
++      { parent_id: null },
++      { name: 5 },
++      { name: 'x', parent_id: 5 },
++      { name: 'x', parent_id: 'loc_missing' },
++      { name: 'x', parent_id: foreign.id },
++    ]) {
++      expectError(await api('POST', path, { token: user.token, body }), 400);
++    }
++  });
++
++  it('deletes only empty locations', async () => {
++    const user = await newUser();
++    const other = await newUser();
++    const h = await newHousehold(user);
++    const otherH = await newHousehold(other);
++    const room = await newLocation(user, h.id, '卧室');
++    const cabinet = await newLocation(user, h.id, '柜子', room.id);
++    const item = await newItem(user, h.id, { name: '袜子', location_id: cabinet.id });
++    const p = (id: string) => `/v1/households/${h.id}/locations/${id}`;
++
++    expectError(await api('DELETE', p(room.id), { token: user.token }), 409); // has a child
++    expectError(await api('DELETE', p(cabinet.id), { token: user.token }), 409); // has an item
++    expectStatus(await api('DELETE', `/v1/households/${h.id}/items/${item.id}`, { token: user.token }), 204);
++    expectStatus(await api('DELETE', p(cabinet.id), { token: user.token }), 204);
++    expectStatus(await api('DELETE', p(room.id), { token: user.token }), 204);
++    expectError(await api('DELETE', p(room.id), { token: user.token }), 404);
++
++    const foreign = await newLocation(other, otherH.id, '别人家');
++    expectError(await api('DELETE', p(foreign.id), { token: user.token }), 404);
++    expectError(await api('DELETE', `/v1/households/${otherH.id}/locations/${foreign.id}`, { token: user.token }), 404);
++
++    const tree = await api('GET', `/v1/households/${h.id}/locations`, { token: user.token });
++    assert.deepEqual(tree.body, { locations: [] });
++  });
++
++  it('never leaves an orphan when a child is added while its parent is deleted', async () => {
++    const user = await newUser();
++    const h = await newHousehold(user);
++    for (let round = 0; round < 8; round++) {
++      const room = await newLocation(user, h.id, `room-${round}`);
++      const [created, deleted] = await Promise.all([
++        api('POST', `/v1/households/${h.id}/locations`, { token: user.token, body: { name: 'c', parent_id: room.id } }),
++        api('DELETE', `/v1/households/${h.id}/locations/${room.id}`, { token: user.token }),
++      ]);
++      const outcome = `${created.status}/${deleted.status}`;
++      assert.ok(outcome === '201/409' || outcome === '400/204', `unexpected outcome ${outcome}`);
++    }
++    const orphans = await server.sql(
++      'SELECT COUNT(*) AS n FROM locations c WHERE c.parent_id IS NOT NULL AND NOT EXISTS (SELECT 1 FROM locations p WHERE p.id = c.parent_id)',
++    );
++    assert.equal(orphans[0]!.n, 0);
++  });
++});
++
++describe('items', () => {
++  it('creates items with defaults and computes days_left in the household time zone', async () => {
++    const user = await newUser();
++    const h = await newHousehold(user, 'Asia/Singapore');
++    const loc = await newLocation(user, h.id, '冰箱');
++    const today = todayIn('Asia/Singapore');
++
++    const plain = await newItem(user, h.id, { name: '电池' });
++    assert.deepEqual(plain, {
++      id: plain.id,
++      name: '电池',
++      quantity: 1,
++      location_id: null,
++      expires_on: null,
++      days_left: null,
++    });
++
++    const milk = await newItem(user, h.id, {
++      name: '牛奶',
++      quantity: 2,
++      location_id: loc.id,
++      expires_on: addDays(today, 3),
++    });
++    assert.deepEqual(milk, {
++      id: milk.id,
++      name: '牛奶',
++      quantity: 2,
++      location_id: loc.id,
++      expires_on: addDays(today, 3),
++      days_left: 3,
++    });
++    assert.equal((await newItem(user, h.id, { name: 'a', expires_on: today })).days_left, 0);
++    assert.equal((await newItem(user, h.id, { name: 'b', expires_on: addDays(today, -1) })).days_left, -1);
++    assert.equal((await newItem(user, h.id, { name: 'c', quantity: 0 })).quantity, 0);
++
++    const got = await api('GET', `/v1/households/${h.id}/items/${milk.id}`, { token: user.token });
++    expectStatus(got, 200);
++    assert.deepEqual(got.body, milk);
++  });
++
++  it('uses each household’s own "today"', async () => {
++    // UTC+14 and UTC-11 are always on different calendar dates.
++    const user = await newUser();
++    const east = await newHousehold(user, 'Pacific/Kiritimati');
++    const west = await newHousehold(user, 'Pacific/Pago_Pago');
++    const date = todayIn('Pacific/Kiritimati');
++    const a = await newItem(user, east.id, { name: 'x', expires_on: date });
++    const b = await newItem(user, west.id, { name: 'x', expires_on: date });
++    assert.equal(a.days_left, 0);
++    assert.equal(b.days_left, daysBetween(date, todayIn('Pacific/Pago_Pago')));
++    assert.ok(b.days_left >= 1);
++  });
++
++  it('validates item fields', async () => {
++    const user = await newUser();
++    const other = await newUser();
++    const h = await newHousehold(user);
++    const otherH = await newHousehold(other);
++    const foreignLoc = await newLocation(other, otherH.id, '别人家');
++    const path = `/v1/households/${h.id}/items`;
++    for (const body of [
++      {},
++      { name: '' },
++      { name: '   ' },
++      { name: null },
++      { name: 3 },
++      { name: 'x', quantity: -1 },
++      { name: 'x', quantity: 1.5 },
++      { name: 'x', quantity: '2' },
++      { name: 'x', quantity: true },
++      { name: 'x', quantity: null },
++      { name: 'x', expires_on: '2026-02-30' },
++      { name: 'x', expires_on: '2026-2-3' },
++      { name: 'x', expires_on: '2026-13-01' },
++      { name: 'x', expires_on: '2027-02-29' },
++      { name: 'x', expires_on: '2026-11-20T00:00:00Z' },
++      { name: 'x', expires_on: ' 2026-11-20' },
++      { name: 'x', expires_on: 20261120 },
++      { name: 'x', location_id: 7 },
++      { name: 'x', location_id: 'loc_missing' },
++      { name: 'x', location_id: foreignLoc.id },
++    ]) {
++      expectError(await api('POST', path, { token: user.token, body }), 400);
++    }
++    expectStatus(await api('POST', path, { token: user.token, body: { name: 'leap', expires_on: '2028-02-29' } }), 201);
++  });
++
++  it('patches only the fields present, with null clearing', async () => {
++    const user = await newUser();
++    const h = await newHousehold(user);
++    const loc = await newLocation(user, h.id, '储物间');
++    const loc2 = await newLocation(user, h.id, '车库');
++    const item = await newItem(user, h.id, { name: '米', quantity: 5, location_id: loc.id, expires_on: '2030-01-01' });
++    const p = `/v1/households/${h.id}/items/${item.id}`;
++
++    let r = await api('PATCH', p, { token: user.token, body: { quantity: 4 } });
++    expectStatus(r, 200);
++    assert.deepEqual(r.body, { ...item, quantity: 4 });
++
++    r = await api('PATCH', p, { token: user.token, body: { expires_on: null, location_id: null } });
++    expectStatus(r, 200);
++    assert.deepEqual(r.body, { ...item, quantity: 4, expires_on: null, location_id: null, days_left: null });
++
++    r = await api('PATCH', p, { token: user.token, body: { name: '大米', location_id: loc2.id, expires_on: '2031-06-30' } });
++    expectStatus(r, 200);
++    assert.equal(r.body.name, '大米');
++    assert.equal(r.body.location_id, loc2.id);
++    assert.equal(r.body.expires_on, '2031-06-30');
++    assert.equal(r.body.days_left, daysBetween('2031-06-30', todayIn(h.timezone)));
++
++    r = await api('PATCH', p, { token: user.token, body: {} });
++    expectStatus(r, 200);
++    assert.equal(r.body.name, '大米');
++
++    for (const body of [
++      { name: null },
++      { name: '' },
++      { quantity: -3 },
++      { quantity: null },
++      { expires_on: '2026-02-30' },
++      { location_id: 'loc_missing' },
++    ]) {
++      expectError(await api('PATCH', p, { token: user.token, body }), 400);
++    }
++    expectError(await api('PATCH', p, { token: user.token, raw: '[1,2' }), 400);
++    const unchanged = await api('GET', p, { token: user.token });
++    assert.equal(unchanged.body.name, '大米');
++    assert.equal(unchanged.body.quantity, 4);
++  });
++
++  it('deletes items and hides other households’ items', async () => {
++    const user = await newUser();
++    const other = await newUser();
++    const h = await newHousehold(user);
++    const otherH = await newHousehold(other);
++    const mine = await newItem(user, h.id, { name: 'mine' });
++    const theirs = await newItem(other, otherH.id, { name: 'theirs' });
++
++    // their item addressed through my household, and through theirs
++    for (const path of [`/v1/households/${h.id}/items/${theirs.id}`, `/v1/households/${otherH.id}/items/${theirs.id}`]) {
++      expectError(await api('GET', path, { token: user.token }), 404);
++      expectError(await api('PATCH', path, { token: user.token, body: { name: 'hacked' } }), 404);
++      expectError(await api('DELETE', path, { token: user.token }), 404);
++    }
++    const still = await api('GET', `/v1/households/${otherH.id}/items/${theirs.id}`, { token: other.token });
++    assert.equal(still.body.name, 'theirs');
++
++    const p = `/v1/households/${h.id}/items/${mine.id}`;
++    const del = await api('DELETE', p, { token: user.token });
++    expectStatus(del, 204);
++    assert.equal(del.body, null);
++    expectError(await api('GET', p, { token: user.token }), 404);
++    expectError(await api('DELETE', p, { token: user.token }), 404);
++  });
++});
++
++describe('item listing', () => {
++  it('validates query parameters', async () => {
++    const user = await newUser();
++    const h = await newHousehold(user);
++    const p = `/v1/households/${h.id}/items`;
++    for (const q of [
++      'limit=0',
++      'limit=101',
++      'limit=-1',
++      'limit=abc',
++      'limit=1.5',
++      'limit=',
++      'cursor=garbage',
++      'cursor=',
++      `cursor=${Buffer.from('{"v":1}').toString('base64url')}`,
++      'expiring_within_days=-1',
++      'expiring_within_days=366',
++      'expiring_within_days=x',
++      'expiring_within_days=1.5',
++      'expired=yes',
++      'expired=true&expiring_within_days=3',
++    ]) {
++      expectError(await api('GET', `${p}?${q}`, { token: user.token }), 400);
++    }
++    for (const q of ['limit=1', 'limit=100', 'expiring_within_days=0', 'expiring_within_days=365', 'expired=true']) {
++      expectStatus(await api('GET', `${p}?${q}`, { token: user.token }), 200);
++    }
++  });
++
++  it('pages through every item exactly once in creation order', async () => {
++    const user = await newUser();
++    const h = await newHousehold(user);
++    const created: string[] = [];
++    for (let i = 0; i < 23; i++) created.push((await newItem(user, h.id, { name: `item-${i}` })).id);
++
++    const first = await api('GET', `/v1/households/${h.id}/items`, { token: user.token });
++    assert.equal(first.body.items.length, 20); // default limit
++    assert.equal(typeof first.body.next_cursor, 'string');
++
++    for (const limit of [1, 5, 7, 23, 100]) {
++      const items = await listAll(user, h.id, {}, limit);
++      assert.deepEqual(items.map((i) => i.id), created, `limit=${limit}`);
++    }
++
++    const exact = await api('GET', `/v1/households/${h.id}/items?limit=23`, { token: user.token });
++    assert.equal(exact.body.next_cursor, null);
++
++    const empty = await newHousehold(user);
++    const none = await api('GET', `/v1/households/${empty.id}/items`, { token: user.token });
++    assert.deepEqual(none.body, { items: [], next_cursor: null });
++  });
++
++  it('keeps paging correctly while returned items are deleted', async () => {
++    const user = await newUser();
++    const h = await newHousehold(user);
++    const ids: string[] = [];
++    for (let i = 0; i < 12; i++) ids.push((await newItem(user, h.id, { name: `n${i}` })).id);
++    const p = `/v1/households/${h.id}/items`;
++    const del = (id: string) => api('DELETE', `${p}/${id}`, { token: user.token });
++
++    const page1 = await api('GET', `${p}?limit=5`, { token: user.token });
++    assert.deepEqual(names(page1.body.items), ['n0', 'n1', 'n2', 'n3', 'n4']);
++    for (const item of page1.body.items) expectStatus(await del(item.id), 204); // incl. the cursor row
++
++    const page2 = await api('GET', `${p}?limit=5&cursor=${encodeURIComponent(page1.body.next_cursor)}`, {
++      token: user.token,
++    });
++    expectStatus(page2, 200);
++    assert.deepEqual(names(page2.body.items), ['n5', 'n6', 'n7', 'n8', 'n9']);
++    expectStatus(await del(ids[9]!), 204); // last row of this page
++    expectStatus(await del(ids[6]!), 204);
++
++    const page3 = await api('GET', `${p}?limit=5&cursor=${encodeURIComponent(page2.body.next_cursor)}`, {
++      token: user.token,
++    });
++    expectStatus(page3, 200);
++    assert.deepEqual(names(page3.body.items), ['n10', 'n11']);
++    assert.equal(page3.body.next_cursor, null);
++  });
++
++  it('filters by expiry window and by expired, sorted by expires_on then creation', async () => {
++    const user = await newUser();
++    const tz = 'America/Los_Angeles';
++    const h = await newHousehold(user, tz);
++    const t = todayIn(tz);
++    // created deliberately out of date order
++    await newItem(user, h.id, { name: 'yesterday', expires_on: addDays(t, -1) });
++    await newItem(user, h.id, { name: 'tomorrow', expires_on: addDays(t, 1) });
++    await newItem(user, h.id, { name: 'today', expires_on: t });
++    await newItem(user, h.id, { name: 'plus3-first', expires_on: addDays(t, 3) });
++    await newItem(user, h.id, { name: 'no-expiry' });
++    await newItem(user, h.id, { name: 'plus4', expires_on: addDays(t, 4) });
++    await newItem(user, h.id, { name: 'two-days-ago', expires_on: addDays(t, -2) });
++    await newItem(user, h.id, { name: 'plus3-second', expires_on: addDays(t, 3) });
++    await newItem(user, h.id, { name: 'far', expires_on: addDays(t, 300) });
++
++    const within3 = await listAll(user, h.id, { expiring_within_days: '3' }, 100);
++    assert.deepEqual(names(within3), ['today', 'tomorrow', 'plus3-first', 'plus3-second']);
++    assert.deepEqual(within3.map((i) => i.days_left), [0, 1, 3, 3]);
++
++    assert.deepEqual(names(await listAll(user, h.id, { expiring_within_days: '0' }, 100)), ['today']);
++    assert.deepEqual(names(await listAll(user, h.id, { expiring_within_days: '365' }, 2)), [
++      'today',
++      'tomorrow',
++      'plus3-first',
++      'plus3-second',
++      'plus4',
++      'far',
++    ]);
++
++    const expired = await listAll(user, h.id, { expired: 'true' }, 1);
++    assert.deepEqual(names(expired), ['two-days-ago', 'yesterday']);
++    assert.deepEqual(expired.map((i) => i.days_left), [-2, -1]);
++
++    assert.equal((await listAll(user, h.id, { expired: 'false' }, 100)).length, 9);
++    assert.deepEqual(names(await listAll(user, h.id, {}, 4)), [
++      'yesterday',
++      'tomorrow',
++      'today',
++      'plus3-first',
++      'no-expiry',
++      'plus4',
++      'two-days-ago',
++      'plus3-second',
++      'far',
++    ]);
++  });
++
++  it('keeps filtered paging correct while returned items are deleted', async () => {
++    const user = await newUser();
++    const tz = 'Europe/Berlin';
++    const h = await newHousehold(user, tz);
++    const t = todayIn(tz);
++    const made: Json[] = [];
++    for (let i = 0; i < 10; i++) made.push(await newItem(user, h.id, { name: `d${i % 3}-${i}`, expires_on: addDays(t, i % 3) }));
++    await newItem(user, h.id, { name: 'outside', expires_on: addDays(t, 9) });
++    // Expected order: by date (i % 3), then creation.
++    const expected = [...made].sort((a, b) => a.expires_on.localeCompare(b.expires_on)).map((i) => i.name);
++
++    const p = `/v1/households/${h.id}/items`;
++    const seen: string[] = [];
++    let cursor: string | null = null;
++    do {
++      const q = new URLSearchParams({ expiring_within_days: '2', limit: '3' });
++      if (cursor) q.set('cursor', cursor);
++      const r = await api('GET', `${p}?${q}`, { token: user.token });
++      expectStatus(r, 200);
++      seen.push(...names(r.body.items));
++      for (const item of r.body.items) expectStatus(await api('DELETE', `${p}/${item.id}`, { token: user.token }), 204);
++      cursor = r.body.next_cursor;
++    } while (cursor);
++    assert.deepEqual(seen, expected);
++  });
++
++  it('rejects a cursor used with a different filter or another household', async () => {
++    const user = await newUser();
++    const h = await newHousehold(user);
++    const h2 = await newHousehold(user);
++    for (let i = 0; i < 3; i++) await newItem(user, h.id, { name: `x${i}`, expires_on: todayIn(h.timezone) });
++    const r = await api('GET', `/v1/households/${h.id}/items?limit=1&expiring_within_days=5`, { token: user.token });
++    const cursor = encodeURIComponent(r.body.next_cursor);
++    expectError(await api('GET', `/v1/households/${h.id}/items?cursor=${cursor}&expired=true`, { token: user.token }), 400);
++    expectError(
++      await api('GET', `/v1/households/${h.id}/items?cursor=${cursor}&expiring_within_days=6`, { token: user.token }),
++      400,
++    );
++    expectError(await api('GET', `/v1/households/${h2.id}/items?cursor=${cursor}`, { token: user.token }), 400);
++    // Same filter repeated, or omitted (the cursor carries it), both continue the listing.
++    const same = await api('GET', `/v1/households/${h.id}/items?cursor=${cursor}&expiring_within_days=5&limit=5`, {
++      token: user.token,
++    });
++    assert.deepEqual(names(same.body.items), ['x1', 'x2']);
++    const omitted = await api('GET', `/v1/households/${h.id}/items?cursor=${cursor}&limit=5`, { token: user.token });
++    assert.deepEqual(names(omitted.body.items), ['x1', 'x2']);
++  });
++
++  it('lists concurrently created items exactly once', async () => {
++    const user = await newUser();
++    const h = await newHousehold(user);
++    const created = await Promise.all(Array.from({ length: 20 }, (_, i) => newItem(user, h.id, { name: `c${i}` })));
++    const listed = await listAll(user, h.id, {}, 6);
++    assert.deepEqual(listed.map((i) => i.id).sort(), created.map((i) => i.id).sort());
++  });
++});
++
++describe('reminders', () => {
++  // 2027-03-09T16:30Z is 2027-03-10 00:30 in Singapore (UTC+8) but still 03-09 in UTC.
++  const T0 = Date.UTC(2027, 2, 9, 16, 30);
++  const HOUR = 3_600_000;
++
++  async function reminders(user: TestUser, householdId: string): Promise<Json[]> {
++    const r = await api('GET', `/v1/households/${householdId}/reminders`, { token: user.token });
++    expectStatus(r, 200);
++    return r.body.reminders;
++  }
++  const summary = (rs: Json[]) => rs.map((r) => `${r.remind_on} ${r.item_name} ${r.expires_on}`);
++
++  it('creates one reminder per item per local day, using scheduledTime in the household zone', async () => {
++    const user = await newUser();
++    const outsider = await newUser();
++    const h = await newHousehold(user, 'Asia/Singapore');
++    await newItem(user, h.id, { name: 'expired', expires_on: '2027-03-09' });
++    const milk = await newItem(user, h.id, { name: 'milk', expires_on: '2027-03-10' });
++    await newItem(user, h.id, { name: 'bread', expires_on: '2027-03-13' });
++    await newItem(user, h.id, { name: 'cheese', expires_on: '2027-03-14' });
++    await newItem(user, h.id, { name: 'salt' });
++    await newItem(user, h.id, { name: 'eggs', expires_on: '2027-03-11' });
++
++    await triggerCron(T0);
++    let rs = await reminders(user, h.id);
++    assert.deepEqual(summary(rs), [
++      '2027-03-10 milk 2027-03-10',
++      '2027-03-10 eggs 2027-03-11',
++      '2027-03-10 bread 2027-03-13',
++    ]);
++    assert.deepEqual(Object.keys(rs[0]).sort(), ['expires_on', 'id', 'item_id', 'item_name', 'remind_on']);
++    assert.equal(rs[0].item_id, milk.id);
++
++    // Re-runs later the same local day, including several at once, add nothing.
++    await triggerCron(T0 + 5 * HOUR);
++    await Promise.all(Array.from({ length: 8 }, () => triggerCron(T0 + 10 * HOUR)));
++    rs = await reminders(user, h.id);
++    assert.equal(rs.length, 3);
++
++    // Next local day: a fresh reminder for whatever is still within range.
++    await triggerCron(T0 + 24 * HOUR);
++    rs = await reminders(user, h.id);
++    assert.deepEqual(summary(rs), [
++      '2027-03-10 milk 2027-03-10',
++      '2027-03-10 eggs 2027-03-11',
++      '2027-03-10 bread 2027-03-13',
++      '2027-03-11 eggs 2027-03-11',
++      '2027-03-11 bread 2027-03-13',
++      '2027-03-11 cheese 2027-03-14',
++    ]);
++    assert.equal(new Set(rs.map((r) => r.id)).size, 6);
++
++    expectError(await api('GET', `/v1/households/${h.id}/reminders`, { token: outsider.token }), 404);
++  });
++
++  it('computes "today" per household time zone', async () => {
++    const user = await newUser();
++    // At 2028-07-01T05:00Z it is 2028-07-01 in Tokyo but still 2028-06-30 in Los Angeles.
++    const at = Date.UTC(2028, 6, 1, 5, 0);
++    const tokyo = await newHousehold(user, 'Asia/Tokyo');
++    const la = await newHousehold(user, 'America/Los_Angeles');
++    for (const h of [tokyo, la]) {
++      await newItem(user, h.id, { name: 'jun30', expires_on: '2028-06-30' });
++      await newItem(user, h.id, { name: 'jul03', expires_on: '2028-07-03' });
++      await newItem(user, h.id, { name: 'jul04', expires_on: '2028-07-04' });
++    }
++    await triggerCron(at);
++    assert.deepEqual(summary(await reminders(user, tokyo.id)), ['2028-07-01 jul03 2028-07-03', '2028-07-01 jul04 2028-07-04']);
++    assert.deepEqual(summary(await reminders(user, la.id)), ['2028-06-30 jun30 2028-06-30', '2028-06-30 jul03 2028-07-03']);
++  });
++
++  it('follows renames and disappears with the item', async () => {
++    const user = await newUser();
++    const h = await newHousehold(user, 'UTC');
++    const item = await newItem(user, h.id, { name: 'yoghurt', expires_on: '2029-01-02' });
++    await triggerCron(Date.UTC(2029, 0, 1, 12));
++    const p = `/v1/households/${h.id}/items/${item.id}`;
++    expectStatus(await api('PATCH', p, { token: user.token, body: { name: 'greek yoghurt' } }), 200);
++    assert.deepEqual(summary(await reminders(user, h.id)), ['2029-01-01 greek yoghurt 2029-01-02']);
++    expectStatus(await api('DELETE', p, { token: user.token }), 204);
++    assert.deepEqual(await reminders(user, h.id), []);
++  });
++});
+diff --git a/test/server.ts b/test/server.ts
+new file mode 100644
+index 0000000..06faf0b
+--- /dev/null
++++ b/test/server.ts
+@@ -0,0 +1,90 @@
++// Boots a real `wrangler dev --local` against a throw-away D1 database, the same way the
++// service is run for acceptance, and exposes small helpers for HTTP calls and direct SQL.
++
++import { spawn, execFile, type ChildProcess } from 'node:child_process';
++import { mkdtempSync, rmSync } from 'node:fs';
++import { createServer } from 'node:net';
++import { join, resolve } from 'node:path';
++import { promisify } from 'node:util';
++
++const execFileAsync = promisify(execFile);
++const ROOT = resolve(import.meta.dirname, '..');
++const WRANGLER = join(ROOT, 'node_modules', '.bin', 'wrangler');
++
++async function freePort(): Promise<number> {
++  return new Promise((ok, fail) => {
++    const srv = createServer();
++    srv.once('error', fail);
++    srv.listen(0, '127.0.0.1', () => {
++      const addr = srv.address();
++      srv.close(() => (typeof addr === 'object' && addr ? ok(addr.port) : fail(new Error('no port'))));
++    });
++  });
++}
++
++export interface TestServer {
++  base: string;
++  /** Runs SQL directly against the local D1 database (for test setup such as expiring an invite). */
++  sql(command: string): Promise<Record<string, unknown>[]>;
++  stop(): Promise<void>;
++}
++
++export async function startServer(): Promise<TestServer> {
++  const stateDir = mkdtempSync(join(ROOT, '.test-state-'));
++  const env = { ...process.env, WRANGLER_SEND_METRICS: 'false', CI: '1', NO_COLOR: '1' };
++
++  await execFileAsync(WRANGLER, ['d1', 'migrations', 'apply', 'DB', '--local', '--persist-to', stateDir], {
++    cwd: ROOT,
++    env,
++  });
++
++  const port = await freePort();
++  const child: ChildProcess = spawn(
++    WRANGLER,
++    ['dev', '--local', '--ip', '127.0.0.1', '--port', String(port), '--persist-to', stateDir, '--inspector-port', '0'],
++    { cwd: ROOT, env, stdio: ['ignore', 'pipe', 'pipe'] },
++  );
++  let log = '';
++  child.stdout?.on('data', (d) => (log += d));
++  child.stderr?.on('data', (d) => (log += d));
++
++  const base = `http://127.0.0.1:${port}`;
++  const deadline = Date.now() + 60_000;
++  for (;;) {
++    if (child.exitCode !== null) throw new Error(`wrangler dev exited early:\n${log}`);
++    try {
++      const res = await fetch(`${base}/v1/me`);
++      await res.body?.cancel();
++      if (res.status === 401) break;
++    } catch {
++      // not listening yet
++    }
++    if (Date.now() > deadline) {
++      child.kill('SIGTERM');
++      throw new Error(`wrangler dev did not become ready:\n${log}`);
++    }
++    await new Promise((r) => setTimeout(r, 250));
++  }
++
++  return {
++    base,
++    async sql(command) {
++      const { stdout } = await execFileAsync(
++        WRANGLER,
++        ['d1', 'execute', 'DB', '--local', '--persist-to', stateDir, '--json', '--command', command],
++        { cwd: ROOT, env },
++      );
++      const parsed = JSON.parse(stdout) as { results: Record<string, unknown>[] }[];
++      return parsed.flatMap((r) => r.results);
++    },
++    async stop() {
++      if (child.exitCode === null) {
++        const exited = new Promise((r) => child.once('exit', r));
++        child.kill('SIGTERM');
++        await Promise.race([exited, new Promise((r) => setTimeout(r, 5000))]);
++        if (child.exitCode === null) child.kill('SIGKILL');
++      }
++      rmSync(stateDir, { recursive: true, force: true });
++    },
++  };
++}
+diff --git a/test/tsconfig.json b/test/tsconfig.json
+new file mode 100644
+index 0000000..b10c0f1
+--- /dev/null
++++ b/test/tsconfig.json
+@@ -0,0 +1,8 @@
++{
++  "extends": "../tsconfig.json",
++  "compilerOptions": {
++    "lib": ["es2023", "dom"],
++    "types": ["node"]
++  },
++  "include": ["./**/*.ts"]
++}
+diff --git a/test/unit.test.ts b/test/unit.test.ts
+new file mode 100644
+index 0000000..9503d12
+--- /dev/null
++++ b/test/unit.test.ts
+@@ -0,0 +1,179 @@
++// Unit tests for the pure modules. Run with: npm run test:unit
++
++import assert from 'node:assert/strict';
++import { describe, it } from 'node:test';
++import { decodeCursor, encodeCursor, type ItemCursor } from '../src/cursor.ts';
++import { base64UrlDecode, base64UrlEncode, hashPassword, verifyPassword } from '../src/crypto.ts';
++import { addDays, dateInTimeZone, dayNumber, diffDays, fromDayNumber, isValidDate, normalizeTimeZone } from '../src/dates.ts';
++import { normalizeEmail, parseIntParam, passwordLength } from '../src/validate.ts';
++
++describe('isValidDate', () => {
++  it('accepts real dates only, in strict YYYY-MM-DD form', () => {
++    for (const ok of ['2026-11-20', '2024-02-29', '2000-02-29', '0001-01-01', '9999-12-31', '2026-12-31']) {
++      assert.equal(isValidDate(ok), true, ok);
++    }
++    for (const bad of [
++      '2026-02-30',
++      '2026-2-3',
++      '2026-02-3',
++      '2023-02-29',
++      '1900-02-29',
++      '2026-04-31',
++      '2026-13-01',
++      '2026-00-10',
++      '2026-01-00',
++      '0000-01-01',
++      '20261120',
++      '2026/11/20',
++      '2026-11-20 ',
++      '2026-11-20T00:00',
++      '+2026-11-20',
++      '２０２６-11-20',
++      '',
++      null,
++      20261120,
++    ]) {
++      assert.equal(isValidDate(bad), false, String(bad));
++    }
++  });
++});
++
++describe('day arithmetic', () => {
++  it('matches Date.UTC for a wide range and round-trips', () => {
++    for (let n = dayNumber('1890-01-01'); n <= dayNumber('2110-12-31'); n += 7) {
++      const s = fromDayNumber(n);
++      assert.equal(Date.UTC(+s.slice(0, 4), +s.slice(5, 7) - 1, +s.slice(8, 10)) / 86_400_000, n);
++      assert.equal(dayNumber(s), n);
++    }
++    assert.equal(dayNumber('1970-01-01'), 0);
++    assert.equal(fromDayNumber(dayNumber('0001-01-01')), '0001-01-01');
++  });
++
++  it('adds and subtracts days across month, year and leap boundaries', () => {
++    assert.equal(addDays('2024-02-28', 1), '2024-02-29');
++    assert.equal(addDays('2023-02-28', 1), '2023-03-01');
++    assert.equal(addDays('2026-12-31', 1), '2027-01-01');
++    assert.equal(addDays('2026-11-20', 365), '2027-11-20');
++    assert.equal(addDays('2026-03-01', -1), '2026-02-28');
++    assert.equal(addDays('9999-12-30', 365), '9999-12-31');
++    assert.equal(diffDays('2026-11-20', '2026-11-17'), 3);
++    assert.equal(diffDays('2026-11-16', '2026-11-17'), -1);
++    assert.equal(diffDays('2025-01-01', '2024-01-01'), 366);
++  });
++});
++
++describe('dateInTimeZone', () => {
++  it('returns the local calendar date of an instant', () => {
++    const t = Date.UTC(2026, 10, 19, 16, 30); // 2026-11-19T16:30Z
++    assert.equal(dateInTimeZone(t, 'UTC'), '2026-11-19');
++    assert.equal(dateInTimeZone(t, 'Asia/Singapore'), '2026-11-20');
++    assert.equal(dateInTimeZone(t, 'America/New_York'), '2026-11-19');
++    assert.equal(dateInTimeZone(Date.UTC(2026, 10, 19, 10, 15), 'Pacific/Kiritimati'), '2026-11-20');
++    assert.equal(dateInTimeZone(Date.UTC(2026, 10, 19, 10, 15), 'Pacific/Pago_Pago'), '2026-11-18');
++    // half-hour and 45-minute offsets
++    assert.equal(dateInTimeZone(Date.UTC(2026, 10, 19, 18, 29), 'Asia/Kolkata'), '2026-11-19');
++    assert.equal(dateInTimeZone(Date.UTC(2026, 10, 19, 18, 30), 'Asia/Kolkata'), '2026-11-20');
++    assert.equal(dateInTimeZone(Date.UTC(2026, 10, 19, 10, 15), 'Asia/Kathmandu'), '2026-11-19');
++    assert.equal(dateInTimeZone(Date.UTC(2026, 10, 20, 10, 15), 'Pacific/Chatham'), '2026-11-21');
++  });
++
++  it('handles DST transitions', () => {
++    // US DST ends 2026-11-01 at 06:00Z. 05:30Z is 01:30 EDT; local midnight afterwards is 05:00Z (EST).
++    assert.equal(dateInTimeZone(Date.UTC(2026, 10, 1, 5, 30), 'America/New_York'), '2026-11-01');
++    assert.equal(dateInTimeZone(Date.UTC(2026, 10, 2, 4, 59), 'America/New_York'), '2026-11-01');
++    assert.equal(dateInTimeZone(Date.UTC(2026, 10, 2, 5, 0), 'America/New_York'), '2026-11-02');
++  });
++});
++
++describe('normalizeTimeZone', () => {
++  it('accepts IANA names and canonicalises case', () => {
++    assert.equal(normalizeTimeZone('Asia/Singapore'), 'Asia/Singapore');
++    assert.equal(normalizeTimeZone('asia/singapore'), 'Asia/Singapore');
++    assert.equal(normalizeTimeZone('UTC'), 'UTC');
++    assert.equal(normalizeTimeZone('America/Argentina/Buenos_Aires'), 'America/Argentina/Buenos_Aires');
++    assert.equal(normalizeTimeZone('Etc/GMT+5'), 'Etc/GMT+5');
++  });
++
++  it('rejects anything else', () => {
++    for (const bad of ['', 'Mars/Phobos', 'Asia/Singapur', '+08:00', '-05:00', 'UTC+8', 'Asia/', '/UTC', 'Asia Singapore', 8, null]) {
++      assert.equal(normalizeTimeZone(bad), null, String(bad));
++    }
++  });
++});
++
++describe('cursor', () => {
++  const cases: ItemCursor[] = [
++    { householdId: 'hh_1', filter: { kind: 'all' }, seq: 42, expiresOn: null },
++    { householdId: 'hh_1', filter: { kind: 'expiring', days: 3, today: '2026-11-08' }, seq: 7, expiresOn: '2026-11-09' },
++    { householdId: 'hh_1', filter: { kind: 'expired', today: '2026-11-08' }, seq: 1, expiresOn: '2026-01-01' },
++  ];
++
++  it('round-trips', () => {
++    for (const c of cases) {
++      const encoded = encodeCursor(c);
++      assert.match(encoded, /^[A-Za-z0-9_-]+$/);
++      assert.deepEqual(decodeCursor(encoded), c);
++    }
++  });
++
++  it('rejects anything it did not produce', () => {
++    const wire = (o: unknown) => Buffer.from(JSON.stringify(o)).toString('base64url');
++    for (const bad of [
++      '',
++      'garbage!',
++      'a',
++      wire(null),
++      wire([1]),
++      wire({ v: 2, h: 'hh_1', k: 'a', s: 1 }),
++      wire({ v: 1, h: 'hh_1', k: 'a', s: 0 }),
++      wire({ v: 1, h: 'hh_1', k: 'a', s: 1.5 }),
++      wire({ v: 1, h: 'hh_1', k: 'a', s: '1' }),
++      wire({ v: 1, h: 'hh_1', k: 'a', s: 1, extra: true }),
++      wire({ v: 1, h: 'hh_1', k: 'e', s: 1, d: '2026-02-30', t: '2026-11-08', n: 3 }),
++      wire({ v: 1, h: 'hh_1', k: 'e', s: 1, d: '2026-11-09', t: '2026-11-08', n: 366 }),
++      wire({ v: 1, h: 'hh_1', k: 'x', s: 1, t: '2026-11-08' }),
++      wire({ v: 1, h: 'hh_1', k: 'z', s: 1 }),
++      'x'.repeat(600),
++    ]) {
++      assert.equal(decodeCursor(bad), null, bad);
++    }
++  });
++});
++
++describe('encodings and passwords', () => {
++  it('base64url round-trips and rejects non-canonical input', () => {
++    const bytes = new Uint8Array([0, 1, 2, 250, 251, 252, 253, 254, 255]);
++    assert.deepEqual(base64UrlDecode(base64UrlEncode(bytes)), bytes);
++    assert.equal(base64UrlDecode('ab+/'), null);
++    assert.equal(base64UrlDecode('a'), null);
++    assert.equal(base64UrlDecode('QR'), null); // stray low bits; canonical form is "QQ"
++  });
++
++  it('hashes passwords with a random salt and verifies them', async () => {
++    const a = await hashPassword('correct horse');
++    const b = await hashPassword('correct horse');
++    assert.notEqual(a, b);
++    assert.ok(!a.includes('correct horse'));
++    assert.equal(await verifyPassword('correct horse', a), true);
++    assert.equal(await verifyPassword('correct horsf', a), false);
++    assert.equal(await verifyPassword('correct horse', 'garbage'), false);
++  });
++});
++
++describe('validation helpers', () => {
++  it('normalises emails', () => {
++    assert.equal(normalizeEmail(' A@Example.COM '), 'a@example.com');
++    for (const bad of ['no-at', '@example.com', 'a@', 'a b@example.com', '', 5]) assert.equal(normalizeEmail(bad), null);
++  });
++
++  it('counts password characters by code point', () => {
++    assert.equal(passwordLength('12345678'), 8);
++    assert.equal(passwordLength('😀😀😀😀'), 4);
++  });
++
++  it('parses strict integers', () => {
++    assert.equal(parseIntParam('20'), 20);
++    assert.equal(parseIntParam('0'), 0);
++    for (const bad of ['', '-1', '+1', '1.0', '1e2', ' 1', 'abc', '9999999999']) assert.equal(parseIntParam(bad), null, bad);
++  });
++});
+diff --git a/tsconfig.json b/tsconfig.json
+new file mode 100644
+index 0000000..a2eb34c
+--- /dev/null
++++ b/tsconfig.json
+@@ -0,0 +1,22 @@
++{
++  "compilerOptions": {
++    "target": "es2022",
++    "module": "es2022",
++    "moduleResolution": "bundler",
++    "lib": ["es2022"],
++    "types": ["@cloudflare/workers-types"],
++    "strict": true,
++    "noUncheckedIndexedAccess": true,
++    "noUnusedLocals": true,
++    "noUnusedParameters": true,
++    "noImplicitReturns": true,
++    "noFallthroughCasesInSwitch": true,
++    "allowImportingTsExtensions": true,
++    "erasableSyntaxOnly": true,
++    "verbatimModuleSyntax": true,
++    "isolatedModules": true,
++    "noEmit": true,
++    "skipLibCheck": true
++  },
++  "include": ["src"]
++}
+diff --git a/wrangler.jsonc b/wrangler.jsonc
+new file mode 100644
+index 0000000..f6182c6
+--- /dev/null
++++ b/wrangler.jsonc
+@@ -0,0 +1,20 @@
++{
++  "$schema": "node_modules/wrangler/config-schema.json",
++  "name": "household-items-service",
++  "main": "src/index.ts",
++  "compatibility_date": "2026-10-01",
++  "d1_databases": [
++    {
++      "binding": "DB",
++      "database_name": "household-items",
++      // Local development only: wrangler uses this id to name the local SQLite file.
++      // Replace with a real id from `wrangler d1 create` before any deployment.
++      "database_id": "00000000-0000-4000-8000-000000000001",
++      "migrations_dir": "migrations"
++    }
++  ],
++  "triggers": {
++    "crons": ["0 * * * *"]
++  },
++  "observability": { "enabled": true }
++}

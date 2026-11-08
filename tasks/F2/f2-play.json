@@ -1,0 +1,16 @@
+{"bundleId":"BUNDLE","launchArgs":ARGS,"steps":[
+ {"op":"wait","t":2.5},
+ {"op":"shot","path":"SHOTS/k1.png"},
+ {"op":"tap","x":0.455,"y":0.350},{"op":"wait","t":1.0},
+ {"op":"shot","path":"SHOTS/k2.png"},
+ {"op":"tap","x":0.386,"y":0.418},{"op":"wait","t":1.0},
+ {"op":"shot","path":"SHOTS/k3.png"},
+ {"op":"tap","x":0.386,"y":0.418},{"op":"wait","t":1.0},
+ {"op":"shot","path":"SHOTS/k4.png"},
+ {"op":"drag","x":0.5,"y":0.78,"x2":0.5,"y2":0.54,"v":600,"after":0.3},{"op":"wait","t":1.2},
+ {"op":"shot","path":"SHOTS/k5.png"},
+ {"op":"tap","x":0.30,"y":0.614},{"op":"wait","t":2.2},
+ {"op":"shot","path":"SHOTS/k6.png"},
+ {"op":"drag","x":0.005,"y":0.5,"x2":0.85,"y2":0.5,"v":1500},{"op":"wait","t":1.5},
+ {"op":"shot","path":"SHOTS/k7.png"}
+]}
