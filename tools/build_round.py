@@ -163,6 +163,9 @@ def main(rid):
         print(k, {m: v[m] for m in ('quality', 'speed', 'cost', 'seconds', 'cost_usd', 'complete')})
     for t, e in tasks.items():
         print(t, {k: (x['status'], x.get('quality'), x.get('speed'), x.get('cost')) for k, x in e['tools'].items()})
+    # 这一轮的成绩变了，总览的数据跟着更新
+    import build_overview
+    build_overview.main()
 
 
 if __name__ == '__main__':

@@ -1,0 +1,666 @@
+<title>ShipBench 总览</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans+Condensed:wght@500;600;700&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&display=swap">
+<style>
+/* Layout: same lab-report language as the round reports. Results first (leaderboard, then trade-off, dimensions, tasks), then the round index, the plan and the method. One marker per configuration carries every comparison. */
+:root {
+  --paper: #f4f6f3;
+  --panel: #ffffff;
+  --ink: #17212b;
+  --muted: #5a6672;
+  --rule: #d6dbd4;
+  --rule2: #b7bfb6;
+  --soft: #e9ede7;
+  --cc: #b9502a;
+  --cx: #1f6d9a;
+  --e3: #a3761a;
+  --e4: #7b4aa8;
+  --e5: #16866a;
+  --ok: #2f7a4f;
+  --display: "IBM Plex Sans Condensed", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Arial Narrow", sans-serif;
+  --body: "IBM Plex Sans", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", system-ui, sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --paper: #111518; --panel: #181d21; --ink: #e5e9e3; --muted: #9aa5ad; --rule: #2b3238; --rule2: #454e55; --soft: #20262b;
+    --cc: #d96a3f; --cx: #3d94c9; --e3: #b08d1e; --e4: #a173dc; --e5: #2ba584; --ok: #6cc08e; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --paper: #111518; --panel: #181d21; --ink: #e5e9e3; --muted: #9aa5ad; --rule: #2b3238; --rule2: #454e55; --soft: #20262b;
+  --cc: #d96a3f; --cx: #3d94c9; --e3: #b08d1e; --e4: #a173dc; --e5: #2ba584; --ok: #6cc08e; color-scheme: dark;
+}
+html[data-lang="zh"] [data-l="en"], html[data-lang="en"] [data-l="zh"] { display: none !important; }
+html { scroll-behavior: smooth; }
+@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+body { background: var(--paper); color: var(--ink); font-family: var(--body); font-size: 15px; line-height: 1.6; }
+.wrap { max-width: 1040px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 26px 64px; }
+h1, h2, h3 { font-family: var(--display); text-wrap: balance; line-height: 1.15; margin: 0; }
+h1 { font-size: clamp(32px, 5.4vw, 50px); font-weight: 700; letter-spacing: -0.01em; }
+h2 { font-size: 26px; font-weight: 600; }
+h3 { font-size: 18px; font-weight: 600; }
+p { margin: 0; max-width: 72ch; }
+a { color: inherit; text-decoration-color: var(--muted); text-underline-offset: 3px; }
+a:focus-visible, button:focus-visible, summary:focus-visible { outline: 2px solid var(--cx); outline-offset: 2px; border-radius: 3px; }
+code { font-family: var(--mono); font-size: 0.88em; background: var(--soft); padding: 1px 5px; border-radius: 3px; }
+.muted { color: var(--muted); }
+.small { font-size: 13px; }
+
+header.top { display: grid; gap: 12px; padding-bottom: 18px; border-bottom: 1px solid var(--rule); }
+.brandrow { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.brand { font-family: var(--mono); font-size: 14px; font-weight: 500; letter-spacing: 0.04em; }
+.lang, .seg { display: inline-flex; border: 1px solid var(--rule); border-radius: 999px; overflow: hidden; flex: none; }
+.lang button, .seg button { font: 500 13px var(--body); padding: 5px 13px; border: 0; background: transparent; color: var(--muted); cursor: pointer; }
+.lang button[aria-pressed="true"], .seg button[aria-pressed="true"] { background: var(--ink); color: var(--paper); }
+.lead { font-size: 17px; color: var(--muted); max-width: 66ch; }
+.facts { font-family: var(--mono); font-size: 12.5px; color: var(--muted); max-width: none; }
+.toc { display: flex; flex-wrap: wrap; gap: 4px 18px; font-size: 14px; padding-top: 2px; }
+.toc a { text-decoration: none; color: var(--muted); }
+.toc a:hover { color: var(--ink); text-decoration: underline; }
+
+section { display: grid; gap: 14px; padding-block: 36px 0; scroll-margin-top: 12px; min-width: 0; }
+.sh { display: grid; gap: 4px; }
+.sets { display: flex; flex-wrap: wrap; gap: 8px; }
+.sets button { font: 500 13px var(--mono); padding: 5px 12px; border: 1px solid var(--rule); border-radius: 4px; background: var(--panel); color: var(--muted); cursor: pointer; }
+.sets button[aria-pressed="true"] { background: var(--ink); border-color: var(--ink); color: var(--paper); }
+.legend { display: flex; flex-wrap: wrap; gap: 6px 18px; font-size: 13px; color: var(--muted); }
+.legend span { display: inline-flex; align-items: center; gap: 6px; }
+.legend b { color: var(--ink); font-weight: 600; }
+.mk { flex: none; display: inline-block; vertical-align: -2px; overflow: visible; }
+.mk path { fill: var(--c); stroke: var(--panel); stroke-width: 2; paint-order: stroke; }
+.mk path.h { fill: var(--panel); stroke: var(--c); stroke-width: 2.4; }
+
+.tablewrap { overflow-x: auto; background: var(--panel); border: 1px solid var(--rule); border-radius: 6px; }
+table { border-collapse: collapse; width: 100%; font-size: 14px; }
+th, td { padding: 9px 12px; text-align: left; vertical-align: top; border-bottom: 1px solid var(--rule); }
+th { font-family: var(--mono); font-size: 11px; font-weight: 500; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); white-space: nowrap; }
+tbody tr:last-child td { border-bottom: 0; }
+td.n, th.n { text-align: right; }
+td.n { font-family: var(--mono); font-variant-numeric: tabular-nums; white-space: nowrap; }
+td.id { font-family: var(--mono); font-weight: 500; white-space: nowrap; }
+
+table.lb td { vertical-align: middle; padding-block: 14px; }
+.who { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.who .nm { display: grid; min-width: 0; }
+.who b { font-family: var(--display); font-size: 21px; font-weight: 600; line-height: 1.2; }
+.who small { font-family: var(--mono); font-size: 12px; color: var(--muted); }
+.eff { font-family: var(--mono); font-size: 12px; font-weight: 500; border: 1px solid var(--rule2); border-radius: 3px; padding: 0 5px; margin-left: 6px; vertical-align: 2px; }
+.sc-c { display: grid; gap: 5px; min-width: 88px; }
+.sc-c .v { font-family: var(--display); font-weight: 500; font-size: 22px; line-height: 1; }
+.sc-c.q { min-width: 150px; }
+.sc-c.q .v { font-size: 38px; font-weight: 700; }
+.sc-c.top .v { font-weight: 700; }
+.bar { height: 6px; background: var(--soft); border-radius: 3px; overflow: hidden; }
+.bar i { display: block; height: 100%; background: var(--c); border-radius: 0 3px 3px 0; }
+@media (max-width: 680px) {
+  table.lb thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+  table.lb tr { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; padding: 14px; border-bottom: 1px solid var(--rule); }
+  table.lb tbody tr:last-child { border-bottom: 0; }
+  table.lb td { display: block; padding: 0; border: 0; text-align: left; }
+  table.lb td.m { grid-column: 1 / -1; }
+  table.lb td[data-th]::before { content: attr(data-th); display: block; font-size: 12px; color: var(--muted); margin-bottom: 4px; }
+  .sc-c, .sc-c.q { min-width: 0; }
+  .sc-c.q .v { font-size: 30px; }
+}
+.take { font-size: 15px; max-width: 86ch; }
+.take b { font-family: var(--display); font-weight: 600; }
+
+.cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 380px), 1fr)); gap: 16px; }
+.card { background: var(--panel); border: 1px solid var(--rule); border-radius: 6px; padding: 16px 18px; display: grid; gap: 8px; min-width: 0; align-content: start; }
+.ch { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 6px 12px; }
+.cap { font-size: 13px; color: var(--muted); max-width: none; }
+
+.scat { position: relative; height: 280px; margin: 26px 16px 56px 34px; }
+.scat .gy { position: absolute; left: 0; right: 0; height: 1px; background: var(--rule); }
+.scat .gx { position: absolute; top: 0; bottom: 0; width: 1px; background: var(--rule); }
+.scat .ty, .scat .tx, .scat .ay, .scat .ax { position: absolute; font: 11.5px var(--mono); color: var(--muted); white-space: nowrap; font-variant-numeric: tabular-nums; }
+.scat .ty { right: 100%; margin-right: 7px; transform: translateY(-50%); }
+.scat .tx { top: 100%; margin-top: 6px; transform: translateX(-50%); }
+.scat .ay { left: -34px; bottom: 100%; margin-bottom: 8px; font-family: var(--body); font-size: 12px; }
+.scat .ax { left: 0; right: 0; top: 100%; margin-top: 28px; text-align: center; white-space: normal; font-family: var(--body); font-size: 12px; }
+.scat .nm { position: absolute; font-size: 13px; font-weight: 500; white-space: nowrap; transform: translateY(-50%); background: var(--panel); padding: 0 4px; }
+.pt { position: absolute; width: 26px; height: 26px; margin: -13px 0 0 -13px; padding: 0; border: 0; background: transparent; display: grid; place-items: center; cursor: default; }
+
+.dp { display: grid; }
+.dr { display: grid; grid-template-columns: var(--lw, 120px) minmax(0, 1fr) auto; align-items: center; gap: 0 10px; min-height: 32px; }
+.dl { font-size: 13px; min-width: 0; line-height: 1.25; }
+.dl small { display: block; font-family: var(--mono); font-size: 11px; color: var(--muted); }
+.dl .tid { font-family: var(--mono); font-weight: 500; }
+.lvl { font-family: var(--mono); font-size: 11px; color: var(--muted); border: 1px solid var(--rule); border-radius: 3px; padding: 0 4px; margin-left: 6px; }
+.dt { position: relative; height: 34px; min-width: 0; }
+.dti { position: absolute; inset: 0 13px; }
+.dti .g { position: absolute; top: 0; bottom: 0; width: 1px; background: var(--rule); }
+.dti .cn { position: absolute; top: 50%; height: 2px; margin-top: -1px; background: var(--rule2); }
+.dti .pt { top: 50%; }
+.dr.ax { min-height: 20px; }
+.dr.ax .dt { height: 20px; }
+.tl { position: absolute; bottom: 2px; transform: translateX(-50%); font: 11px var(--mono); color: var(--muted); white-space: nowrap; font-variant-numeric: tabular-nums; }
+@media (min-width: 840px) { #dims .dr:not(.ax) { min-height: 78px; } #dims .dr:not(.ax) .dt { height: 78px; } }
+.dr.grp { min-height: 26px; align-items: end; }
+.dr.grp .dl { grid-column: 1 / -1; font-size: 12px; color: var(--muted); padding-bottom: 2px; }
+.vals { display: flex; gap: 10px; }
+.val { display: inline-flex; align-items: center; justify-content: flex-end; gap: 5px; width: var(--vw, 62px); font: 12px var(--mono); font-variant-numeric: tabular-nums; }
+@media (max-width: 560px) {
+  .vals { display: none; }
+  .dr { --lw: 84px; }
+  .tl.odd { display: none; }
+}
+
+details { background: var(--panel); border: 1px solid var(--rule); border-radius: 6px; }
+details > summary { cursor: pointer; padding: 11px 16px; font-weight: 500; font-size: 14px; }
+details > div { padding: 0 0 2px; overflow-x: auto; }
+details table { font-size: 13px; }
+details th { white-space: normal; }
+
+.rounds { display: grid; gap: 10px; }
+.rd { background: var(--panel); border: 1px solid var(--rule); border-radius: 6px; padding: 14px 18px; display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px 20px; align-items: start; }
+.rd .ti { display: grid; gap: 3px; min-width: 0; }
+.rd .ti b { font-family: var(--display); font-size: 19px; font-weight: 600; line-height: 1.2; }
+.rd .ti span { font-family: var(--mono); font-size: 12px; color: var(--muted); }
+.rd .ents { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 6px 22px; font-size: 14px; }
+.rd .ents > span { display: inline-flex; align-items: center; gap: 6px; }
+.rd .ents em { font-style: normal; font-family: var(--mono); font-size: 12px; color: var(--muted); }
+.rd .ents strong { font-family: var(--mono); font-weight: 500; font-variant-numeric: tabular-nums; }
+.links { display: flex; flex-wrap: wrap; gap: 8px; }
+.btn { font-size: 13px; font-weight: 500; padding: 5px 12px; border-radius: 4px; border: 1px solid var(--rule2); text-decoration: none; white-space: nowrap; }
+.btn.pri { background: var(--ink); border-color: var(--ink); color: var(--paper); }
+@media (max-width: 560px) { .rd { grid-template-columns: 1fr; } }
+
+ul.plan { list-style: none; margin: 0; padding: 0; display: grid; gap: 0; background: var(--panel); border: 1px solid var(--rule); border-radius: 6px; }
+ul.plan li { display: grid; grid-template-columns: 76px minmax(0, 1fr); gap: 4px 14px; padding: 12px 18px; border-bottom: 1px solid var(--rule); }
+ul.plan li:last-child { border-bottom: 0; }
+.pill { justify-self: start; font-family: var(--mono); font-size: 11px; color: var(--muted); border: 1px solid var(--rule2); border-radius: 999px; padding: 1px 8px; white-space: nowrap; align-self: start; margin-top: 2px; }
+ul.plan b { font-weight: 600; }
+
+.bank { display: grid; grid-template-columns: 30fr 25fr 25fr 20fr; gap: 10px; }
+.bk { background: var(--panel); border: 1px solid var(--rule); border-radius: 6px; padding: 12px 14px; display: grid; gap: 8px; align-content: start; min-width: 0; }
+.bk b { font-family: var(--display); font-size: 16px; font-weight: 600; line-height: 1.2; display: block; }
+.bk .w { font-family: var(--mono); font-size: 24px; font-weight: 500; line-height: 1; }
+.chips { display: flex; flex-wrap: wrap; gap: 4px; }
+.chip { font: 12px var(--mono); padding: 1px 6px; border-radius: 3px; border: 1px solid var(--rule2); color: var(--muted); text-decoration: none; }
+.chip.ran { background: var(--ink); border-color: var(--ink); color: var(--paper); }
+.chipkey { display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: 13px; color: var(--muted); align-items: center; }
+.chipkey span { display: inline-flex; gap: 6px; align-items: center; }
+@media (max-width: 760px) { .bank { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 440px) { .bank { grid-template-columns: 1fr; } }
+ul.tx { margin: 0; padding-left: 20px; display: grid; gap: 8px; max-width: 80ch; }
+h3 { margin-top: 8px; }
+.sub { display: grid; gap: 10px; }
+
+pre.f { margin: 0; font-family: var(--mono); font-size: 14px; background: var(--panel); border: 1px solid var(--rule); border-radius: 6px; padding: 12px 16px; overflow-x: auto; }
+.ladder { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); border: 1px solid var(--rule); border-radius: 6px; background: var(--panel); }
+.ladder div { padding: 10px 12px; display: grid; gap: 2px; border-right: 1px solid var(--rule); min-width: 0; }
+.ladder div:last-child { border-right: 0; }
+.ladder b { font-family: var(--display); font-size: 24px; font-weight: 600; line-height: 1; }
+.ladder span { font-size: 12.5px; color: var(--muted); }
+@media (max-width: 520px) {
+  .ladder { grid-template-columns: 1fr; }
+  .ladder div { grid-template-columns: 56px 1fr; align-items: center; border-right: 0; border-bottom: 1px solid var(--rule); }
+  .ladder div:last-child { border-bottom: 0; }
+}
+footer { margin-top: 44px; padding-top: 16px; border-top: 1px solid var(--rule); display: flex; flex-wrap: wrap; justify-content: space-between; gap: 6px 18px; font-size: 13px; color: var(--muted); }
+#tip { position: fixed; z-index: 20; max-width: 280px; background: var(--ink); color: var(--paper); font-size: 12.5px; line-height: 1.45; padding: 7px 10px; border-radius: 4px; pointer-events: none; white-space: pre-line; }
+#tip[hidden] { display: none; }
+</style>
+
+<div class="wrap">
+  <header class="top">
+    <div class="brandrow">
+      <span class="brand">ShipBench</span>
+      <div class="lang" role="group" aria-label="Language">
+        <button type="button" data-set="zh" aria-pressed="false">中文</button>
+        <button type="button" data-set="en" aria-pressed="false">English</button>
+      </div>
+    </div>
+    <h1><span data-l="zh">大模型实战编程测评</span><span data-l="en">Real-World Coding Benchmark for LLMs</span></h1>
+    <p class="lead"><span data-l="zh">考题来自已上架 App 的真实项目，每个模型在自家编程工具里完成，质量、速度、成本分开评分。</span><span data-l="en">Tasks come from real projects on the App Store. Each model works inside its own vendor's coding agent, and quality, speed and cost are scored separately.</span></p>
+    <p class="facts" id="facts"></p>
+    <nav class="toc" aria-label="Sections">
+      <a href="#results"><span data-l="zh">成绩</span><span data-l="en">Results</span></a>
+      <a href="#reports"><span data-l="zh">各轮报告</span><span data-l="en">Round reports</span></a>
+      <a href="#plan"><span data-l="zh">计划</span><span data-l="en">Plan</span></a>
+      <a href="#method"><span data-l="zh">测试方案</span><span data-l="en">Method</span></a>
+      <a href="#scoring"><span data-l="zh">怎么算分</span><span data-l="en">Scoring</span></a>
+      <a href="#fairness"><span data-l="zh">公平规矩</span><span data-l="en">Fairness</span></a>
+      <a href="#limits"><span data-l="zh">局限</span><span data-l="en">Limitations</span></a>
+      <a href="#run"><span data-l="zh">自己跑</span><span data-l="en">Run it yourself</span></a>
+    </nav>
+  </header>
+
+  <section id="results" aria-labelledby="h-results">
+    <div class="sh">
+      <h2 id="h-results"><span data-l="zh">成绩</span><span data-l="en">Results</span></h2>
+      <p class="muted small" id="set-note"></p>
+    </div>
+    <div class="sets" id="set-tabs" role="group" aria-label="Task set"></div>
+    <div class="tablewrap"><table class="lb" id="board"></table></div>
+    <p class="muted small"><span data-l="zh">一个配置 = 模型 + 思考档位 + 自家工具。三项分数都是越高越好；速度分和成本分与冻结的基准比，50 分等于基准。花费一律按 API 标价折算。</span><span data-l="en">A configuration is a model, a reasoning effort and the vendor's own agent. Higher is better on all three scores; speed and cost are measured against frozen references, where 50 matches the reference. Cost is always at API list price.</span></p>
+    <p class="take" id="take"></p>
+    <div class="legend" id="legend"></div>
+    <div class="cols">
+      <div class="card">
+        <div class="ch">
+          <h3 style="margin:0"><span data-l="zh">质量和代价</span><span data-l="en">Quality against price</span></h3>
+          <div class="seg" role="group" data-seg="x"></div>
+        </div>
+        <p class="cap"><span data-l="zh">越靠左上越好：质量更高，代价更小。横轴每一格翻一倍。</span><span data-l="en">Top left is best: higher quality at a lower price. Each gridline on the horizontal axis doubles.</span></p>
+        <div class="scat" id="scatter"></div>
+      </div>
+      <div class="card">
+        <h3 style="margin:0"><span data-l="zh">四个维度的质量分</span><span data-l="en">Quality by dimension</span></h3>
+        <p class="cap"><span data-l="zh">百分比是该维度在总分里的权重。横轴从 60 开始。</span><span data-l="en">Percentages are each dimension's weight in the total. The axis starts at 60.</span></p>
+        <div id="dims"></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="ch">
+        <h3 style="margin:0"><span data-l="zh">逐题对比</span><span data-l="en">Task by task</span></h3>
+        <div class="seg" role="group" data-seg="m"></div>
+      </div>
+      <p class="cap" id="tasks-cap"></p>
+      <div id="tasks"></div>
+    </div>
+    <details>
+      <summary><span data-l="zh">查看逐题数据表</span><span data-l="en">View the task data as a table</span></summary>
+      <div id="task-table"></div>
+    </details>
+  </section>
+
+  <section id="reports" aria-labelledby="h-reports">
+    <div class="sh">
+      <h2 id="h-reports"><span data-l="zh">各轮报告</span><span data-l="en">Round reports</span></h2>
+      <p class="muted small"><span data-l="zh">每一轮有自己的完整报告：逐题怎么判、两家各扣在哪、并排对比视频。数据、改动和评分理由都在开源仓库。</span><span data-l="en">Every round has its own full report: how each task was judged, where each model lost points, and side-by-side videos. Data, diffs and rationales are in the open-source repository.</span></p>
+    </div>
+    <div class="rounds" id="round-list"></div>
+  </section>
+
+  <section id="plan" aria-labelledby="h-plan">
+    <h2 id="h-plan"><span data-l="zh">计划</span><span data-l="en">Plan</span></h2>
+    <ul class="plan">
+      <li><span class="pill"><span data-l="zh">计划中</span><span data-l="en">Planned</span></span><div><b><span data-l="zh">跑完整个题库</span><span data-l="en">Run the whole bank</span></b> <span data-l="zh">31 道题全部跑一遍，包括还没用过的题。</span><span data-l="en">All 31 tasks, including the ones not used yet.</span></div></li>
+      <li><span class="pill"><span data-l="zh">计划中</span><span data-l="en">Planned</span></span><div><b><span data-l="zh">比较思考档位</span><span data-l="en">Compare reasoning efforts</span></b> <span data-l="zh">同一个模型换档位再跑同一批题，比如 Opus 5.5 的 <code>high</code> 对 <code>xhigh</code>，看档位对质量、速度和成本的影响。</span><span data-l="en">The same model on the same tasks at another effort, such as Opus 5.5 at <code>high</code> against <code>xhigh</code>, to see what effort does to quality, speed and cost.</span></div></li>
+      <li><span class="pill"><span data-l="zh">计划中</span><span data-l="en">Planned</span></span><div><b><span data-l="zh">加入更多家</span><span data-l="en">Add more vendors</span></b> <span data-l="zh">Gemini（Gemini CLI）、千问（Qwen Code）、Kimi（Kimi Code CLI）。</span><span data-l="en">Gemini (Gemini CLI), Qwen (Qwen Code) and Kimi (Kimi Code CLI).</span></div></li>
+      <li><span class="pill"><span data-l="zh">计划中</span><span data-l="en">Planned</span></span><div><b><span data-l="zh">新模型发布就测</span><span data-l="en">Test new models as they ship</span></b> <span data-l="zh">只跑新模型，之前的结果照用，速度和成本都和冻结的基准比。</span><span data-l="en">Only the new model runs; earlier results are reused against the frozen speed and cost references.</span></div></li>
+      <li><span class="pill"><span data-l="zh">计划中</span><span data-l="en">Planned</span></span><div><b><span data-l="zh">第二位评审</span><span data-l="en">A second reviewer</span></b> <span data-l="zh">加一个别家模型的评审，并抽样请人工校准。</span><span data-l="en">A reviewer from another vendor, plus a human calibration sample.</span></div></li>
+    </ul>
+    <p class="muted small"><span data-l="zh">这些都没有固定日期。每跑完一轮，这一页的数据和索引都会更新。</span><span data-l="en">None of these has a fixed date. This page's data and index are updated after every round.</span></p>
+  </section>
+
+  <section id="method" aria-labelledby="h-method">
+    <h2 id="h-method"><span data-l="zh">测试方案</span><span data-l="en">Method</span></h2>
+    <div class="sub">
+      <h3><span data-l="zh">为什么做 ShipBench</span><span data-l="en">Why ShipBench</span></h3>
+      <ul class="tx">
+        <li><b><span data-l="zh">测真实用法。</span><span data-l="en">Real usage.</span></b> <span data-l="zh">开发者都是用 Claude Code、Codex 这类编程工具干活，没人拿 API 裸调模型写代码，所以每个模型都放在它自家的工具里测。工具固定，每一轮换的是模型。</span><span data-l="en">Developers work through coding agents such as Claude Code and Codex, not raw API calls, so each model is tested inside its own vendor's agent. The agent stays fixed; what changes from round to round is the model.</span></li>
+        <li><b><span data-l="zh">只测公开榜单测不到的。</span><span data-l="en">Work that public leaderboards don't cover.</span></b> <span data-l="zh">连动效一起复刻一个 iOS 页面、带鉴权和并发的后端、照项目规矩加功能，用的都是已上架 App 的代码。数学和通识推理交给现有的榜单。</span><span data-l="en">An iOS screen rebuilt with its motion, a backend with auth and concurrency, a feature added under a project's own rules, all on the code of apps that are on the App Store. Math and general reasoning are left to existing benchmarks.</span></li>
+        <li><b><span data-l="zh">快。</span><span data-l="en">Fast.</span></b> <span data-l="zh">新模型一发布，只跑新的那一个；之前的结果照用。</span><span data-l="en">When a new model ships, only that model needs to run; earlier results are reused.</span></li>
+      </ul>
+    </div>
+    <div class="sub">
+      <h3><span data-l="zh">题库</span><span data-l="en">The task bank</span></h3>
+      <p class="muted small"><span data-l="zh">31 道题，四个维度，按权重合成质量分。点题号可以看这道题。</span><span data-l="en">31 tasks in four dimensions; the weights make up the quality score. Click an ID to open the task.</span></p>
+      <div class="bank" id="bank"></div>
+      <div class="chipkey">
+        <span><i class="chip ran" style="font-style:normal">S1</i><span data-l="zh">已在某一轮跑过，判分程序和参考答案都已公开</span><span data-l="en">Used in a round; hidden tests, reference and grader are public</span></span>
+        <span><i class="chip" style="font-style:normal">S3</i><span data-l="zh">还没跑过，只公开题面和底稿</span><span data-l="en">Not used yet; only the prompt and starting code are public</span></span>
+      </div>
+      <div class="tablewrap"><table>
+        <thead><tr><th><span data-l="zh">维度</span><span data-l="en">Dimension</span></th><th><span data-l="zh">工具要做什么</span><span data-l="en">What the agent does</span></th><th><span data-l="zh">怎么判</span><span data-l="en">How it is judged</span></th></tr></thead>
+        <tbody>
+          <tr><td><span data-l="zh">修 bug、加功能</span><span data-l="en">Fix bugs &amp; add features</span></td><td><span data-l="zh">只看问题现象，在真实项目里改代码</span><span data-l="en">Change a real codebase from a bug report that describes symptoms</span></td><td><span data-l="zh">隐藏测试（70%）+ 代码质量评审（30%）</span><span data-l="en">Hidden tests (70%) + code-quality review (30%)</span></td></tr>
+          <tr><td><span data-l="zh">前端复刻</span><span data-l="en">Rebuild a screen</span></td><td><span data-l="zh">照录屏和素材，用 SwiftUI 复刻一个 iOS 页面，连动效和交互；不给关键帧、时间轴，也不说明手势</span><span data-l="en">Rebuild an iOS screen in SwiftUI from a screen recording and its assets, motion and interaction included. No keyframes, no timeline, no description of the gestures</span></td><td><span data-l="zh">在模拟器上按原录屏的同一套操作回放，停稳的画面自动比对（30%）+ 看并排视频评静态还原、动效还原、交互手感（70%）</span><span data-l="en">Replay the same gestures on a simulator, compare the settled frames automatically (30%) + review of the side-by-side video for static fidelity, motion and feel (70%)</span></td></tr>
+          <tr><td><span data-l="zh">后端搭建</span><span data-l="en">Build a backend</span></td><td><span data-l="zh">按需求文档从零搭 Cloudflare Workers + D1 服务</span><span data-l="en">Build a Cloudflare Workers + D1 service from a written spec</span></td><td><span data-l="zh">隐藏接口验收：功能、鉴权与隔离、坏输入和并发下扛不扛得住（70%）+ 代码质量评审（30%）</span><span data-l="en">Hidden API acceptance tests: features, auth and isolation, robustness under bad input and concurrency (70%) + code-quality review (30%)</span></td></tr>
+          <tr><td><span data-l="zh">守规矩</span><span data-l="en">Follow project rules</span></td><td><span data-l="zh">在用 ShipSwift 组件库的 App 里加功能，项目文档写明了哪些坑不许踩</span><span data-l="en">Add a feature to an app that uses the ShipSwift component library, where the project's docs list pitfalls to avoid</span></td><td><span data-l="zh">静态检查该用的组件用没用、写明的坑踩没踩，并且要能编译（70%）+ 代码质量评审（30%）</span><span data-l="en">Static checks that the right components were used and the documented pitfalls avoided, plus a build (70%) + code-quality review (30%)</span></td></tr>
+        </tbody>
+      </table></div>
+    </div>
+    <div class="sub">
+      <h3><span data-l="zh">题目怎么出的</span><span data-l="en">How tasks are made</span></h3>
+      <ul class="tx">
+        <li><b><span data-l="zh">修 bug、加功能：</span><span data-l="en">Bug fixes and features:</span></b> <span data-l="zh">从这些 App 的提交历史里挑修复类的提交（改动 1–5 个文件），把代码退回到修之前；题面用提问题的人的口吻写现象，不透露改法。隐藏测试取自原提交，没带测试的另写。有些是合成题：在现行代码上只退回一处修复。</span><span data-l="en">taken from fix commits in the apps' history (1–5 files changed), with the code reverted to before the fix. The prompt describes the symptom in the voice of whoever reported it and never hints at the fix. Hidden tests come from the original commit or are written for the task. Some tasks are synthetic: a single fix reverted in today's code.</span></li>
+        <li><b><span data-l="zh">前端复刻：</span><span data-l="en">Rebuild a screen:</span></b> <span data-l="zh">维护者自己 App 的 3 个页面，加 3 个知名 App 的页面（真机录屏）。工具只拿到录屏和素材，怎么拆帧、怎么看出动效由它自己处理。</span><span data-l="en">three screens from the maintainer's own apps and three from well-known apps recorded on a real device. The agent gets the recording and the assets only; how to extract frames and read the motion is up to the agent.</span></li>
+        <li><b><span data-l="zh">后端搭建：</span><span data-l="en">Build a backend:</span></b> <span data-l="zh">每题一份需求文档。技术栈定死（Cloudflare Workers + D1），整套在本地起服务、本地测，不用任何云账号。验收分三块：功能；鉴权和隔离（没登录、读别人的数据、改别人的数据都要被拒）；扛不扛得住（坏输入、重复提交、并发请求、超大请求）。</span><span data-l="en">one written spec per task. The stack is fixed (Cloudflare Workers + D1) and everything runs locally, with no cloud account. The checks cover features; auth and isolation (requests without a session, or reading or changing someone else's data, must be refused); and robustness (bad input, duplicate submissions, concurrent requests, oversized requests).</span></li>
+        <li><b><span data-l="zh">守规矩：</span><span data-l="en">Follow project rules:</span></b> <span data-l="zh">一个装好 ShipSwift 组件库的 iOS 项目，规矩文件（同一份内容放成 <code>CLAUDE.md</code>、<code>AGENTS.md</code>、<code>GEMINI.md</code>、<code>QWEN.md</code>）写明界面优先用 ShipSwift 组件、动手前先读对应的 skill 文档、文档里写明的坑不许踩。每题都落在一个写明的坑上。ShipSwift 免费组件库是公开的，模型可能见过，但这里测的是照不照项目规矩办事。</span><span data-l="en">an iOS project with the ShipSwift component library and a rules file (the same text as <code>CLAUDE.md</code>, <code>AGENTS.md</code>, <code>GEMINI.md</code>, <code>QWEN.md</code>) that says to prefer ShipSwift components, read the matching skill doc first and avoid the pitfalls it lists. Each task lands on a documented pitfall. The free ShipSwift library is public, so models may have seen it, but what is tested is whether the agent follows the project's rules.</span></li>
+        <li><span data-l="zh">每道题用之前都验过判分：参考答案满分，底稿或故意偷懒的版本明显掉分。</span><span data-l="en">Every task is validated before use: the reference solution scores 100, and the starting code or a deliberately lazy version scores clearly lower.</span></li>
+      </ul>
+    </div>
+    <div class="sub">
+      <h3><span data-l="zh">公开了什么</span><span data-l="en">What is public</span></h3>
+      <p><span data-l="zh">每道题的题面、说明和底稿都公开。隐藏测试、参考答案和判分程序，等第一次用到这道题的那一轮跑完再公开，免得工具跑测时上网搜到答案。</span><span data-l="en">Every task's prompt, README and starting code are public. A task's hidden tests, reference solution and grader are published with the first round that uses it, so that agents with web access cannot look them up during a run.</span> <span id="public-now"></span></p>
+    </div>
+  </section>
+
+  <section id="scoring" aria-labelledby="h-scoring">
+    <h2 id="h-scoring"><span data-l="zh">怎么算分</span><span data-l="en">How scores are computed</span></h2>
+    <p><b><span data-l="zh">质量</span><span data-l="en">Quality</span></b> <span data-l="zh">是四个维度的加权和，每个维度取这一轮里该维度各题的平均。</span><span data-l="en">is the weighted sum of the four dimensions; each dimension is the mean of its tasks in that round.</span></p>
+    <p><b><span data-l="zh">速度和成本</span><span data-l="en">Speed and cost</span></b> <span data-l="zh">单列，不进总分。每题：</span><span data-l="en">are reported next to quality, not folded into it. For each task:</span></p>
+    <pre class="f"><span data-l="zh">分数 = 50 + 25 × log2(基准 ÷ 实际)，截在 0–100</span><span data-l="en">score = clamp(50 + 25 × log2(reference / actual), 0, 100)</span></pre>
+    <div class="ladder">
+      <div><b>100</b><span><span data-l="zh">快 4 倍或更多</span><span data-l="en">4× better or more</span></span></div>
+      <div><b>75</b><span><span data-l="zh">快一倍或省一半</span><span data-l="en">2× better</span></span></div>
+      <div><b>50</b><span><span data-l="zh">和基准一样</span><span data-l="en">Matches the reference</span></span></div>
+      <div><b>25</b><span><span data-l="zh">慢一倍或贵一倍</span><span data-l="en">2× worse</span></span></div>
+      <div><b>0</b><span><span data-l="zh">差 4 倍或更多</span><span data-l="en">4× worse or more</span></span></div>
+    </div>
+    <p><span data-l="zh">每题的基准取第一次跑这道题那一轮各家的几何平均，定下就冻结（<a href="https://github.com/signerlabs/shipbench/blob/main/rounds/references.json">rounds/references.json</a>），以后的新组合都和同一把尺子比。质量分低于 60、或碰到安全上限的题，速度分和成本分都记 0。花费一律按各家 API 每百万 token 的标价折算，不管实际走订阅还是按量计费。按倍数算，是因为各家的快慢差的是倍数（同一题有的差几十倍），每快一倍都加 25 分；不用「最快的那家记满分」，因为那样每加一家，所有人的分都会变。</span><span data-l="en">The reference for each task is the geometric mean of the first round that ran it, and is then frozen (<a href="https://github.com/signerlabs/shipbench/blob/main/rounds/references.json">rounds/references.json</a>), so later entrants are measured against the same yardstick. A task whose quality is below 60, or that hit the safety cap, scores 0 for speed and cost. Cost uses each vendor's API list price per million tokens, regardless of how the run was actually billed. The scale is logarithmic because stacks differ by multiples (tens of times on the same task), so every doubling is worth the same 25 points. "Fastest scores 100" is not used, because every new entrant would change everyone else's score.</span></p>
+    <p><b><span data-l="zh">代码质量评审</span><span data-l="en">Code-quality review.</span></b> <span data-l="zh">五项各打 1–10 分：结构与分层、可读性、一致性（错误、校验和项目原有写法）、稳健写法（边界情况，不随意强转或强制解包，并发安全，不为凑过测试而写）、可维护性（重复、常量、测试）。后端题另外公布客观指标作佐证：文件数和行数、<code>tsc --strict</code> 报错、Biome 告警密度、jscpd 重复率、测试数（<a href="https://github.com/signerlabs/shipbench/blob/main/runner/grade_quality.py">runner/grade_quality.py</a>）。</span><span data-l="en">Five criteria, 1–10 each: structure and layering, readability, consistency (errors, validation, the project's existing patterns), robustness (edge cases, no unsafe casts or force unwraps, concurrency safety, no test-gaming) and maintainability (duplication, constants, tests). For backends, objective metrics are published alongside as evidence: file count and size, <code>tsc --strict</code> errors, Biome lint density, jscpd duplication, test count (<a href="https://github.com/signerlabs/shipbench/blob/main/runner/grade_quality.py">runner/grade_quality.py</a>).</span></p>
+  </section>
+
+  <section id="fairness" aria-labelledby="h-fairness">
+    <h2 id="h-fairness"><span data-l="zh">公平规矩</span><span data-l="en">Fairness rules</span></h2>
+    <ul class="tx">
+      <li><span data-l="zh">各家拿到一字不差的题面、一份全新的代码副本。</span><span data-l="en">Same prompt, byte for byte, and a fresh copy of the starting code for every tool.</span></li>
+      <li><span data-l="zh">每家工具都在专用的 macOS 系统用户里跑，碰不到操作者的文件、密钥、git 和 GitHub 登录；每次运行都给一个全新的配置目录（不然工具会记得之前的对话）。</span><span data-l="en">Each tool runs in a dedicated macOS user with no access to the operator's files, keys, git or GitHub credentials, and a fresh config directory for every run (agents remember earlier sessions otherwise).</span></li>
+      <li><span data-l="zh">思考档位一律显式指定，不用默认值，并写明在每一轮的配置里。各家默认差得很远（Claude Code 给 Opus 5.5 默认 medium，Codex 给 GPT-6 Astra 默认 low）。</span><span data-l="en">Reasoning effort is always set explicitly and stated for every round. Defaults are not used because they differ wildly between vendors (Claude Code defaults Opus 5.5 to <code>medium</code>, Codex defaults GPT-6 Astra to <code>low</code>).</span></li>
+      <li><span data-l="zh">不限时，照实记用时；3 小时安全上限只防卡死。</span><span data-l="en">No time limit; wall-clock time is recorded. A 3-hour safety cap only catches stuck runs.</span></li>
+      <li><span data-l="zh">同一台机器上一次只跑一个。每次运行前停掉上一次留下的进程、卸掉模拟器里装的 App、清掉公共的 <code>/tmp</code>。</span><span data-l="en">Runs are sequential on the same machine: one run at a time. Before every run, leftover processes from the previous run are stopped, apps installed on the simulator are removed and the shared <code>/tmp</code> is cleared.</span></li>
+      <li><span data-l="zh">出现 <code>git push</code>、删基线文件、碰凭证，那题记 0 分。</span><span data-l="en"><code>git push</code>, deleting baseline files or touching credentials scores 0 for that task.</span></li>
+      <li><span data-l="zh">工具可以联网（它要调自家模型），但测评用户里没有任何登录态，推不了代码。</span><span data-l="en">Agents have network access, which they need to reach their model, but no logged-in accounts, so they cannot push code anywhere.</span></li>
+      <li><span data-l="zh">被限流、额度用完、接口出错这类不算能力的失败，那次作废、从头重跑，不计次数。</span><span data-l="en">Infrastructure failures (rate limits, exhausted quota, API errors) void the run, which is redone from scratch; they are not counted as attempts.</span></li>
+      <li><span data-l="zh">隐藏测试、参考答案和原录屏的标准帧，跑测时都不在工具的工作目录里。</span><span data-l="en">Hidden tests, reference solutions and reference frames are never in the agent's workspace.</span></li>
+    </ul>
+  </section>
+
+  <section id="limits" aria-labelledby="h-limits">
+    <h2 id="h-limits"><span data-l="zh">局限</span><span data-l="en">Limitations</span></h2>
+    <ul class="tx">
+      <li><b><span data-l="zh">每题只跑一次。</span><span data-l="en">One run per task.</span></b> <span data-l="zh">单次结果有偶然性，分差小的写成打平，不硬排名次。</span><span data-l="en">Single runs vary; close results are reported as ties rather than ranked.</span></li>
+      <li><b><span data-l="zh">主观部分是 AI 评审打的。</span><span data-l="en">The subjective parts are scored by an AI reviewer.</span></b> <span data-l="zh">录屏评分和代码质量评审由 Claude（Opus 5.5）打分，两家的产出标成随机的甲乙，打完才揭晓。评审和其中一家参赛者是同一家公司的模型，所以每条理由、每段视频、每份改动都公开，任何人都能重新打分。完整的对话记录里有测评机器的细节，由维护者保存，需要可以索取。</span><span data-l="en">Video ratings and code-quality reviews are done by Claude (Opus 5.5) with the two outputs labeled at random and revealed only after scoring. The reviewer comes from the same vendor as one of the contestants, so every rationale, video and diff is published for anyone to re-score. Full agent transcripts include details of the test machine and are kept by the maintainer; they are available on request.</span></li>
+      <li><b><span data-l="zh">题目用过之后就公开，</span><span data-l="en">Tasks become public after they are used,</span></b> <span data-l="zh">以后的模型可能见过。每道题都记了公开日期，每一轮都加没跑过的新题。</span><span data-l="en">so future models may have seen them. Every task records when it was published, and each round adds tasks that have not been run before.</span></li>
+      <li><span data-l="zh">前端题目前只有 iOS，需要装了 Xcode 的 Mac。</span><span data-l="en">Frontend tasks are iOS only for now, and need macOS with Xcode.</span></li>
+    </ul>
+  </section>
+
+  <section id="run" aria-labelledby="h-run">
+    <h2 id="h-run"><span data-l="zh">自己跑</span><span data-l="en">Run it yourself</span></h2>
+    <p><span data-l="zh">程序、题目和判分都开源。需要装了 Xcode 的 Mac、iPhone 模拟器和要测的编程工具，步骤见 <a href="https://github.com/signerlabs/shipbench/blob/main/runner/README.md">runner/README.md</a>。</span><span data-l="en">The runner, tasks and graders are open source. You need a Mac with Xcode, an iPhone simulator and the agent CLIs you want to test. Steps are in <a href="https://github.com/signerlabs/shipbench/blob/main/runner/README.md">runner/README.md</a>.</span></p>
+  </section>
+
+  <footer>
+    <span><a href="https://github.com/signerlabs/shipbench">github.com/signerlabs/shipbench</a></span>
+    <span><span data-l="zh">程序 MIT · 题目 CC BY-NC 4.0 · 结果 CC BY 4.0</span><span data-l="en">Code MIT · Tasks CC BY-NC 4.0 · Results CC BY 4.0</span></span>
+    <span>ShipBench · SignerLabs</span>
+  </footer>
+</div>
+<div id="tip" role="tooltip" hidden></div>
+
+<script type="application/json" id="overview-data">{"repo": "https://github.com/signerlabs/shipbench", "updated": "2026-11-08", "rounds": [{"id": "round-01", "n": 1, "label": {"zh": "第一轮", "en": "Round 1"}, "title": {"zh": "第一轮：Opus 5.5 对 GPT-6 Astra（精简题库）", "en": "Round 1: Opus 5.5 vs GPT-6 Astra (lite set)"}, "date": "2026-11-08", "headline": {"zh": "判对错两家全满分，差距在复刻页面动起来像不像（前端 92.5 对 77.2）和代码质量；GPT-6 Astra 8 道题用 1 小时 19 分、23 美元，Opus 5.5 用 3 小时 6 分、52 美元。", "en": "Both pass every pass/fail check. The gap is in how the rebuilt screens move (frontend 92.5 vs 77.2) and in code quality, while GPT-6 Astra finishes the 8 tasks in 1 h 19 min for $23 against 3 h 6 min and $52."}, "report_url": "https://claude.ai/artifact/C2fe52C6DcYjLHraFvygpw", "data_url": "https://github.com/signerlabs/shipbench/tree/main/reports/round-01", "dimensions": [{"key": "fix", "weight": 0.3, "tasks": ["S1", "S2"]}, {"key": "frontend", "weight": 0.25, "tasks": ["F2", "F1"]}, {"key": "backend", "weight": 0.25, "tasks": ["B4", "B2"]}, {"key": "rules", "weight": 0.2, "tasks": ["R5", "R9"]}], "tasks": [{"id": "S1", "dimension": "fix", "level": "easy", "zh": "剪贴板 App 数据层：两台 Mac 同步来的同一条置顶，去重时留下的不一样", "en": "Clipboard app data layer: duplicate pins synced from two Macs are deduplicated differently", "lang": "Swift"}, {"id": "S2", "dimension": "fix", "level": "hard", "zh": "剪贴板 App 数据层：搜索翻页回到开头、Pinboard 拖不动（只写现象）", "en": "Clipboard app data layer: search paging jumps back to the start, Pinboard items won't move (symptoms only)", "lang": "Swift"}, {"id": "F2", "dimension": "frontend", "level": "easy", "zh": "照录屏复刻 Trovy 的统计报表页和房间详情页", "en": "Rebuild Trovy's stats report and room detail screens from a recording", "lang": "SwiftUI"}, {"id": "F1", "dimension": "frontend", "level": "hard", "zh": "照录屏复刻美食地图 App 的三步引导页，含插画动画", "en": "Rebuild a food-map app's three-step onboarding from a recording, illustrations animated", "lang": "SwiftUI"}, {"id": "B4", "dimension": "backend", "level": "easy", "zh": "按需求搭会员订阅回调服务（17 条隐藏验收）", "en": "Build a subscription webhook service from a spec (17 hidden checks)", "lang": "TypeScript · Workers + D1"}, {"id": "B2", "dimension": "backend", "level": "hard", "zh": "按需求从零搭家庭物品与过期提醒服务（49 条隐藏验收）", "en": "Build a household inventory and expiry-reminder service from a spec (49 hidden checks)", "lang": "TypeScript · Workers + D1"}, {"id": "R5", "dimension": "rules", "level": "easy", "zh": "用 ShipSwift 组件加「编辑习惯」和全局提示", "en": "Add habit editing and a global toast with ShipSwift components", "lang": "SwiftUI"}, {"id": "R9", "dimension": "rules", "level": "hard", "zh": "健身 App 加花费页，避开四份文档里写明的坑", "en": "Add an expenses screen to a fitness app without hitting the pitfalls in four docs", "lang": "SwiftUI"}], "entries": [{"key": "claude", "vendor": "claude", "model": "Opus 5.5", "agent": "Claude Code", "version": "2.1.319", "effort": "xhigh", "quality": 94.5, "speed": 38.1, "cost": 42.1, "seconds": 11175, "cost_usd": 52.36, "dimensions": {"fix": {"quality": 95.5, "speed": 47.3, "cost": 52.4}, "frontend": {"quality": 92.5, "speed": 30.4, "cost": 29.4}, "backend": {"quality": 95.8, "speed": 45.0, "cost": 44.5}, "rules": {"quality": 93.7, "speed": 25.3, "cost": 39.3}}, "tasks": {"S1": {"quality": 95.8, "speed": 46.2, "cost": 51.0, "seconds": 229, "cost_usd": 1.03}, "S2": {"quality": 95.2, "speed": 48.4, "cost": 53.8, "seconds": 462, "cost_usd": 2.28}, "F2": {"quality": 90.8, "speed": 35.6, "cost": 34.9, "seconds": 2662, "cost_usd": 13.43}, "F1": {"quality": 94.2, "speed": 25.1, "cost": 24.0, "seconds": 4608, "cost_usd": 23.07}, "B4": {"quality": 95.8, "speed": 43.7, "cost": 44.2, "seconds": 703, "cost_usd": 2.49}, "B2": {"quality": 95.8, "speed": 46.2, "cost": 44.8, "seconds": 1109, "cost_usd": 4.38}, "R5": {"quality": 92.8, "speed": 20.6, "cost": 41.4, "seconds": 408, "cost_usd": 1.64}, "R9": {"quality": 94.6, "speed": 30.0, "cost": 37.3, "seconds": 994, "cost_usd": 4.04}}}, {"key": "codex", "vendor": "codex", "model": "GPT-6 Astra", "agent": "Codex CLI", "version": "0.167.0", "effort": "xhigh", "quality": 88.7, "speed": 61.9, "cost": 57.9, "seconds": 4771, "cost_usd": 23.28, "dimensions": {"fix": {"quality": 92.2, "speed": 52.7, "cost": 47.6}, "frontend": {"quality": 77.2, "speed": 69.7, "cost": 70.5}, "backend": {"quality": 92.5, "speed": 55.0, "cost": 55.5}, "rules": {"quality": 93.1, "speed": 74.7, "cost": 60.7}}, "tasks": {"S1": {"quality": 94.6, "speed": 53.8, "cost": 49.0, "seconds": 186, "cost_usd": 1.09}, "S2": {"quality": 89.8, "speed": 51.6, "cost": 46.2, "seconds": 422, "cost_usd": 2.81}, "F2": {"quality": 70.5, "speed": 64.4, "cost": 65.1, "seconds": 1200, "cost_usd": 5.8}, "F1": {"quality": 83.9, "speed": 74.9, "cost": 76.0, "seconds": 1160, "cost_usd": 5.46}, "B4": {"quality": 94.0, "speed": 56.3, "cost": 55.8, "seconds": 497, "cost_usd": 1.81}, "B2": {"quality": 91.0, "speed": 53.8, "cost": 55.2, "seconds": 899, "cost_usd": 3.29}, "R5": {"quality": 95.2, "speed": 79.4, "cost": 58.6, "seconds": 80, "cost_usd": 1.02}, "R9": {"quality": 91.0, "speed": 70.0, "cost": 62.7, "seconds": 327, "cost_usd": 2.0}}}]}], "bank": [{"key": "fix", "weight": 0.3, "zh": "修 bug、加功能", "en": "Fix bugs & add features", "tasks": [{"id": "S1", "en": "Pinboard dedupe across two Macs (bug fix, sample)", "zh": "剪贴板 App 数据层：两台 Mac 同步来的同一条置顶，去重时选的不一样", "rounds": ["round-01"]}, {"id": "S2", "en": "Search paging and Pinboard reordering (bug fix)", "zh": "剪贴板 App 数据层：搜索翻页回到开头、Pinboard 拖不动（只写现象）", "rounds": ["round-01"]}, {"id": "S3", "en": "Same-day reminders collide (bug fix)", "zh": "宠物健康 iOS App：同一天到期的提醒只响一条", "rounds": []}, {"id": "S4", "en": "Cleared fields come back after editing (bug fix)", "zh": "宠物健康 iOS App：编辑时清空的字段没清掉", "rounds": []}, {"id": "S5", "en": "Link previews must not touch private addresses (feature)", "zh": "剪贴板 App 的链接预览：哪些网址不该去取", "rounds": []}, {"id": "T1", "en": "Duplicate opening-hours periods (bug fix)", "zh": "美食地图服务端：营业时间同一时段显示两遍", "rounds": []}, {"id": "T2", "en": "Reading powers aloud (bug fix)", "zh": "儿童数学学伴核心逻辑：乘方的英文读法不对", "rounds": []}, {"id": "T3", "en": "Cleaning post tags (feature)", "zh": "美食地图服务端：给导入的标签做清洗", "rounds": []}, {"id": "T4", "en": "Re-importing a closed restaurant (bug fix)", "zh": "美食地图服务端：已关闭的店还下发坐标", "rounds": []}, {"id": "P1", "en": "Finding phrases in a Chinese voice-over (bug fix)", "zh": "视频生成脚本：中文口播里找不到短语（每个汉字算一个词）", "rounds": []}]}, {"key": "frontend", "weight": 0.25, "zh": "前端复刻", "en": "Rebuild a screen", "tasks": [{"id": "F1", "en": "Rebuild the 烟火小店 onboarding from a recording (frontend)", "zh": "烟火小店引导页", "rounds": ["round-01"]}, {"id": "F2", "en": "Rebuild the Trovy stats report (frontend)", "zh": "Trovy 统计报表", "rounds": ["round-01"]}, {"id": "F3", "en": "Rebuild the 烟火小店 home page from a recording (frontend)", "zh": "烟火小店首页：主推卡横滑、好店发现卡片流", "rounds": []}, {"id": "F4", "en": "Rebuild the Moonlitt moon-phase screen from a recording (frontend, third-party app)", "zh": "Moonlitt 月相页（别家 App）", "rounds": []}, {"id": "F5", "en": "Rebuild an Airbnb listing page from a recording (frontend, third-party app)", "zh": "Airbnb 房源详情（别家 App）", "rounds": []}, {"id": "F6", "en": "Rebuild the Duolingo learning path from a recording (frontend, third-party app)", "zh": "Duolingo 学习路径（别家 App）", "rounds": []}]}, {"key": "backend", "weight": 0.25, "zh": "后端搭建", "en": "Build a backend", "tasks": [{"id": "B1", "en": "Shared lists (backend)", "zh": "多人共享清单", "rounds": []}, {"id": "B2", "en": "Household items and expiry reminders (backend)", "zh": "家庭物品与过期提醒", "rounds": ["round-01"]}, {"id": "B3", "en": "Nearby shops and ratings (backend)", "zh": "附近的店和评分", "rounds": []}, {"id": "B4", "en": "Subscription membership from webhook events (backend, sample)", "zh": "会员订阅回调（样题）", "rounds": ["round-01"]}, {"id": "B5", "en": "CSV import and spending stats (backend)", "zh": "记账数据导入和统计", "rounds": []}]}, {"key": "rules", "weight": 0.2, "zh": "守规矩", "en": "Follow project rules", "tasks": [{"id": "R1", "en": "Friends leaderboard (project rules)", "zh": "好友排行榜", "rounds": []}, {"id": "R2", "en": "AI coach chat (project rules)", "zh": "AI 教练聊天页", "rounds": []}, {"id": "R3", "en": "Meal photo (project rules)", "zh": "记一餐拍照", "rounds": []}, {"id": "R4", "en": "First-launch onboarding (project rules)", "zh": "首次启动欢迎页", "rounds": []}, {"id": "R5", "en": "Edit a habit, with global alerts (project rules, sample)", "zh": "编辑习惯和全局提示（样题）", "rounds": ["round-01"]}, {"id": "R6", "en": "Settings page (project rules)", "zh": "设置页", "rounds": []}, {"id": "R7", "en": "Stats page (project rules)", "zh": "统计页", "rounds": []}, {"id": "R8", "en": "Bottom tab bar (project rules)", "zh": "底部标签栏", "rounds": []}, {"id": "R9", "en": "Workout expenses page (project rules)", "zh": "健身花费页", "rounds": ["round-01"]}, {"id": "R10", "en": "Goal due badges (project rules)", "zh": "目标到期标签", "rounds": []}]}]}</script>
+<script>
+(function () {
+  var D = JSON.parse(document.getElementById('overview-data').textContent || '{"rounds":[],"bank":[]}');
+  var lang = 'en';
+  var T = {
+    zh: { model: '配置', q: '质量', s: '速度', c: '成本', time: '总用时', spend: '总花费', cost: '花费', t: '用时', quality: '质量',
+          easy: '易', hard: '难', tasks: function (n) { return n + ' 道题'; }, rounds: function (a) { return a.join('、'); },
+          note: function (n, ids) { return '下面放在一起比的，都跑了完全相同的 ' + n + ' 道题：' + ids + '。'; },
+          facts: function (r, c, u, t, d) { return '已跑 ' + r + ' 轮 · ' + c + ' 个配置 · 题库 ' + t + ' 道，已用 ' + u + ' 道 · 更新于 ' + d; },
+          axY: '质量分', axCost: function (n) { return n + ' 道题总花费（美元，对数轴）'; }, axTime: function (n) { return n + ' 道题总用时（对数轴）'; },
+          capQ: '质量分，横轴从 60 开始。', capT: '每题用时，对数轴，每一格翻一倍，越靠左越快。', capC: '每题花费（美元，按 API 标价），对数轴，每一格翻一倍，越靠左越省。',
+          report: '完整报告', data: '数据', pub: function (n, ids) { return '目前已有 ' + n + ' 道全部公开：' + ids + '。'; },
+          task: '题目', desc: '说明', head: 'ShipBench 总览', th: '小时' },
+    en: { model: 'Configuration', q: 'Quality', s: 'Speed', c: 'Cost', time: 'Total time', spend: 'Total cost', cost: 'Cost', t: 'Time', quality: 'Quality',
+          easy: 'easier', hard: 'harder', tasks: function (n) { return n + ' tasks'; }, rounds: function (a) { return a.join(', '); },
+          note: function (n, ids) { return 'Everything compared below ran exactly the same ' + n + ' tasks: ' + ids + '.'; },
+          facts: function (r, c, u, t, d) { return r + (r === 1 ? ' round' : ' rounds') + ' so far · ' + c + ' configurations · ' + u + ' of ' + t + ' tasks used · updated ' + d; },
+          axY: 'Quality', axCost: function (n) { return 'Total cost of the ' + n + ' tasks (USD, log scale)'; }, axTime: function (n) { return 'Total time for the ' + n + ' tasks (log scale)'; },
+          capQ: 'Quality score. The axis starts at 60.', capT: 'Time per task on a log scale; each gridline doubles. Further left is faster.', capC: 'Cost per task at API list price (USD), on a log scale; each gridline doubles. Further left is cheaper.',
+          report: 'Full report', data: 'Data', pub: function (n, ids) { return 'So far ' + n + ' tasks are fully public: ' + ids + '.'; },
+          task: 'Task', desc: 'Description', head: 'ShipBench Overview', th: 'h' }
+  };
+  var VENDOR = { claude: ['var(--cc)', 'circle'], codex: ['var(--cx)', 'diamond'], qwen: ['var(--e3)', 'triangle'], gemini: ['var(--e4)', 'square'], kimi: ['var(--e5)', 'hex'] };
+  var SHAPE = { circle: 'M-5.2,0a5.2,5.2 0 1,0 10.4,0a5.2,5.2 0 1,0 -10.4,0Z', diamond: 'M0,-6.4L6.4,0L0,6.4L-6.4,0Z', triangle: 'M0,-6.2L5.8,4.6L-5.8,4.6Z', square: 'M-4.8,-4.8H4.8V4.8H-4.8Z', hex: 'M0,-6.2L5.4,-3.1V3.1L0,6.2L-5.4,3.1V-3.1Z' };
+
+  // 把跑了相同题目的轮次归成一组，组内的配置才放在一起比
+  var SETS = [], seen = {};
+  D.rounds.forEach(function (r) {
+    var key = r.tasks.map(function (t) { return t.id; }).sort().join(' ');
+    var s = SETS.filter(function (x) { return x.key === key; })[0];
+    if (!s) { s = { key: key, rounds: [], tasks: r.tasks, dimensions: r.dimensions }; SETS.push(s); }
+    s.rounds.push(r);
+    r.entries.forEach(function (e) {
+      e.round = r;
+      // 同一家的第二种模型或档位用空心标记，标记跟着配置走，不随筛选变化
+      var v = e.model + '@' + e.effort;
+      seen[e.vendor] = seen[e.vendor] || [];
+      if (seen[e.vendor].indexOf(v) < 0) seen[e.vendor].push(v);
+      e.hollow = seen[e.vendor].indexOf(v) > 0;
+    });
+  });
+  var view = { set: SETS.length ? SETS.filter(function (s) { return s.rounds.indexOf(D.rounds[D.rounds.length - 1]) >= 0; })[0] : null, x: 'cost', m: 'quality' };
+
+  function esc(s) { return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
+  function n1(x) { return x == null ? '—' : (Math.round(x * 10) / 10).toFixed(1); }
+  function L(o) { return o ? (o[lang] || o.en || o.zh || '') : ''; }
+  function usd(x) { return x == null ? '—' : '$' + x.toFixed(2); }
+  function dur(s) {
+    if (!s) return '—';
+    var h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60), sec = s % 60;
+    if (lang === 'zh') return h ? h + ' 小时 ' + m + ' 分' : m + ' 分 ' + (sec < 10 ? '0' : '') + sec + ' 秒';
+    return h ? h + ' h ' + m + ' min' : m + ':' + (sec < 10 ? '0' : '') + sec;
+  }
+  function durShort(s) {
+    if (s < 600) return Math.floor(s / 60) + ':' + (s % 60 < 10 ? '0' : '') + (s % 60);
+    return Math.round(s / 60) + (lang === 'zh' ? ' 分' : ' min');
+  }
+  function tickTime(v) {
+    if (v % 3600 === 0) return (v / 3600) + (lang === 'zh' ? ' 小时' : ' h');
+    return (v / 60) + (lang === 'zh' ? ' 分' : ' min');
+  }
+  function tickCost(v) { return '$' + v; }
+  function color(e) { return (VENDOR[e.vendor] || ['var(--muted)'])[0]; }
+  function mark(e, size) {
+    var sh = SHAPE[(VENDOR[e.vendor] || [0, 'square'])[1]];
+    size = size || 14;
+    return '<svg class="mk" viewBox="-8 -8 16 16" width="' + size + '" height="' + size + '" aria-hidden="true" style="--c:' + color(e) + '"><path d="' + sh + '"' + (e.hollow ? ' class="h"' : '') + '/></svg>';
+  }
+  function name(e) { return e.model + ' · ' + e.effort; }
+  function setEntries(s) { var a = []; s.rounds.forEach(function (r) { a = a.concat(r.entries); }); return a; }
+  function lin(a, b) { return function (v) { return (v - a) / (b - a) * 100; }; }
+  function log(a, b) { var la = Math.log(a), lb = Math.log(b); return function (v) { return (Math.log(v) - la) / (lb - la) * 100; }; }
+  function log2Ticks(vals, base) {
+    var lo = Math.min.apply(0, vals), hi = Math.max.apply(0, vals);
+    var a = Math.floor(Math.log2(lo / base)), b = Math.ceil(Math.log2(hi / base));
+    if (a === b) b += 1;
+    var t = [];
+    for (var k = a; k <= b; k++) t.push(base * Math.pow(2, k));
+    return t;
+  }
+  function qualityAxis(vals) {
+    var min = Math.min.apply(0, vals), a = min < 60 ? Math.floor(min / 10) * 10 : 60, t = [];
+    for (var v = a; v <= 100; v += 10) t.push(v);
+    return { ticks: t, x: lin(a, 100), label: String };
+  }
+  function tipOf(title, pairs) { return title + '\n' + pairs.join(' · '); }
+
+  function renderFacts() {
+    var cfg = 0; D.rounds.forEach(function (r) { cfg += r.entries.length; });
+    var total = 0, used = 0;
+    D.bank.forEach(function (d) { total += d.tasks.length; d.tasks.forEach(function (t) { if (t.rounds.length) used++; }); });
+    document.getElementById('facts').textContent = T[lang].facts(D.rounds.length, cfg, used, total, D.updated || '—');
+  }
+  function renderSets() {
+    var el = document.getElementById('set-tabs');
+    el.hidden = SETS.length < 2;
+    el.style.display = SETS.length < 2 ? 'none' : '';
+    el.innerHTML = SETS.map(function (s, i) {
+      return '<button type="button" data-set-i="' + i + '" aria-pressed="' + (s === view.set) + '">' + T[lang].tasks(s.tasks.length) + ' · ' + esc(T[lang].rounds(s.rounds.map(function (r) { return L(r.label); }))) + '</button>';
+    }).join('');
+    document.getElementById('set-note').textContent = view.set ? T[lang].note(view.set.tasks.length, view.set.tasks.map(function (t) { return t.id; }).join(' ')) : '';
+  }
+  function renderLegend() {
+    document.getElementById('legend').innerHTML = setEntries(view.set).map(function (e) {
+      return '<span>' + mark(e) + '<b>' + esc(e.model) + '</b> ' + esc(e.effort) + ' · ' + esc(e.agent) + '</span>';
+    }).join('');
+  }
+  function renderBoard() {
+    var t = T[lang], list = setEntries(view.set).slice().sort(function (a, b) { return b.quality - a.quality; });
+    var max = { quality: 0, speed: 0, cost: 0 };
+    list.forEach(function (e) { ['quality', 'speed', 'cost'].forEach(function (m) { if (e[m] > max[m]) max[m] = e[m]; }); });
+    function sc(e, m, cls, th) {
+      return '<td data-th="' + esc(th) + '"><div class="sc-c ' + cls + (e[m] === max[m] && list.length > 1 ? ' top' : '') + '"><span class="v">' + n1(e[m]) + '</span><div class="bar" style="--c:' + color(e) + '"><i style="width:' + e[m] + '%"></i></div></div></td>';
+    }
+    document.getElementById('board').innerHTML =
+      '<thead><tr><th>' + t.model + '</th><th>' + t.q + '</th><th>' + t.s + '</th><th>' + t.c + '</th><th class="n">' + t.time + '</th><th class="n">' + t.spend + '</th></tr></thead><tbody>' +
+      list.map(function (e) {
+        return '<tr><td class="m"><div class="who">' + mark(e, 18) + '<div class="nm"><b>' + esc(e.model) + '<span class="eff">' + esc(e.effort) + '</span></b><small>' + esc(e.agent) + (e.version ? ' ' + esc(e.version) : '') + ' · ' + esc(L(e.round.label)) + '</small></div></div></td>' +
+          sc(e, 'quality', 'q', t.q) + sc(e, 'speed', '', t.s) + sc(e, 'cost', '', t.c) +
+          '<td class="n" data-th="' + esc(t.time) + '">' + dur(e.seconds) + '</td><td class="n" data-th="' + esc(t.spend) + '">' + usd(e.cost_usd) + '</td></tr>';
+      }).join('') + '</tbody>';
+  }
+  function renderTake() {
+    var r = view.set.rounds[view.set.rounds.length - 1];
+    document.getElementById('take').innerHTML = r.headline ? '<b>' + esc(L(r.label)) + '：</b>'.replace('：', lang === 'zh' ? '：' : ': ') + esc(L(r.headline)) : '';
+  }
+  function renderSeg() {
+    var x = document.querySelector('[data-seg="x"]'), m = document.querySelector('[data-seg="m"]'), t = T[lang];
+    function btn(k, v, label, cur) { return '<button type="button" data-seg-k="' + k + '" data-seg-v="' + v + '" aria-pressed="' + (cur === v) + '">' + label + '</button>'; }
+    x.innerHTML = btn('x', 'cost', t.cost, view.x) + btn('x', 'time', t.t, view.x);
+    m.innerHTML = btn('m', 'quality', t.quality, view.m) + btn('m', 'time', t.t, view.m) + btn('m', 'cost', t.cost, view.m);
+  }
+  function renderScatter() {
+    var t = T[lang], list = setEntries(view.set), isCost = view.x === 'cost';
+    var val = function (e) { return isCost ? e.cost_usd : e.seconds; };
+    var ticks = log2Ticks(list.map(val), isCost ? 1 : 3600);
+    var X = log(ticks[0], ticks[ticks.length - 1]);
+    var qa = qualityAxis(list.map(function (e) { return e.quality; }));
+    var Y = qa.x, h = '';
+    qa.ticks.forEach(function (v) { h += '<i class="gy" style="top:' + (100 - Y(v)) + '%"></i><span class="ty" style="top:' + (100 - Y(v)) + '%">' + v + '</span>'; });
+    ticks.forEach(function (v) { h += '<i class="gx" style="left:' + X(v) + '%"></i><span class="tx" style="left:' + X(v) + '%">' + (isCost ? tickCost(v) : tickTime(v)) + '</span>'; });
+    h += '<span class="ay">' + t.axY + '</span><span class="ax">' + (isCost ? t.axCost(view.set.tasks.length) : t.axTime(view.set.tasks.length)) + '</span>';
+    list.forEach(function (e) {
+      var x = X(val(e)), y = 100 - Y(e.quality);
+      var tip = tipOf(name(e), [t.q + ' ' + n1(e.quality), dur(e.seconds), usd(e.cost_usd)]);
+      h += '<button type="button" class="pt" style="left:' + x + '%;top:' + y + '%" data-tip="' + esc(tip) + '" aria-label="' + esc(tip) + '">' + mark(e, 18) + '</button>';
+      if (list.length <= 6) h += '<span class="nm" style="top:' + y + '%;' + (x > 62 ? 'right:calc(' + (100 - x) + '% + 14px)' : 'left:calc(' + x + '% + 14px)') + '">' + esc(name(e)) + '</span>';
+    });
+    document.getElementById('scatter').innerHTML = h;
+  }
+  // 点线图：每行一条轨道，同一行的配置画在同一根轴上
+  function dotPlot(rows, axis, list, vw) {
+    var ticks = axis.ticks, n = ticks.length;
+    var gs = ticks.map(function (v) { return '<i class="g" style="left:' + axis.x(v) + '%"></i>'; }).join('');
+    var showVals = list.length <= 3;
+    var h = '<div class="dr ax"><div></div><div class="dt"><div class="dti">' + ticks.map(function (v, i) {
+      return '<span class="tl' + ((n - 1 - i) % 2 ? ' odd' : '') + '" style="left:' + axis.x(v) + '%">' + axis.label(v) + '</span>';
+    }).join('') + '</div></div>' + (showVals ? '<div class="vals">' + list.map(function () { return '<span class="val"></span>'; }).join('') + '</div>' : '') + '</div>';
+    rows.forEach(function (r) {
+      if (r.group) { h += '<div class="dr grp"><div class="dl">' + esc(r.group) + '</div></div>'; return; }
+      var xs = list.map(function (e) { return r.value(e); }).filter(function (v) { return v != null; }).map(axis.x);
+      var lo = Math.min.apply(0, xs), hi = Math.max.apply(0, xs);
+      h += '<div class="dr"><div class="dl">' + r.label + '</div><div class="dt"><div class="dti">' + gs +
+        (xs.length > 1 ? '<i class="cn" style="left:' + lo + '%;width:' + (hi - lo) + '%"></i>' : '') +
+        list.map(function (e) {
+          var v = r.value(e);
+          if (v == null) return '';
+          var tip = tipOf(r.title + ' · ' + name(e), r.tip(e));
+          return '<button type="button" class="pt" style="left:' + axis.x(v) + '%" data-tip="' + esc(tip) + '" aria-label="' + esc(tip) + '">' + mark(e, 16) + '</button>';
+        }).join('') + '</div></div>' +
+        (showVals ? '<div class="vals">' + list.map(function (e) { return '<span class="val">' + mark(e, 11) + r.fmt(r.value(e)) + '</span>'; }).join('') + '</div>' : '') + '</div>';
+    });
+    return '<div class="dp" style="--vw:' + vw + '">' + h + '</div>';
+  }
+  function dimOf(key) { return D.bank.filter(function (d) { return d.key === key; })[0]; }
+  function renderDims() {
+    var t = T[lang], list = setEntries(view.set), vals = [];
+    list.forEach(function (e) { view.set.dimensions.forEach(function (d) { vals.push(e.dimensions[d.key].quality); }); });
+    var rows = view.set.dimensions.map(function (d) {
+      var nm = L(dimOf(d.key));
+      return { label: esc(nm) + '<small>' + Math.round(d.weight * 100) + '%</small>', title: nm, value: function (e) { return e.dimensions[d.key].quality; }, fmt: n1, tip: function (e) { return [t.q + ' ' + n1(e.dimensions[d.key].quality), t.s + ' ' + n1(e.dimensions[d.key].speed), t.c + ' ' + n1(e.dimensions[d.key].cost)]; } };
+    });
+    document.getElementById('dims').innerHTML = dotPlot(rows, qualityAxis(vals), list, '54px');
+  }
+  function renderTasks() {
+    var t = T[lang], list = setEntries(view.set), m = view.m, vals = [];
+    var key = m === 'quality' ? 'quality' : (m === 'time' ? 'seconds' : 'cost_usd');
+    view.set.tasks.forEach(function (x) { list.forEach(function (e) { vals.push(e.tasks[x.id][key]); }); });
+    var axis;
+    if (m === 'quality') axis = qualityAxis(vals);
+    else {
+      var ticks = log2Ticks(vals, m === 'time' ? 60 : 1);
+      axis = { ticks: ticks, x: log(ticks[0], ticks[ticks.length - 1]), label: m === 'time' ? tickTime : tickCost };
+    }
+    var fmt = m === 'quality' ? n1 : (m === 'time' ? durShort : usd);
+    var byId = {}; view.set.tasks.forEach(function (x) { byId[x.id] = x; });
+    var rows = [];
+    view.set.dimensions.forEach(function (d) {
+      rows.push({ group: L(dimOf(d.key)) });
+      d.tasks.forEach(function (id) {
+        var x = byId[id];
+        rows.push({ label: '<span class="tid">' + id + '</span>' + (x.level ? '<span class="lvl">' + t[x.level] + '</span>' : ''), title: id + ' ' + L(x),
+          value: function (e) { return e.tasks[id][key]; }, fmt: fmt,
+          tip: function (e) { var c = e.tasks[id]; return [t.q + ' ' + n1(c.quality), dur(c.seconds), usd(c.cost_usd)]; } });
+      });
+    });
+    document.getElementById('tasks-cap').textContent = m === 'quality' ? t.capQ : (m === 'time' ? t.capT : t.capC);
+    document.getElementById('tasks').innerHTML = dotPlot(rows, axis, list, '72px');
+  }
+  function renderTaskTable() {
+    var t = T[lang], list = setEntries(view.set);
+    var h = '<table><thead><tr><th rowspan="2">' + t.task + '</th><th rowspan="2">' + t.desc + '</th>' + list.map(function (e) { return '<th colspan="3">' + esc(name(e)) + '</th>'; }).join('') + '</tr><tr>' +
+      list.map(function () { return '<th class="n">' + t.q + '</th><th class="n">' + t.t + '</th><th class="n">' + t.cost + '</th>'; }).join('') + '</tr></thead><tbody>';
+    view.set.tasks.forEach(function (x) {
+      h += '<tr><td class="id">' + x.id + '</td><td>' + esc(L(x)) + '</td>' + list.map(function (e) { var c = e.tasks[x.id]; return '<td class="n">' + n1(c.quality) + '</td><td class="n">' + durShort(c.seconds) + '</td><td class="n">' + usd(c.cost_usd) + '</td>'; }).join('') + '</tr>';
+    });
+    document.getElementById('task-table').innerHTML = h + '</tbody></table>';
+  }
+  function renderRounds() {
+    var t = T[lang], total = 0; D.bank.forEach(function (d) { total += d.tasks.length; });
+    document.getElementById('round-list').innerHTML = D.rounds.slice().reverse().map(function (r) {
+      return '<article class="rd"><div class="ti"><b>' + esc(L(r.title)) + '</b><span>' + esc(r.date) + ' · ' + r.tasks.length + ' / ' + total + ' · ' + r.tasks.map(function (x) { return x.id; }).join(' ') + '</span></div>' +
+        '<div class="links">' + (r.report_url ? '<a class="btn pri" href="' + esc(r.report_url) + '" target="_blank" rel="noopener">' + t.report + ' ↗</a>' : '') + '<a class="btn" href="' + esc(r.data_url) + '" target="_blank" rel="noopener">' + t.data + ' ↗</a></div>' +
+        '<div class="ents">' + r.entries.map(function (e) { return '<span>' + mark(e) + '<b>' + esc(e.model) + '</b><em>' + esc(e.effort) + '</em><strong>' + n1(e.quality) + '</strong></span>'; }).join('') + '</div></article>';
+    }).join('');
+  }
+  function renderBank() {
+    var ran = [];
+    document.getElementById('bank').innerHTML = D.bank.map(function (d) {
+      return '<div class="bk"><span class="w">' + Math.round(d.weight * 100) + '%</span><b>' + esc(L(d)) + '</b><div class="chips">' + d.tasks.map(function (x) {
+        if (x.rounds.length) ran.push(x.id);
+        return '<a class="chip' + (x.rounds.length ? ' ran' : '') + '" href="' + D.repo + '/tree/main/tasks/' + x.id + '" target="_blank" rel="noopener" data-tip="' + esc(x.id + '\n' + L(x)) + '">' + x.id + '</a>';
+      }).join('') + '</div></div>';
+    }).join('');
+    document.getElementById('public-now').textContent = ran.length ? T[lang].pub(ran.length, ran.join(' ')) : '';
+  }
+  function render() {
+    if (!view.set) return;
+    renderFacts(); renderSets(); renderLegend(); renderBoard(); renderTake(); renderSeg(); renderScatter(); renderDims(); renderTasks(); renderTaskTable(); renderRounds(); renderBank();
+  }
+  function setLang(l) {
+    lang = l;
+    document.documentElement.setAttribute('data-lang', l);
+    document.documentElement.setAttribute('lang', l === 'zh' ? 'zh-CN' : 'en');
+    document.title = T[l].head;
+    document.querySelectorAll('.lang button').forEach(function (b) { b.setAttribute('aria-pressed', b.getAttribute('data-set') === l ? 'true' : 'false'); });
+    render();
+  }
+  document.addEventListener('click', function (ev) {
+    var b = ev.target.closest && ev.target.closest('button');
+    if (!b) return;
+    if (b.hasAttribute('data-set')) { setLang(b.getAttribute('data-set')); if (location.hash !== '#' + lang) location.hash = lang; }
+    else if (b.hasAttribute('data-set-i')) { view.set = SETS[+b.getAttribute('data-set-i')]; render(); }
+    else if (b.hasAttribute('data-seg-k')) { view[b.getAttribute('data-seg-k')] = b.getAttribute('data-seg-v'); render(); }
+  });
+  window.addEventListener('hashchange', function () { var h = location.hash.slice(1); if ((h === 'zh' || h === 'en') && h !== lang) setLang(h); });
+
+  var tip = document.getElementById('tip');
+  function showTip(el) {
+    tip.textContent = el.getAttribute('data-tip');
+    tip.hidden = false;
+    var r = el.getBoundingClientRect(), w = tip.offsetWidth, h = tip.offsetHeight;
+    var x = Math.max(8, Math.min(window.innerWidth - w - 8, r.left + r.width / 2 - w / 2));
+    var y = r.top - h - 8;
+    if (y < 8) y = r.bottom + 8;
+    tip.style.left = x + 'px';
+    tip.style.top = y + 'px';
+  }
+  document.addEventListener('pointerover', function (ev) { var t = ev.target.closest && ev.target.closest('[data-tip]'); if (t) showTip(t); else tip.hidden = true; });
+  document.addEventListener('focusin', function (ev) { var t = ev.target.closest && ev.target.closest('[data-tip]'); if (t) showTip(t); });
+  document.addEventListener('focusout', function () { tip.hidden = true; });
+
+  var h0 = location.hash.slice(1), nav = (navigator.language || '').toLowerCase();
+  setLang(h0 === 'zh' || h0 === 'en' ? h0 : (nav.indexOf('zh') === 0 ? 'zh' : 'en'));
+})();
+</script>

@@ -5,6 +5,15 @@
     "en": "Round 1: Opus 5.5 vs GPT-6 Astra (lite set)"
   },
   "dates": "2026-11-08",
+  "label": {
+    "zh": "第一轮",
+    "en": "Round 1"
+  },
+  "report_url": "https://claude.ai/artifact/C2fe52C6DcYjLHraFvygpw",
+  "headline": {
+    "zh": "判对错两家全满分，差距在复刻页面动起来像不像（前端 92.5 对 77.2）和代码质量；GPT-6 Astra 8 道题用 1 小时 19 分、23 美元，Opus 5.5 用 3 小时 6 分、52 美元。",
+    "en": "Both pass every pass/fail check. The gap is in how the rebuilt screens move (frontend 92.5 vs 77.2) and in code quality, while GPT-6 Astra finishes the 8 tasks in 1 h 19 min for $23 against 3 h 6 min and $52."
+  },
   "note": "从 31 道题库里每个维度挑两道（都是样题，每维一易一难），每题每家只跑一次，思考档位都是各家第二高的 xhigh。",
   "tools": {
     "claude": {

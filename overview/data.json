@@ -1,0 +1,549 @@
+{
+ "repo": "https://github.com/signerlabs/shipbench",
+ "updated": "2026-11-08",
+ "rounds": [
+  {
+   "id": "round-01",
+   "n": 1,
+   "label": {
+    "zh": "第一轮",
+    "en": "Round 1"
+   },
+   "title": {
+    "zh": "第一轮：Opus 5.5 对 GPT-6 Astra（精简题库）",
+    "en": "Round 1: Opus 5.5 vs GPT-6 Astra (lite set)"
+   },
+   "date": "2026-11-08",
+   "headline": {
+    "zh": "判对错两家全满分，差距在复刻页面动起来像不像（前端 92.5 对 77.2）和代码质量；GPT-6 Astra 8 道题用 1 小时 19 分、23 美元，Opus 5.5 用 3 小时 6 分、52 美元。",
+    "en": "Both pass every pass/fail check. The gap is in how the rebuilt screens move (frontend 92.5 vs 77.2) and in code quality, while GPT-6 Astra finishes the 8 tasks in 1 h 19 min for $23 against 3 h 6 min and $52."
+   },
+   "report_url": "https://claude.ai/artifact/C2fe52C6DcYjLHraFvygpw",
+   "data_url": "https://github.com/signerlabs/shipbench/tree/main/reports/round-01",
+   "dimensions": [
+    {
+     "key": "fix",
+     "weight": 0.3,
+     "tasks": [
+      "S1",
+      "S2"
+     ]
+    },
+    {
+     "key": "frontend",
+     "weight": 0.25,
+     "tasks": [
+      "F2",
+      "F1"
+     ]
+    },
+    {
+     "key": "backend",
+     "weight": 0.25,
+     "tasks": [
+      "B4",
+      "B2"
+     ]
+    },
+    {
+     "key": "rules",
+     "weight": 0.2,
+     "tasks": [
+      "R5",
+      "R9"
+     ]
+    }
+   ],
+   "tasks": [
+    {
+     "id": "S1",
+     "dimension": "fix",
+     "level": "easy",
+     "zh": "剪贴板 App 数据层：两台 Mac 同步来的同一条置顶，去重时留下的不一样",
+     "en": "Clipboard app data layer: duplicate pins synced from two Macs are deduplicated differently",
+     "lang": "Swift"
+    },
+    {
+     "id": "S2",
+     "dimension": "fix",
+     "level": "hard",
+     "zh": "剪贴板 App 数据层：搜索翻页回到开头、Pinboard 拖不动（只写现象）",
+     "en": "Clipboard app data layer: search paging jumps back to the start, Pinboard items won't move (symptoms only)",
+     "lang": "Swift"
+    },
+    {
+     "id": "F2",
+     "dimension": "frontend",
+     "level": "easy",
+     "zh": "照录屏复刻 Trovy 的统计报表页和房间详情页",
+     "en": "Rebuild Trovy's stats report and room detail screens from a recording",
+     "lang": "SwiftUI"
+    },
+    {
+     "id": "F1",
+     "dimension": "frontend",
+     "level": "hard",
+     "zh": "照录屏复刻美食地图 App 的三步引导页，含插画动画",
+     "en": "Rebuild a food-map app's three-step onboarding from a recording, illustrations animated",
+     "lang": "SwiftUI"
+    },
+    {
+     "id": "B4",
+     "dimension": "backend",
+     "level": "easy",
+     "zh": "按需求搭会员订阅回调服务（17 条隐藏验收）",
+     "en": "Build a subscription webhook service from a spec (17 hidden checks)",
+     "lang": "TypeScript · Workers + D1"
+    },
+    {
+     "id": "B2",
+     "dimension": "backend",
+     "level": "hard",
+     "zh": "按需求从零搭家庭物品与过期提醒服务（49 条隐藏验收）",
+     "en": "Build a household inventory and expiry-reminder service from a spec (49 hidden checks)",
+     "lang": "TypeScript · Workers + D1"
+    },
+    {
+     "id": "R5",
+     "dimension": "rules",
+     "level": "easy",
+     "zh": "用 ShipSwift 组件加「编辑习惯」和全局提示",
+     "en": "Add habit editing and a global toast with ShipSwift components",
+     "lang": "SwiftUI"
+    },
+    {
+     "id": "R9",
+     "dimension": "rules",
+     "level": "hard",
+     "zh": "健身 App 加花费页，避开四份文档里写明的坑",
+     "en": "Add an expenses screen to a fitness app without hitting the pitfalls in four docs",
+     "lang": "SwiftUI"
+    }
+   ],
+   "entries": [
+    {
+     "key": "claude",
+     "vendor": "claude",
+     "model": "Opus 5.5",
+     "agent": "Claude Code",
+     "version": "2.1.319",
+     "effort": "xhigh",
+     "quality": 94.5,
+     "speed": 38.1,
+     "cost": 42.1,
+     "seconds": 11175,
+     "cost_usd": 52.36,
+     "dimensions": {
+      "fix": {
+       "quality": 95.5,
+       "speed": 47.3,
+       "cost": 52.4
+      },
+      "frontend": {
+       "quality": 92.5,
+       "speed": 30.4,
+       "cost": 29.4
+      },
+      "backend": {
+       "quality": 95.8,
+       "speed": 45.0,
+       "cost": 44.5
+      },
+      "rules": {
+       "quality": 93.7,
+       "speed": 25.3,
+       "cost": 39.3
+      }
+     },
+     "tasks": {
+      "S1": {
+       "quality": 95.8,
+       "speed": 46.2,
+       "cost": 51.0,
+       "seconds": 229,
+       "cost_usd": 1.03
+      },
+      "S2": {
+       "quality": 95.2,
+       "speed": 48.4,
+       "cost": 53.8,
+       "seconds": 462,
+       "cost_usd": 2.28
+      },
+      "F2": {
+       "quality": 90.8,
+       "speed": 35.6,
+       "cost": 34.9,
+       "seconds": 2662,
+       "cost_usd": 13.43
+      },
+      "F1": {
+       "quality": 94.2,
+       "speed": 25.1,
+       "cost": 24.0,
+       "seconds": 4608,
+       "cost_usd": 23.07
+      },
+      "B4": {
+       "quality": 95.8,
+       "speed": 43.7,
+       "cost": 44.2,
+       "seconds": 703,
+       "cost_usd": 2.49
+      },
+      "B2": {
+       "quality": 95.8,
+       "speed": 46.2,
+       "cost": 44.8,
+       "seconds": 1109,
+       "cost_usd": 4.38
+      },
+      "R5": {
+       "quality": 92.8,
+       "speed": 20.6,
+       "cost": 41.4,
+       "seconds": 408,
+       "cost_usd": 1.64
+      },
+      "R9": {
+       "quality": 94.6,
+       "speed": 30.0,
+       "cost": 37.3,
+       "seconds": 994,
+       "cost_usd": 4.04
+      }
+     }
+    },
+    {
+     "key": "codex",
+     "vendor": "codex",
+     "model": "GPT-6 Astra",
+     "agent": "Codex CLI",
+     "version": "0.167.0",
+     "effort": "xhigh",
+     "quality": 88.7,
+     "speed": 61.9,
+     "cost": 57.9,
+     "seconds": 4771,
+     "cost_usd": 23.28,
+     "dimensions": {
+      "fix": {
+       "quality": 92.2,
+       "speed": 52.7,
+       "cost": 47.6
+      },
+      "frontend": {
+       "quality": 77.2,
+       "speed": 69.7,
+       "cost": 70.5
+      },
+      "backend": {
+       "quality": 92.5,
+       "speed": 55.0,
+       "cost": 55.5
+      },
+      "rules": {
+       "quality": 93.1,
+       "speed": 74.7,
+       "cost": 60.7
+      }
+     },
+     "tasks": {
+      "S1": {
+       "quality": 94.6,
+       "speed": 53.8,
+       "cost": 49.0,
+       "seconds": 186,
+       "cost_usd": 1.09
+      },
+      "S2": {
+       "quality": 89.8,
+       "speed": 51.6,
+       "cost": 46.2,
+       "seconds": 422,
+       "cost_usd": 2.81
+      },
+      "F2": {
+       "quality": 70.5,
+       "speed": 64.4,
+       "cost": 65.1,
+       "seconds": 1200,
+       "cost_usd": 5.8
+      },
+      "F1": {
+       "quality": 83.9,
+       "speed": 74.9,
+       "cost": 76.0,
+       "seconds": 1160,
+       "cost_usd": 5.46
+      },
+      "B4": {
+       "quality": 94.0,
+       "speed": 56.3,
+       "cost": 55.8,
+       "seconds": 497,
+       "cost_usd": 1.81
+      },
+      "B2": {
+       "quality": 91.0,
+       "speed": 53.8,
+       "cost": 55.2,
+       "seconds": 899,
+       "cost_usd": 3.29
+      },
+      "R5": {
+       "quality": 95.2,
+       "speed": 79.4,
+       "cost": 58.6,
+       "seconds": 80,
+       "cost_usd": 1.02
+      },
+      "R9": {
+       "quality": 91.0,
+       "speed": 70.0,
+       "cost": 62.7,
+       "seconds": 327,
+       "cost_usd": 2.0
+      }
+     }
+    }
+   ]
+  }
+ ],
+ "bank": [
+  {
+   "key": "fix",
+   "weight": 0.3,
+   "zh": "修 bug、加功能",
+   "en": "Fix bugs & add features",
+   "tasks": [
+    {
+     "id": "S1",
+     "en": "Pinboard dedupe across two Macs (bug fix, sample)",
+     "zh": "剪贴板 App 数据层：两台 Mac 同步来的同一条置顶，去重时选的不一样",
+     "rounds": [
+      "round-01"
+     ]
+    },
+    {
+     "id": "S2",
+     "en": "Search paging and Pinboard reordering (bug fix)",
+     "zh": "剪贴板 App 数据层：搜索翻页回到开头、Pinboard 拖不动（只写现象）",
+     "rounds": [
+      "round-01"
+     ]
+    },
+    {
+     "id": "S3",
+     "en": "Same-day reminders collide (bug fix)",
+     "zh": "宠物健康 iOS App：同一天到期的提醒只响一条",
+     "rounds": []
+    },
+    {
+     "id": "S4",
+     "en": "Cleared fields come back after editing (bug fix)",
+     "zh": "宠物健康 iOS App：编辑时清空的字段没清掉",
+     "rounds": []
+    },
+    {
+     "id": "S5",
+     "en": "Link previews must not touch private addresses (feature)",
+     "zh": "剪贴板 App 的链接预览：哪些网址不该去取",
+     "rounds": []
+    },
+    {
+     "id": "T1",
+     "en": "Duplicate opening-hours periods (bug fix)",
+     "zh": "美食地图服务端：营业时间同一时段显示两遍",
+     "rounds": []
+    },
+    {
+     "id": "T2",
+     "en": "Reading powers aloud (bug fix)",
+     "zh": "儿童数学学伴核心逻辑：乘方的英文读法不对",
+     "rounds": []
+    },
+    {
+     "id": "T3",
+     "en": "Cleaning post tags (feature)",
+     "zh": "美食地图服务端：给导入的标签做清洗",
+     "rounds": []
+    },
+    {
+     "id": "T4",
+     "en": "Re-importing a closed restaurant (bug fix)",
+     "zh": "美食地图服务端：已关闭的店还下发坐标",
+     "rounds": []
+    },
+    {
+     "id": "P1",
+     "en": "Finding phrases in a Chinese voice-over (bug fix)",
+     "zh": "视频生成脚本：中文口播里找不到短语（每个汉字算一个词）",
+     "rounds": []
+    }
+   ]
+  },
+  {
+   "key": "frontend",
+   "weight": 0.25,
+   "zh": "前端复刻",
+   "en": "Rebuild a screen",
+   "tasks": [
+    {
+     "id": "F1",
+     "en": "Rebuild the 烟火小店 onboarding from a recording (frontend)",
+     "zh": "烟火小店引导页",
+     "rounds": [
+      "round-01"
+     ]
+    },
+    {
+     "id": "F2",
+     "en": "Rebuild the Trovy stats report (frontend)",
+     "zh": "Trovy 统计报表",
+     "rounds": [
+      "round-01"
+     ]
+    },
+    {
+     "id": "F3",
+     "en": "Rebuild the 烟火小店 home page from a recording (frontend)",
+     "zh": "烟火小店首页：主推卡横滑、好店发现卡片流",
+     "rounds": []
+    },
+    {
+     "id": "F4",
+     "en": "Rebuild the Moonlitt moon-phase screen from a recording (frontend, third-party app)",
+     "zh": "Moonlitt 月相页（别家 App）",
+     "rounds": []
+    },
+    {
+     "id": "F5",
+     "en": "Rebuild an Airbnb listing page from a recording (frontend, third-party app)",
+     "zh": "Airbnb 房源详情（别家 App）",
+     "rounds": []
+    },
+    {
+     "id": "F6",
+     "en": "Rebuild the Duolingo learning path from a recording (frontend, third-party app)",
+     "zh": "Duolingo 学习路径（别家 App）",
+     "rounds": []
+    }
+   ]
+  },
+  {
+   "key": "backend",
+   "weight": 0.25,
+   "zh": "后端搭建",
+   "en": "Build a backend",
+   "tasks": [
+    {
+     "id": "B1",
+     "en": "Shared lists (backend)",
+     "zh": "多人共享清单",
+     "rounds": []
+    },
+    {
+     "id": "B2",
+     "en": "Household items and expiry reminders (backend)",
+     "zh": "家庭物品与过期提醒",
+     "rounds": [
+      "round-01"
+     ]
+    },
+    {
+     "id": "B3",
+     "en": "Nearby shops and ratings (backend)",
+     "zh": "附近的店和评分",
+     "rounds": []
+    },
+    {
+     "id": "B4",
+     "en": "Subscription membership from webhook events (backend, sample)",
+     "zh": "会员订阅回调（样题）",
+     "rounds": [
+      "round-01"
+     ]
+    },
+    {
+     "id": "B5",
+     "en": "CSV import and spending stats (backend)",
+     "zh": "记账数据导入和统计",
+     "rounds": []
+    }
+   ]
+  },
+  {
+   "key": "rules",
+   "weight": 0.2,
+   "zh": "守规矩",
+   "en": "Follow project rules",
+   "tasks": [
+    {
+     "id": "R1",
+     "en": "Friends leaderboard (project rules)",
+     "zh": "好友排行榜",
+     "rounds": []
+    },
+    {
+     "id": "R2",
+     "en": "AI coach chat (project rules)",
+     "zh": "AI 教练聊天页",
+     "rounds": []
+    },
+    {
+     "id": "R3",
+     "en": "Meal photo (project rules)",
+     "zh": "记一餐拍照",
+     "rounds": []
+    },
+    {
+     "id": "R4",
+     "en": "First-launch onboarding (project rules)",
+     "zh": "首次启动欢迎页",
+     "rounds": []
+    },
+    {
+     "id": "R5",
+     "en": "Edit a habit, with global alerts (project rules, sample)",
+     "zh": "编辑习惯和全局提示（样题）",
+     "rounds": [
+      "round-01"
+     ]
+    },
+    {
+     "id": "R6",
+     "en": "Settings page (project rules)",
+     "zh": "设置页",
+     "rounds": []
+    },
+    {
+     "id": "R7",
+     "en": "Stats page (project rules)",
+     "zh": "统计页",
+     "rounds": []
+    },
+    {
+     "id": "R8",
+     "en": "Bottom tab bar (project rules)",
+     "zh": "底部标签栏",
+     "rounds": []
+    },
+    {
+     "id": "R9",
+     "en": "Workout expenses page (project rules)",
+     "zh": "健身花费页",
+     "rounds": [
+      "round-01"
+     ]
+    },
+    {
+     "id": "R10",
+     "en": "Goal due badges (project rules)",
+     "zh": "目标到期标签",
+     "rounds": []
+    }
+   ]
+  }
+ ]
+}

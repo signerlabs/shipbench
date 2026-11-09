@@ -2,6 +2,12 @@
 
 **Report · 报告：** https://claude.ai/artifact/C2fe52C6DcYjLHraFvygpw (Chinese and English · 中英双语). The same page is `index.html` in this folder · 本目录的 `index.html` 就是同一页。
 
+**All rounds · 各轮总览：** https://claude.ai/artifact/PqeRTZmWJeqaGeKXWWwdBB
+
+Round 1 includes the four tasks of the 2026-11-08 sample results (S2, F1, B2, R9), now with code-quality reviews added to S2 and R9; the earlier `results/2026-11-08-xhigh` folder is in the git history.
+
+第一轮包含 2026-11-08 样题结果的四道题（S2、F1、B2、R9），S2、R9 补上了代码质量评审；原来的 `results/2026-11-08-xhigh` 目录留在 git 历史里。
+
 **Opus 5.5** in Claude Code 2.1.319 (`--effort xhigh`) vs **GPT-6 Astra** in Codex CLI 0.167.0 (`model_reasoning_effort="xhigh"`). Lite set: two tasks per dimension from the 31-task bank, one run per task per tool.
 
 **Opus 5.5**（在 Claude Code 2.1.319 里跑，`--effort xhigh`）对 **GPT-6 Astra**（在 Codex CLI 0.167.0 里跑，`model_reasoning_effort="xhigh"`）。精简版：从 31 道题库里每个维度挑两道，每家每题跑一次。
